@@ -3,9 +3,14 @@
 {
     # A private laptop cannot normally satisfy public HTTP/TLS ACME challenges.
     auto_https disable_redirects
+    admin off
+    persist_config off
+    servers {
+        protocols h1 h2
+    }
 }
 
-https://{$ATTENDANCE_HOST} {
+https://{$ATTENDANCE_HOST}:{$ATTENDANCE_PORT:8443} {
     bind {$LAPTOP_LAN_IP}
     tls {$ATTENDANCE_CERT_FILE} {$ATTENDANCE_KEY_FILE}
     reverse_proxy 127.0.0.1:4180 {

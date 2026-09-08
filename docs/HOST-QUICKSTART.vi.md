@@ -2,6 +2,8 @@
 
 Dành cho **một TA phụ trách laptop host** của lớp. Các TA còn lại chỉ cần URL HTTPS và email quản trị. Hướng dẫn service hiện dành cho Linux/systemd.
 
+Xem bản hướng dẫn ngắn: **[Chuẩn bị ở nhà và kiểm tra tại trường](PREPARE-BEFORE-CLASS.vi.md)**.
+
 ## A. Làm ở nhà trước khi mang máy tới trường
 
 ### 1. Tải mã nguồn và cài thư viện
@@ -12,6 +14,9 @@ Cài Git, Node.js 24+, Python 3 (backup/kiểm thử). Trong terminal:
 git clone https://github.com/namle24/bp-attendance.git
 cd bp-attendance
 npm ci
+npm run caddy:install
+npm run laptop:setup
+npm run host:install
 ```
 
 ### 2. Chuẩn bị các thông tin chạy thật
@@ -29,7 +34,7 @@ npm ci
 ### 3. Tạo `.env`
 
 ```bash
-cp .env.example .env
+npm run laptop:setup
 ```
 
 Mở `.env` bằng trình soạn thảo, điền đầy đủ theo [WEB-SETUP.vi.md](WEB-SETUP.vi.md). Giữ:
@@ -41,44 +46,34 @@ BP_DATABASE=./data/web-live.sqlite
 TRUSTED_PROXY_CIDRS=127.0.0.1/32,::1/128
 ```
 
-`PUBLIC_ORIGIN` là URL HTTPS thật; `CAMPUS_CIDRS` là nguồn nội bộ IT xác nhận; `ADMIN_EMAILS` gồm các TA, ngăn cách dấu phẩy. Tạo QR secret ngẫu nhiên theo hướng dẫn rồi giữ ổn định qua restart. `.env`, database và credentials không đưa lên GitHub.
+`PUBLIC_ORIGIN` là URL HTTPS thật, gồm cổng `:8443`; `CAMPUS_CIDRS` là nguồn nội bộ IT xác nhận; `ADMIN_EMAILS` gồm các TA, ngăn cách dấu phẩy. Tạo QR secret ngẫu nhiên theo hướng dẫn rồi giữ ổn định qua restart. `.env`, database và credentials không đưa lên GitHub.
 
 Kiểm tra cấu hình trước khi khởi động:
 
 ```bash
-npm run preflight
+npm run host:check
 ```
 
 Lệnh này kiểm tra các trường bắt buộc và file service account; chưa kiểm tra Google/HTTPS/mạng trường. Nếu cần chạy trong terminal để xem log sau khi cấu hình hoàn chỉnh, dùng `npm start`, dừng bằng Ctrl+C trước khi chuyển sang service.
 
 ### 4. Chuẩn bị HTTPS
 
-Cài Caddy. Dùng [Caddyfile.lan](../deploy/Caddyfile.lan), với hostname, IP laptop và chứng chỉ/khóa được cấp. Cấu hình biến trong môi trường **Caddy**; `.env` của Node không tự cấp các biến này cho Caddy.
+Caddy đã được `caddy:install` đặt trong `data/bin` và service đã được `host:install` liên kết. Điền `data/caddy.env`: hostname, cổng `8443`, IP laptop tại trường và đường dẫn fullchain/private key được cấp. Dịch vụ tự đọc file này; `.env` của Node là file riêng.
+
+`host:check` kiểm tra chứng chỉ/key/hostname và chạy Caddy validate khi đủ các trường. Chứng chỉ phải được điện thoại tin cậy; cần IT xác nhận DNS và mạng. Node 4180 chỉ ở localhost; Caddy nhận TCP 8443.
+
+### 5. Bật/dừng dịch vụ
+
+Khi đủ Google/HTTPS và đã cấu hình mạng tại trường:
 
 ```bash
-caddy validate --config deploy/Caddyfile.lan --adapter caddyfile
-```
-
-Lệnh chỉ chạy được sau khi đã điền đủ biến/đường dẫn chứng chỉ. Cho Caddy chạy bằng dịch vụ có quyền mở cổng 443. Chi tiết DNS, bind IP và firewall ở [LAPTOP-LAN.vi.md](LAPTOP-LAN.vi.md#cấu-hình-ứng-dụng-và-https). Node 4180 chỉ ở localhost.
-
-### 5. Chuẩn bị cách giữ app chạy
-
-```bash
-npm run laptop:prepare
-cat data/systemd/bp-attendance-laptop.service
-```
-
-Script tạo mẫu theo đường dẫn repo/Node hiện tại, chưa cài service. Sau khi `.env` hoàn chỉnh:
-
-```bash
-systemctl --user link "$PWD/data/systemd/bp-attendance-laptop.service"
-systemctl --user daemon-reload
-systemctl --user start bp-attendance-laptop.service
-systemctl --user status bp-attendance-laptop.service
+npm run host:check -- --campus
+npm run host:start
+npm run host:status
 systemd-inhibit --list
 ```
 
-Service giữ inhibitor khi chạy và tự restart khi process lỗi. Cắm sạc, mở nắp, giữ phiên đăng nhập hệ điều hành, kiểm tra máy không sleep. Nếu inhibitor không được cấp quyền, xem log và xử lý trước khi phục vụ lớp. Không chạy thêm `npm start` song song.
+App và Caddy dùng service user, tự restart khi process lỗi. App giữ inhibitor trong khi chạy. Cắm sạc, mở nắp, giữ phiên đăng nhập hệ điều hành, kiểm tra máy không sleep. Không chạy thêm `npm start` song song. Các file service nằm trong `data/systemd`; nếu đổi đường dẫn repo/Node, chạy lại `laptop:setup` và `host:install` khi không thu điểm danh.
 
 ## B. Đến trường: kiểm tra trước khi thu điểm danh
 
@@ -86,13 +81,12 @@ Service giữ inhibitor khi chạy và tự restart khi process lỗi. Cắm s�
 2. Tìm IPv4 của card Wi‑Fi và thử đường kết nối:
 
 ```bash
-ip -brief -4 address
-npm run lan:probe -- --host IP_WIFI_CUA_LAPTOP
+npm run campus:test
 ```
 
-Thay `IP_WIFI_CUA_LAPTOP` bằng địa chỉ thật. Mở URL được in ra trên điện thoại. Trang chỉ kiểm tra kết nối, tự đóng sau 5 phút. Nếu không vào được, kiểm tra firewall/client isolation/VLAN cùng IT. Probe thành công chưa thay cho thử HTTPS/Google.
+Lệnh tự nhận IP Wi-Fi và mở QR trên laptop; dùng điện thoại quét QR. Trang chỉ kiểm tra kết nối, tự đóng sau 5 phút. Nếu không vào được, kiểm tra firewall/client isolation/VLAN cùng IT. Probe thành công chưa thay cho thử HTTPS/Google.
 
-3. Mở `https://HOSTNAME_THAT/readyz` từ điện thoại, phải nhận `{"ok":true}`. Sau đó mở trang chính, thử Google TA và sinh viên, kiểm tra MSSV/QR/mã nhập trên laptop/receipt/Sheet.
+3. Mở `https://HOSTNAME_THAT:8443/readyz` từ điện thoại, phải nhận `{"ok":true}`. Sau đó mở trang chính, thử Google TA và sinh viên, kiểm tra MSSV/QR/mã nhập trên laptop/receipt/Sheet.
 4. Dùng mạng khách/4G: phải bị chặn theo tiêu chí đã chốt. Kiểm tra cả nguồn IPv4/IPv6 thực tế nếu có.
 5. Thử nhiều điện thoại, rồi tăng tải trên môi trường thử. Benchmark local không chứng minh độ ổn định Wi‑Fi thật. Không đo tải tổng hợp cạnh buổi đang điểm danh chính thức.
 
@@ -109,7 +103,7 @@ Chỉ chia sẻ **URL HTTPS chung** cho các TA/sinh viên sau khi nghiệm thu.
 
 ```bash
 python3 scripts/backup-db.py data/web-live.sqlite data/backups
-systemctl --user stop bp-attendance-laptop.service
+npm run host:stop
 ```
 
 Backup trên cùng laptop cần được chép sang nơi lưu riêng được trường cho phép. Khi đổi laptop/khôi phục, giữ database và cấu hình đúng; không tạo database mới để cùng ghi vào Sheet hiện tại. [Backup và phục hồi](USTH-HOSTING.vi.md#backup-và-phục-hồi).
@@ -117,7 +111,7 @@ Backup trên cùng laptop cần được chép sang nơi lưu riêng được tr
 ## Xem lỗi khi app không chạy
 
 ```bash
-systemctl --user status bp-attendance-laptop.service
+npm run host:status
 journalctl --user -u bp-attendance-laptop.service -n 50 --no-pager
 curl --fail http://127.0.0.1:4180/readyz
 ```

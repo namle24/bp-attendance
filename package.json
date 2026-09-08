@@ -10,7 +10,15 @@
     "bench:web": "node scripts/bench-web.cjs",
     "lan:probe": "node scripts/lan-probe.cjs",
     "laptop:prepare": "node scripts/prepare-laptop.cjs",
-    "preflight": "node --env-file-if-exists=.env scripts/preflight.cjs"
+    "preflight": "node --env-file-if-exists=.env scripts/preflight.cjs",
+    "caddy:install": "node scripts/install-caddy.cjs",
+    "laptop:setup": "node scripts/laptop-setup.cjs && node scripts/prepare-laptop.cjs",
+    "host:check": "node scripts/host-check.cjs --report",
+    "host:install": "node scripts/host-control.cjs install",
+    "host:start": "node scripts/host-control.cjs start",
+    "host:stop": "node scripts/host-control.cjs stop",
+    "host:status": "node scripts/host-control.cjs status",
+    "campus:test": "node scripts/campus-test.cjs"
   },
   "engines": {
     "node": ">=24"

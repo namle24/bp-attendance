@@ -1,8 +1,11 @@
 # Phạm vi kiểm tra bản web · 08/09/2026
 
-33 kiểm thử tự động: 9 luật đối chiếu và bảng ngày, 10 bảo mật/lưu trữ/Sheets, 11 kiểm thử API HTTP, 1 backup, 1 phục hồi tiến trình và 1 tải khóa/xác minh JWT. Google Identity và Sheets dùng dữ liệu giả lập trong kiểm thử; JWT ở bài khóa Google có chữ ký RSA thật do bài test tự tạo, không phải token của tài khoản USTH.
+35 kiểm thử tự động: 9 luật đối chiếu và bảng ngày, 10 bảo mật/lưu trữ/Sheets, 11 kiểm thử API HTTP, 1 backup, 1 phục hồi tiến trình, 1 tải khóa/xác minh JWT, 1 setup laptop và 1 HTTPS/Caddy. Google Identity và Sheets dùng dữ liệu giả lập trong kiểm thử; JWT ở bài khóa Google có chữ ký RSA thật do bài test tự tạo, không phải token của tài khoản USTH.
 
 Các tình huống đã kiểm tra:
+
+- Setup laptop lần hai giữ nguyên QR secret, email TA, cấu hình proxy và dữ liệu SQLite; `.env` có quyền 600, báo cáo không chứa secret.
+- Caddy 2.11.4 thật với chứng chỉ thử trong thư mục tạm: TLS xác minh được qua CA chỉ định riêng trong test, readiness qua proxy thành công, header campus giả bị Caddy ghi đè và app từ chối. Bài này tự bỏ qua nếu máy chưa chạy `npm run caddy:install`; trên laptop chuẩn bị đã chạy và đạt. Không cài CA thử vào hệ điều hành.
 
 - CIDR IPv4, IPv4-mapped IPv6, IPv6; IP ngoài danh sách; từ chối cấu hình `/0`.
 - QR có chữ ký, thay mỗi 30 giây, từ chối mã sửa/giả, mã tương lai, mã hết hạn và phiên đã đóng.
@@ -22,7 +25,7 @@ Các tình huống đã kiểm tra:
 
 Kiểm tra trình duyệt chạy Chromium với HTTPS localhost và database tạm. Provider Google và writer Sheets được thay bằng fixture trong `tests/helpers/browser-fixture.cjs`; entry point ứng dụng không import fixture. Cookie Secure, nonce, đối chiếu Google claims/roster, CIDR và CSRF vẫn chạy. Kiểm tra TA mở một nút vào màn chiếu, điện thoại quét QR, máy tính nhập mã, mất mạng trước khi ghi không báo thành công, mất phản hồi sau khi ghi lấy lại được receipt, đổi QR sau 30 giây, đóng phiên và bố cục responsive. Không xác nhận đăng nhập hoặc ghi Sheets thật từ bài thử này.
 
-Đã bổ sung [benchmark gửi dồn 100/300/700 lượt](LOAD-TEST.vi.md), mỗi mức ba lần, tách process phát tải/server, SQLite trên filesystem và đồng hồ thật. Xem báo cáo cho kết quả trước/sau tối ưu. Đây là phép đo riêng với 33 kiểm thử trên; chưa đo Google login, TLS, Wi‑Fi hay hosting thật.
+Đã bổ sung [benchmark gửi dồn 100/300/700 lượt](LOAD-TEST.vi.md), mỗi mức ba lần, tách process phát tải/server, SQLite trên filesystem và đồng hồ thật. Xem báo cáo cho kết quả trước/sau tối ưu. Đây là phép đo riêng với 35 kiểm thử trên; chưa đo Google login, TLS, Wi‑Fi hay hosting thật.
 
 ```bash
 npm test

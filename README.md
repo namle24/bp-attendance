@@ -12,6 +12,7 @@ Laptop host và sinh viên kết nối **USTH_CONNECT**. Mọi lượt gửi đ�
 
 | Người sử dụng | Hướng dẫn |
 | --- | --- |
+| Chuẩn bị ở nhà, ngày mai thử tại trường | **[Chuẩn bị trước buổi học](docs/PREPARE-BEFORE-CLASS.vi.md)** |
 | TA đứng lớp | **[Thao tác từng bước, có ảnh](docs/TA-GUIDE.vi.md)** |
 | TA phụ trách laptop host | **[Cài đặt và chạy ứng dụng](docs/HOST-QUICKSTART.vi.md)** |
 | Người cấu hình Google / Sheets | [Thông số và thiết lập tài khoản](docs/WEB-SETUP.vi.md) |
@@ -26,19 +27,21 @@ Cần **Node.js 24+, Git, Python 3** và Caddy cho HTTPS. Hướng dẫn dịch 
 git clone https://github.com/namle24/bp-attendance.git
 cd bp-attendance
 npm ci
-cp .env.example .env
+npm run caddy:install
+npm run laptop:setup
+npm run host:install
 ```
 
 Điền `.env` theo [hướng dẫn cấu hình](docs/WEB-SETUP.vi.md): URL HTTPS, OAuth client, domain Google của trường, email TA, CIDR mạng, QR secret, Sheet và đường dẫn credentials. Thiết lập DNS/chứng chỉ và [Caddyfile LAN](deploy/Caddyfile.lan) trước khi cho sinh viên truy cập.
 
 ```bash
-npm run preflight
-npm start
+npm run host:check -- --campus
+npm run host:start
 ```
 
-`preflight` kiểm tra cấu hình và file credentials tại máy, không xác nhận quyền Google hay kết nối tại trường. `npm start` chạy ứng dụng; thiếu cấu hình bắt buộc sẽ dừng và báo rõ biến cần điền. Node chỉ nghe `127.0.0.1:4180`; sinh viên mở **URL HTTPS chung** qua Caddy. `localhost` trên điện thoại không phải laptop host.
+`host:check` kiểm tra cấu hình, credentials, chứng chỉ và IP trước khi bật dịch vụ. `host:start` bật app và Caddy theo user hiện tại. Node chỉ nghe `127.0.0.1:4180`; sinh viên mở **URL HTTPS chung có cổng 8443** qua Caddy. `localhost` trên điện thoại không phải laptop host.
 
-Để giữ app chạy và tự restart khi process lỗi, dùng `npm run laptop:prepare` rồi cài service theo [các bước host](docs/HOST-QUICKSTART.vi.md). Mỗi lớp dùng một database chung; không chạy nhiều bản app ghi riêng cho cùng buổi.
+`npm run host:status` xem trạng thái; `npm run host:stop` dừng sau khi đồng bộ/backup. Mỗi lớp dùng một database chung. Hướng dẫn chi tiết: [chuẩn bị từ nhà và test ở trường](docs/PREPARE-BEFORE-CLASS.vi.md).
 
 **Tình trạng nghiệm thu:** đã kiểm thử cục bộ; chưa có cấu hình Google/HTTPS của lớp và chưa nghiệm thu trên Wi‑Fi USTH. Cần hoàn tất các mục này trước khi thu điểm danh chính thức.
 

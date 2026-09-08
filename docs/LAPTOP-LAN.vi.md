@@ -48,7 +48,7 @@ Giữ Node chỉ nghe localhost; Caddy nhận HTTPS trên card mạng trường:
 ```dotenv
 BIND_HOST=127.0.0.1
 PORT=4180
-PUBLIC_ORIGIN=https://TEN_MIEN_DA_CAP
+PUBLIC_ORIGIN=https://TEN_MIEN_DA_CAP:8443
 TRUSTED_PROXY_CIDRS=127.0.0.1/32,::1/128
 BP_DATABASE=./data/web-live.sqlite
 ```
@@ -60,13 +60,14 @@ Mẫu riêng: [Caddyfile.lan](../deploy/Caddyfile.lan). Điền các biến tron
 | Biến của Caddy | Nội dung |
 | --- | --- |
 | ATTENDANCE_HOST | Hostname thật, không kèm `https://` |
+| ATTENDANCE_PORT | `8443` cho dịch vụ user trên laptop |
 | LAPTOP_LAN_IP | IP laptop đã được giữ ổn định |
 | ATTENDANCE_CERT_FILE | Đường dẫn full certificate chain đúng hostname |
 | ATTENDANCE_KEY_FILE | Đường dẫn private key, chỉ dịch vụ Caddy/quản trị đọc được |
 
 Biến trong `.env` của Node không tự đi vào Caddy. Caddy chỉ tin IP socket rồi ghi đè header chuyển tới Node. Mẫu không dành cho Cloudflare, CDN hoặc một proxy khác đứng phía trước.
 
-Cài Caddy theo hướng dẫn của hệ điều hành, kiểm tra `caddy validate --config deploy/Caddyfile.lan --adapter caddyfile` với biến và chứng chỉ thật, rồi chạy bằng service có quyền bind cổng 443. Firewall chỉ mở 443 từ mạng sinh viên được phép; Node 4180 giữ localhost. Mẫu hiện chưa được chạy với chứng chỉ/tên miền USTH thật.
+Cài bằng `npm run caddy:install`; điền `data/caddy.env` và kiểm tra bằng `npm run host:check -- --campus`. Service user đọc file này, chạy HTTPS cổng 8443. Firewall chỉ cho phép TCP 8443 từ mạng sinh viên; Node 4180 giữ localhost. Caddy đã được kiểm tra với TLS localhost và chặn header giả; chứng chỉ/tên miền USTH vẫn cần nghiệm thu.
 
 TA cũng dùng hostname HTTPS này. Truy cập thử `/readyz` từ điện thoại trước, rồi thử đăng nhập/điểm danh. `localhost` trên điện thoại là chính điện thoại, không phải laptop.
 
@@ -75,29 +76,23 @@ TA cũng dùng hostname HTTPS này. Truy cập thử `/readyz` từ điện tho�
 Trên Linux/systemd, dùng mẫu service theo **user hiện tại**, có đúng đường dẫn Node (kể cả khi cài bằng nvm), thay vì mặc định Node ở `/usr/bin/node` như máy chủ cài riêng.
 
 ```bash
-npm run laptop:prepare
-cat data/systemd/bp-attendance-laptop.service
-```
-
-Lệnh chỉ tạo file service để xem xét trong `data/systemd/`; không cài dịch vụ, không đổi nguồn/sleep và không mở cổng. Sau khi hoàn tất `.env`, Google, mạng và HTTPS, cài/chạy bằng tài khoản laptop:
-
-```bash
-systemctl --user link "$PWD/data/systemd/bp-attendance-laptop.service"
-systemctl --user daemon-reload
-systemctl --user start bp-attendance-laptop.service
-systemctl --user status bp-attendance-laptop.service
+npm run laptop:setup
+npm run host:install
+npm run host:check -- --campus
+npm run host:start
+npm run host:status
 systemd-inhibit --list
 ```
 
-Service yêu cầu chặn sleep/idle/lid switch trong lúc chạy và tự khởi động lại khi tiến trình lỗi. Nếu hệ điều hành từ chối quyền inhibitor, service có thể không chạy: xem log, xử lý chính sách nguồn của laptop trước khi phục vụ lớp. Inhibitor không bảo đảm chống tắt máy cưỡng bức, hết pin hoặc mọi cấu hình desktop. Cắm sạc, để nắp mở, giữ phiên đăng nhập hệ điều hành và kiểm tra thực tế máy không ngủ. Không bật auto-update/restart hoặc chạy tác vụ nặng trong buổi điểm danh.
+Setup tạo file và giữ cấu hình/dữ liệu đã có; install liên kết dịch vụ theo user. App và Caddy được quản lý bằng target chung, tự restart khi process lỗi. App chặn sleep/idle/lid switch khi chạy. Cắm sạc, giữ nắp mở và phiên đăng nhập hệ điều hành; xác nhận máy không ngủ. Không bật cập nhật/restart hoặc chạy tác vụ nặng trong buổi.
 
-Service user chưa được bật tự chạy lúc login; chủ động bật trước buổi. Không chạy thêm `npm start` cùng database. Nếu đổi thư mục repo hoặc phiên bản Node/nvm, tạo lại file, daemon-reload và thử trước buổi; không đổi trong lúc sinh viên gửi.
+Dịch vụ chưa đặt tự chạy khi đăng nhập; chủ động bật trước buổi. Nếu đổi thư mục repo/Node, tạo lại và liên kết lại service trước khi thu điểm danh. Hướng dẫn theo thứ tự: [PREPARE-BEFORE-CLASS.vi.md](PREPARE-BEFORE-CLASS.vi.md).
 
 Sau buổi, chờ đồng bộ hoặc xác nhận dữ liệu đang chờ đã lưu, backup rồi tắt:
 
 ```bash
 python3 scripts/backup-db.py data/web-live.sqlite data/backups
-systemctl --user stop bp-attendance-laptop.service
+npm run host:stop
 ```
 
 Backup này nằm cùng laptop; chép sang nơi riêng được trường cho phép để bảo vệ khi hỏng/mất máy. [Hướng dẫn backup/restore](USTH-HOSTING.vi.md#backup-và-phục-hồi).

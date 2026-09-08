@@ -20,14 +20,14 @@ Mẫu nội dung bạn có thể gửi IT (công cụ không tự gửi):
 
 ```bash
 npm ci --omit=dev
-cp .env.example .env
+npm run laptop:setup
 ```
 
 Điền `.env`, không commit hoặc gửi qua nhóm chat:
 
 | Biến | Giá trị |
 | --- | --- |
-| PUBLIC_ORIGIN | HTTPS origin thật, không có `/` cuối |
+| PUBLIC_ORIGIN | HTTPS origin thật, gồm `:8443` cho laptop, không có `/` cuối |
 | PORT / BIND_HOST | `4180` / `127.0.0.1` khi dùng Caddy cùng máy |
 | GOOGLE_CLIENT_ID | OAuth client Web application |
 | GOOGLE_HOSTED_DOMAINS | Các giá trị `hd` được IT xác nhận, phân cách dấu phẩy |
@@ -68,7 +68,7 @@ Mỗi lượt sinh viên ghi SQLite trước; worker ghi snapshot theo lô, gi�
 
 ## 5. HTTPS và IP nguồn
 
-Dùng [Caddyfile LAN](../deploy/Caddyfile.lan) cho Caddy cùng laptop Node. Cấp `ATTENDANCE_HOST`, `LAPTOP_LAN_IP`, `ATTENDANCE_CERT_FILE`, `ATTENDANCE_KEY_FILE` trong môi trường Caddy. Hostname trỏ về laptop; chứng chỉ được điện thoại tin cậy. Caddy chuyển về localhost và ghi đè `X-Forwarded-For` bằng IP từ kết nối vào Caddy.
+Dùng [Caddyfile LAN](../deploy/Caddyfile.lan) cho Caddy cùng laptop Node. Cấp `ATTENDANCE_HOST`, `ATTENDANCE_PORT=8443`, `LAPTOP_LAN_IP`, `ATTENDANCE_CERT_FILE`, `ATTENDANCE_KEY_FILE` trong `data/caddy.env` của dịch vụ Caddy. Hostname trỏ về laptop; chứng chỉ được điện thoại tin cậy. Caddy chuyển về localhost và ghi đè `X-Forwarded-For` bằng IP từ kết nối vào Caddy.
 
 Chỉ mở HTTPS qua proxy, không mở cổng Node 4180 ra Internet. `TRUSTED_PROXY_CIDRS` phải đúng proxy đó; không đặt `trust proxy=true`. Nếu có CDN/load balancer, cần xác định nơi xóa header giả và chuỗi IP thực tế, rồi kiểm thử lại. [Express](https://expressjs.com/en/guide/behind-proxies/), [Caddy](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy).
 
