@@ -1,106 +1,28 @@
-# Laptop và sinh viên cùng Wi‑Fi USTH
+# Kiểm tra mạng USTH và laptop host
 
-Phương án người dùng chọn: ứng dụng và SQLite chạy trên laptop cá nhân; laptop và sinh viên cùng kết nối `USTH_CONNECT`. Sinh viên truy cập **trực tiếp trong mạng nội bộ**. Không cần thuê VPS hoặc dùng tunnel Internet cho phương án này.
+App nghe trực tiếp trên IPv4 card Wi-Fi, cổng 4180. Trang TA nghe riêng `127.0.0.1:4181`. Sinh viên mở URL do máy host in ra, cùng Wi-Fi của lớp; không mở URL localhost của TA.
 
-```mermaid
-flowchart LR
-  S[Điện thoại trên USTH_CONNECT] --> W[Hạ tầng Wi‑Fi trường]
-  W --> C[HTTPS trên laptop / Caddy]
-  C --> A[Ứng dụng điểm danh]
-  A --> D[(SQLite trên SSD laptop)]
-  A --> G[Google: xác thực / đồng bộ Sheets]
-```
+## Kiểm tra tại trường
 
-## Điều kiện để chạy được
+- Kết nối laptop và điện thoại vào USTH_CONNECT, hoàn tất đăng nhập captive portal.
+- Chạy `npm run campus:test`: app thử mạng cổng 4188, QR/link riêng, không ghi dữ liệu, tự hết hạn sau 5 phút.
+- Tiếp tục `npm run host:start` và mở link cổng 4180 trên thiết bị sinh viên. Probe 4188 thành công chưa đủ nếu firewall chặn riêng 4180.
+- Dùng hai thiết bị và database thử riêng theo [chuẩn bị buổi học](PREPARE-BEFORE-CLASS.vi.md), xem IP ở bảng TA.
 
-1. **Thiết bị sinh viên truy cập được laptop.** Cùng SSID chưa chứng minh có cùng subnet hoặc được phép liên lạc. Nếu mạng bật client isolation hoặc chia VLAN không có route phù hợp, cần IT cho phép truy cập tới laptop. Tài liệu Wi‑Fi đã cung cấp chưa nói về cấu hình này.
-2. **IP laptop ổn định trong buổi.** Nhờ IT đặt DHCP reservation hoặc cấp địa chỉ đúng quy trình; không tự chọn một IP tĩnh có thể trùng máy khác. Không dùng IP Docker/VPN làm địa chỉ cho điện thoại.
-3. **Tên miền và HTTPS hợp lệ trên điện thoại.** DNS mà sinh viên dùng phải trỏ hostname tới IP nội bộ của laptop. Cần chứng chỉ đúng hostname được trình duyệt tin cậy và khai báo hostname HTTPS trong Authorized JavaScript origins của Google. [Google Identity](https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid).
-4. **Chỉ các phân đoạn mạng được phép tới trang điểm danh.** IT xác nhận CIDR nguồn thực tế của CONNECT; Guest/VPN không được nằm trong phạm vi chấp nhận. App kiểm tra CIDR ở server, không đọc SSID.
+Nếu không mở được link: kiểm tra IP hiện tại, cổng, Wi-Fi và firewall laptop; hỏi IT về client isolation/VLAN/routing. Cùng tên Wi-Fi không bảo đảm hai thiết bị được kết nối với nhau. Nếu sinh viên khác subnet, IT cần xác nhận dải nguồn rồi mới thêm `CAMPUS_CIDRS`.
 
-Không yêu cầu 700 sinh viên cài chứng chỉ tự ký hoặc sửa file hosts. Để Google login hoạt động bình thường, ưu tiên IT cấp hostname và chứng chỉ được điện thoại tin cậy. Laptop không nhận kết nối công khai từ Internet thì không mặc định dùng được ACME HTTP/TLS challenge; có thể dùng chứng chỉ IT cấp hoặc DNS challenge cho domain có quyền quản lý. [Caddy HTTPS](https://caddyserver.com/docs/automatic-https).
+Không tắt toàn bộ firewall để xử lý. Nếu cần mở, giới hạn **TCP 4180, card Wi-Fi, subnet sinh viên**; không mở cổng TA 4181. Không chuyển qua tunnel/public proxy vì sẽ thay đổi cách quan sát IP và phạm vi truy cập. Bản hiện tại dùng HTTP LAN, chưa mã hóa nội dung trên đường truyền. Nếu trường yêu cầu HTTPS, cần IT triển khai đường kết nối/chứng chỉ và kiểm tra lại IP trước khi sử dụng.
 
-Google login và đồng bộ Sheets vẫn cần Internet. Sau khi đã đăng nhập và trang đã tải đủ, các lượt gửi trong LAN được lưu ở laptop khi Sheets không truy cập được; không cam kết mọi tình huống mất Internet vẫn đăng nhập hoặc tải trang mới được.
+## IP có thể và không thể xác định
 
-## Thử kết nối từ điện thoại trước
+Server lấy `req.socket.remoteAddress`, chuẩn hóa IP và bỏ qua `X-Forwarded-For`, `X-Real-IP` hoặc trường `ip` từ biểu mẫu. [Express giải thích rủi ro khi tin các header proxy](https://expressjs.com/en/guide/behind-proxies/). Luồng LAN không bật trust proxy.
 
-Trên laptop đã vào USTH_CONNECT:
+Web không đọc được SSID hoặc tài khoản dùng để đăng nhập Wi-Fi. Giới hạn subnet chỉ kiểm tra địa chỉ nguồn nhìn thấy, không chứng minh người gửi có mặt đúng phòng. Nếu mạng làm NAT trước laptop, nhiều thiết bị có thể dùng chung địa chỉ nguồn; xem [RFC 3022](https://www.rfc-editor.org/rfc/rfc3022). Đây là khả năng cần thử, chưa có bằng chứng USTH dùng cách đó trên đường kết nối này.
 
-```bash
-ip -brief -4 address
-npm run lan:probe -- --host IP_WIFI_CUA_LAPTOP
-```
+Nếu nhiều MSSV cùng IP, app vẫn nhận đủ lượt và gắn cờ để TA đối chiếu. Nên giải thích cho giảng viên nếu cả lớp bị gom thành một IP; không dùng số lượng dòng đỏ để kết luận gian lận.
 
-Thay `IP_WIFI_CUA_LAPTOP` bằng IPv4 của card Wi‑Fi. Không dùng địa chỉ Docker/VPN. Ví dụ dưới đây dùng IP giả để minh họa; **không phải IP/subnet USTH**, cần thay bằng địa chỉ thật trên laptop:
+## Laptop và Wi-Fi khi đông người
 
-```bash
-npm run lan:probe -- --host 10.20.30.40
-```
+Cắm sạc, giữ Wi-Fi ổn định, không đóng terminal nếu chạy `npm start`. Service Linux có chặn sleep/idle/lid sleep và tự khởi động lại khi tiến trình lỗi; vẫn kiểm tra thực tế. DHCP đổi IP hoặc đổi mạng thì dừng/bật service và chiếu QR mới. Database/phiên còn nguyên.
 
-Lệnh in ra URL dạng `http://IP:4188/probe/...`. Trên điện thoại, kết nối cùng USTH_CONNECT, tắt dữ liệu di động khi thử, mở đúng URL được in. Nếu thấy “Đã kết nối được tới laptop” thì đường HTTP từ điện thoại đó tới laptop hoạt động. Trang thử không ghi danh tính/điểm danh, không phục vụ file; tự đóng sau 5 phút hoặc Ctrl+C.
-
-Nếu không vào được: kiểm tra lại IP, firewall laptop, mạng của điện thoại và nhờ IT kiểm tra client isolation/VLAN. Nếu cần, cho phép riêng cổng thử từ CIDR đã xác nhận trong thời gian thử; không tắt toàn bộ firewall. Probe thành công chưa chứng minh HTTPS, Google hoặc toàn bộ access point đều hoạt động; thử vài điện thoại ở các vị trí trong phòng trước khi tăng tải.
-
-## Cấu hình ứng dụng và HTTPS
-
-Giữ Node chỉ nghe localhost; Caddy nhận HTTPS trên card mạng trường:
-
-```dotenv
-BIND_HOST=127.0.0.1
-PORT=4180
-PUBLIC_ORIGIN=https://TEN_MIEN_DA_CAP:8443
-TRUSTED_PROXY_CIDRS=127.0.0.1/32,::1/128
-BP_DATABASE=./data/web-live.sqlite
-```
-
-`CAMPUS_CIDRS` phải là **các dải nguồn nội bộ mà laptop thực sự thấy và IT xác nhận**, không lấy dải IP public của phương án VPS. Không thêm `127.0.0.1` hoặc toàn bộ dải private để hết lỗi. Nếu mạng có router/NAT giữa các VLAN, cần kiểm tra nguồn laptop thấy có phân biệt được Guest/VPN không. Thêm OAuth, domain Google, roster, admin, QR secret, Sheet và credentials theo [WEB-SETUP.vi.md](WEB-SETUP.vi.md).
-
-Mẫu riêng: [Caddyfile.lan](../deploy/Caddyfile.lan). Điền các biến trong môi trường dịch vụ Caddy, hoặc thay placeholder bằng giá trị thật:
-
-| Biến của Caddy | Nội dung |
-| --- | --- |
-| ATTENDANCE_HOST | Hostname thật, không kèm `https://` |
-| ATTENDANCE_PORT | `8443` cho dịch vụ user trên laptop |
-| LAPTOP_LAN_IP | IP laptop đã được giữ ổn định |
-| ATTENDANCE_CERT_FILE | Đường dẫn full certificate chain đúng hostname |
-| ATTENDANCE_KEY_FILE | Đường dẫn private key, chỉ dịch vụ Caddy/quản trị đọc được |
-
-Biến trong `.env` của Node không tự đi vào Caddy. Caddy chỉ tin IP socket rồi ghi đè header chuyển tới Node. Mẫu không dành cho Cloudflare, CDN hoặc một proxy khác đứng phía trước.
-
-Cài bằng `npm run caddy:install`; điền `data/caddy.env` và kiểm tra bằng `npm run host:check -- --campus`. Service user đọc file này, chạy HTTPS cổng 8443. Firewall chỉ cho phép TCP 8443 từ mạng sinh viên; Node 4180 giữ localhost. Caddy đã được kiểm tra với TLS localhost và chặn header giả; chứng chỉ/tên miền USTH vẫn cần nghiệm thu.
-
-TA cũng dùng hostname HTTPS này. Truy cập thử `/readyz` từ điện thoại trước, rồi thử đăng nhập/điểm danh. `localhost` trên điện thoại là chính điện thoại, không phải laptop.
-
-## Giữ laptop chạy trong buổi học
-
-Trên Linux/systemd, dùng mẫu service theo **user hiện tại**, có đúng đường dẫn Node (kể cả khi cài bằng nvm), thay vì mặc định Node ở `/usr/bin/node` như máy chủ cài riêng.
-
-```bash
-npm run laptop:setup
-npm run host:install
-npm run host:check -- --campus
-npm run host:start
-npm run host:status
-systemd-inhibit --list
-```
-
-Setup tạo file và giữ cấu hình/dữ liệu đã có; install liên kết dịch vụ theo user. App và Caddy được quản lý bằng target chung, tự restart khi process lỗi. App chặn sleep/idle/lid switch khi chạy. Cắm sạc, giữ nắp mở và phiên đăng nhập hệ điều hành; xác nhận máy không ngủ. Không bật cập nhật/restart hoặc chạy tác vụ nặng trong buổi.
-
-Dịch vụ chưa đặt tự chạy khi đăng nhập; chủ động bật trước buổi. Nếu đổi thư mục repo/Node, tạo lại và liên kết lại service trước khi thu điểm danh. Hướng dẫn theo thứ tự: [PREPARE-BEFORE-CLASS.vi.md](PREPARE-BEFORE-CLASS.vi.md).
-
-Sau buổi, chờ đồng bộ hoặc xác nhận dữ liệu đang chờ đã lưu, backup rồi tắt:
-
-```bash
-python3 scripts/backup-db.py data/web-live.sqlite data/backups
-npm run host:stop
-```
-
-Backup này nằm cùng laptop; chép sang nơi riêng được trường cho phép để bảo vệ khi hỏng/mất máy. [Hướng dẫn backup/restore](USTH-HOSTING.vi.md#backup-và-phục-hồi).
-
-## Sức tải và tính hợp lệ
-
-Phép đo trên laptop hiện tại từng nhận đủ 700 lượt gửi dồn khoảng 2 giây; có một đợt 300 lượt mất 7,88 giây. Đây là HTTP loopback, chưa đo việc Wi‑Fi cùng phục vụ 700 điện thoại và laptop host. [Báo cáo đầy đủ](LOAD-TEST.vi.md).
-
-Nhờ sinh viên đăng nhập sớm; mở phiên 5–8 phút, QR đổi 30 giây liên tục. Trước khi dùng chính thức, thử tải qua HTTPS và hạ tầng Wi‑Fi thật, ghi nhận cả lỗi lẫn độ trễ bất thường. Nếu thiết bị không thể tới laptop hoặc laptop ngừng chạy, TA đối chiếu thẻ và ghi ngoại lệ; không lấy HTTP probe làm điểm danh.
-
-Cùng Wi‑Fi vẫn không chứng minh đúng người hoặc đúng phòng. Giữ Google–MSSV, CIDR, QR có hạn và quy trình đối chiếu thẻ do giảng viên chốt. Các giới hạn chi tiết ở [ANTI-PROXY.vi.md](ANTI-PROXY.vi.md).
+Đo tải cục bộ chưa đo airtime, captive portal, số client/AP hoặc chất lượng sóng. [Số liệu server](LOAD-TEST.vi.md) không thay được thử với nhiều điện thoại tại trường. Nếu sự cố mạng, giữ bản ghi đã có và để TA đối chiếu ngoại lệ theo quy trình lớp.

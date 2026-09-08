@@ -8,35 +8,30 @@ const {performance}=require('node:perf_hooks');
 const assert=require('node:assert/strict');
 
 async function serverProcess(){
-  const {Store}=require('../web/store.cjs');
-  const {createApp}=require('../web/app.cjs');
+  const {LanStore:Store}=require('../web/lan-store.cjs');
+  const {createStudentApp}=require('../web/lan-app.cjs');
   const {SyncWorker}=require('../web/sheets.cjs');
-  const {ranges,issueQr,today,hash}=require('../web/security.cjs');
-  const config={origin:'https://attendance.school.example',clientId:'unused',domains:['school.example'],admins:['ta@school.example'],secret:'benchmark-only-secret-'.repeat(3),campusCidrs:['203.0.113.0/24'],campus:ranges(['203.0.113.0/24']),proxies:ranges(['127.0.0.1/32'])};
+  const {ranges,today}=require('../web/security.cjs');
+  const {randomBytes}=require('node:crypto');
+  const config={origin:'',campus:ranges(['127.0.0.1/32'])};
   const filename=process.argv[3],count=Number(process.argv[4]);
   const store=new Store(filename);
-  store.importRoster('MSSV,Họ tên,Email trường\n'+Array.from({length:count},(_,i)=>`S${i},Student ${i},s${i}@school.example`).join('\n'),'benchmark');
-  // Seed already authenticated users. Google login is deliberately outside this measurement.
-  const identities=Array.from({length:count},(_,i)=>{
-    const identity={email:`s${i}@school.example`,sub:`benchmark-${i}`};
-    store.bindStudent(identity);
-    const challenge=store.challenge();
-    return store.authenticate(hash(challenge.token),identity);
-  });
+  const identities=Array.from({length:count},(_,i)=>({studentId:'S'+String(i).padStart(4,'0'),name:'Student '+i,seat:'B-'+i,requestId:randomBytes(16).toString('hex')}));
   // Keep Sheets unavailable: receipts must not depend on its network response.
   let releaseSheets;
   const pendingSheets=new Promise(resolve=>{releaseSheets=resolve;});
   const worker=new SyncWorker(store,{write:()=>pendingSheets});
-  const app=createApp(config,store,worker,{verifyGoogle:async()=>{throw Error('Google is outside this benchmark');}});
+  const app=createStudentApp(config,store);
   const server=await new Promise(resolve=>{const s=app.listen(0,'127.0.0.1',()=>resolve(s));});
+  config.origin='http://127.0.0.1:'+server.address().port;
   process.on('message',async message=>{
     if(message==='start'){
       const session=store.open(today(Date.now()),5,'benchmark');
-      const qr=issueQr(session,config.secret,Date.now());
+      const qr={sessionId:session.id};
       void worker.sync();
       process.send({kind:'start',qr,session:session.id});
     }else if(message==='stats'){
-      process.send({kind:'stats',records:store.db.prepare('SELECT COUNT(*) AS n FROM attendance').get().n,sync:worker.status(),rssMiB:process.memoryUsage().rss/1024/1024});
+      process.send({kind:'stats',records:store.db.prepare('SELECT COUNT(*) AS n FROM lan_attendance').get().n,flagged:store.entries().filter(e=>e.status==='PENDING').length,sync:worker.status(),rssMiB:process.memoryUsage().rss/1024/1024});
     }else if(message==='stop'){
       await new Promise(resolve=>server.close(resolve));
       releaseSheets();
@@ -44,7 +39,7 @@ async function serverProcess(){
       await new Promise(resolve=>setImmediate(resolve));
       store.close();
       const reopened=new Store(filename);
-      const records=reopened.db.prepare('SELECT COUNT(*) AS n FROM attendance').get().n;
+      const records=reopened.db.prepare('SELECT COUNT(*) AS n FROM lan_attendance').get().n;
       reopened.close();process.send({kind:'stop',persistedRecords:records});process.disconnect();
     }
   });
@@ -65,11 +60,11 @@ function command(child,kind){const result=receive(child,kind);child.send(kind);r
 
 async function burst(port,identities,qr){
   const agent=new http.Agent({keepAlive:true,maxSockets:identities.length});
-  const payload=JSON.stringify(process.env.BP_BENCH_METHOD==='code'?{code:qr.code}:{token:qr.token}),start=performance.now();
+  const start=performance.now();
   let lastDispatch=start;
   const pending=identities.map(identity=>new Promise(resolve=>{
-    const before=performance.now();lastDispatch=before;
-    const req=http.request({hostname:'127.0.0.1',port,path:'/api/check-in',method:'POST',agent,headers:{Origin:'https://attendance.school.example','X-Forwarded-For':'203.0.113.8','Content-Type':'application/json','Content-Length':Buffer.byteLength(payload),'X-CSRF-Token':identity.csrf,Cookie:'__Host-bp_auth='+identity.token}},res=>{
+    const before=performance.now();lastDispatch=before;const payload=JSON.stringify({...identity,...qr});
+    const req=http.request({hostname:'127.0.0.1',port,path:'/api/check-in',method:'POST',agent,headers:{Origin:'http://127.0.0.1:'+port,'Content-Type':'application/json','Content-Length':Buffer.byteLength(payload)}},res=>{
       let body='';res.setEncoding('utf8');res.on('data',chunk=>{body+=chunk;});
       res.on('end',()=>{let parsed;try{parsed=JSON.parse(body);}catch{parsed={code:'INVALID_JSON'};}resolve({ms:performance.now()-before,status:res.statusCode,body:parsed});});
       res.on('error',error=>resolve({ms:performance.now()-before,status:0,body:{code:error.code||error.message}}));
@@ -96,11 +91,11 @@ async function measure(count,run){
     const retry=await burst(ready.port,ready.identities,started.qr);
     const stats=await command(child,'stats');
     const stopped=await command(child,'stop');
-    const result={count,run,first,retry,records:stats.records,persistedRecords:stopped.persistedRecords,sheetsBlocked:stats.sync.busy&&stats.sync.pending,rssMiB:Math.round(stats.rssMiB),sqlite:ready.sqlite};
+    const result={count,run,first,retry,records:stats.records,flagged:stats.flagged,persistedRecords:stopped.persistedRecords,sheetsBlocked:stats.sync.busy&&stats.sync.pending,rssMiB:Math.round(stats.rssMiB),sqlite:ready.sqlite};
     console.log(JSON.stringify(result));
     assert.equal(first.success,count,'First submissions must all succeed');
     assert.equal(first.duplicates,0);assert.equal(retry.success,count);assert.equal(retry.duplicates,count);
-    assert.equal(stats.records,count);assert.equal(stopped.persistedRecords,count);assert.equal(result.sheetsBlocked,true);
+    assert.equal(stats.records,count);assert.equal(stats.flagged,count);assert.equal(stopped.persistedRecords,count);assert.equal(result.sheetsBlocked,true);
     return result;
   }finally{
     if(child.exitCode===null){const exited=new Promise(resolve=>child.once('exit',resolve));child.kill();await exited;}
@@ -109,7 +104,7 @@ async function measure(count,run){
 }
 
 async function main(){
-  const report={measuredAt:new Date().toISOString(),node:process.version,cpu:os.cpus()[0]?.model,availableParallelism:os.availableParallelism(),totalMemoryGiB:Math.round(os.totalmem()/1024**3),method:'Separate server/load processes, loopback HTTP, temporary disk SQLite WAL, real clock and 30-second QR; already logged-in users; one simulated campus IP; Sheets writer held pending; no Google, TLS, Wi-Fi or browser load.',submission:process.env.BP_BENCH_METHOD==='code'?'code':'QR',results:[]};
+  const report={measuredAt:new Date().toISOString(),node:process.version,cpu:os.cpus()[0]?.model,availableParallelism:os.availableParallelism(),totalMemoryGiB:Math.round(os.totalmem()/1024**3),method:'Separate server/load processes, loopback HTTP, real clock, temporary disk SQLite WAL with FULL synchronous; anonymous three-field forms; actual shared loopback socket IP; all peers flagged; Sheets writer held pending. Does not measure Wi-Fi, browser assets or real Sheets API.',submission:'LAN form',results:[]};
   for(const count of (process.env.BP_BENCH_COUNTS||'100,300,700').split(',').map(Number))for(let run=1;run<=3;run++)report.results.push(await measure(count,run));
   if(process.argv[2])writeFileSync(path.resolve(process.argv[2]),JSON.stringify(report,null,2)+'\n');
   console.log('All bursts and duplicate retries passed; records persisted after reopening SQLite.');

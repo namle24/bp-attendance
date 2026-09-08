@@ -6,12 +6,14 @@ Logo tại `web/public/assets/usth-logo.png` được trích xuất nguyên ản
 
 QR vẫn đen trên nền trắng; đỏ dùng cho điểm nhấn và trạng thái cần chú ý, xanh là màu nút chính. Giao diện dùng font hệ thống, không tải font từ dịch vụ bên ngoài.
 
-Các ảnh trong README và hướng dẫn TA được chụp từ app đang chạy với database/tài khoản giả bằng `scripts/test-web-ui.cjs`. Script đồng thời kiểm tra luồng đăng nhập với provider Google cô lập, nhập mã trên laptop, receipt, mất mạng trước/sau khi ghi, QR thay theo thời gian thật, đóng phiên và màn điện thoại/trình chiếu.
+Ảnh trong README và hướng dẫn TA được chụp từ app đang chạy với hai sinh viên hư cấu trong database tạm, bằng `scripts/test-web-ui.cjs`. Script kiểm tra biểu mẫu điện thoại/laptop, màn chiếu QR, mất mạng trước/sau khi lưu, khôi phục khi tải lại trang, cờ trùng IP và thao tác đối chiếu của TA.
 
-Muốn chụp lại, chuẩn bị `playwright-core` và Chromium; đặt `BP_PLAYWRIGHT_MODULE` và `BP_CHROMIUM` tới module/binary của máy rồi chạy:
+Chuẩn bị `playwright` hoặc `playwright-core` và Chromium; đặt đường dẫn module và binary:
 
 ```bash
-node scripts/test-web-ui.cjs
+BP_PLAYWRIGHT_MODULE=/path/to/playwright BP_CHROMIUM=/path/to/chromium node scripts/test-web-ui.cjs
 ```
 
-Script dùng HTTPS localhost trên cổng ngẫu nhiên và database tạm, tự dọn sau khi xong; cần OpenSSL, không cần tài khoản Google. Nút Google trong ảnh do fixture provider dựng để kiểm thử; khi triển khai, Google Identity Services tự dựng nút theo tài khoản/trình duyệt. Ảnh kiểm thử không chứng minh đã tích hợp tài khoản USTH hoặc ghi Sheet thật. Không có dữ liệu thử được tự thêm khi ứng dụng khởi động.
+Script dùng HTTP localhost trên hai cổng ngẫu nhiên và database tạm, tự dọn sau khi xong. Các ảnh hiện tại: `web-projector.png`, `web-admin.png`, `web-student-ready.png`, `web-student.png`, `web-student-desktop.png`, `web-review.png`.
+
+Không dùng QR/URL trong ảnh cho lớp: đó là địa chỉ kiểm thử localhost. App tại trường hiển thị IP Wi-Fi thật của laptop. Ảnh kiểm thử không chứng minh kết nối USTH hoặc đồng bộ Sheet thật. Database lớp không được điền dữ liệu thử.

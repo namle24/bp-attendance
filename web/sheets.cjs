@@ -26,7 +26,7 @@ class SheetsWriter {
       this.sheet={sheetId:id,title:this.config.sheetTitle,gridProperties:{rowCount:1000,columnCount:30}};
     }
   }
-  async write(values){
+  async write(values,snapshot){
     await this.ensure();
     const rows=values.length,cols=values[0].length,grid=this.sheet.gridProperties;
     if(rows>grid.rowCount||cols>grid.columnCount){
@@ -36,6 +36,21 @@ class SheetsWriter {
     }
     const range="'"+this.config.sheetTitle+"'!A1:"+column(cols)+rows;
     await this.request('/values/'+encodeURIComponent(range)+'?valueInputOption=RAW','PUT',{range,majorDimension:'ROWS',values});
+    if(snapshot){
+      if(!this.detailWriter)this.detailWriter=new SheetsWriter({...this.config,sheetTitle:'BP_Offline_Check'},this.store);
+      await this.detailWriter.write(snapshot.detail);
+      const detailId=this.detailWriter.sheet.sheetId,mainId=this.sheet.sheetId;
+      const white={red:1,green:1,blue:1},red={red:1,green:0.80,blue:0.80};
+      const paint=(sheetId,startRowIndex,endRowIndex,startColumnIndex,endColumnIndex,color)=>({repeatCell:{range:{sheetId,startRowIndex,endRowIndex,startColumnIndex,endColumnIndex},cell:{userEnteredFormat:{backgroundColor:color}},fields:'userEnteredFormat.backgroundColor'}});
+      // Both tabs belong to this database. Clear previous review colors, then apply
+      // only the pending flags captured with this values snapshot (never live reads).
+      const requests=[paint(mainId,0,values.length,0,cols,white),paint(detailId,0,snapshot.detail.length,0,snapshot.detail[0].length,white)];
+      const groups=new Map();for(const cell of snapshot.red){if(!groups.has(cell.col))groups.set(cell.col,[]);groups.get(cell.col).push(cell.row);}
+      function intervals(rows){const result=[];for(const row of [...new Set(rows)].sort((a,b)=>a-b)){const last=result.at(-1);if(last&&last[1]===row)last[1]++;else result.push([row,row+1]);}return result;}
+      for(const [col,rows] of groups)for(const [start,end] of intervals(rows))requests.push(paint(mainId,start,end,col,col+1,red));
+      for(const [start,end] of intervals(snapshot.detailRed))requests.push(paint(detailId,start,end,0,snapshot.detail[0].length,red));
+      await this.request(':batchUpdate','POST',{requests});
+    }
   }
 }
 class SyncWorker {
@@ -45,8 +60,8 @@ class SyncWorker {
     if(!this.writer||this.busy||(!force&&(Date.now()<this.nextAt||!this.status().pending)))return this.status();
     this.busy=true;
     try{
-      const revision=this.store.meta('revision'),values=this.store.matrix();
-      await this.writer.write(values);
+      const revision=this.store.meta('revision'),snapshot=this.store.snapshot?.(),values=snapshot?.values||this.store.matrix();
+      await this.writer.write(values,snapshot);
       // Only acknowledge the snapshot written; records received during await remain pending.
       this.store.setMeta('synced',revision);this.store.setMeta('lastSync',new Date().toISOString());this.store.setMeta('syncError','');this.failures=0;this.nextAt=0;
     }catch(e){this.store.setMeta('syncError',e.message);this.failures++;this.nextAt=Date.now()+Math.min(60000,2000*2**Math.min(this.failures,5))+Math.random()*1000;}

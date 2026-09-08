@@ -8,7 +8,7 @@ const os=require('node:os');
 const {Store}=require('../web/store.cjs');
 const {hash}=require('../web/security.cjs');
 
-test('actual server retains sessions and acknowledged attendance after SIGKILL',async()=>{
+test('historical Google storage retains sessions and acknowledged attendance after SIGKILL',async()=>{
   const temp=mkdtempSync(path.join(os.tmpdir(),'bp-restart-'));
   const reservation=net.createServer();await new Promise(resolve=>reservation.listen(0,'127.0.0.1',resolve));
   const port=reservation.address().port;await new Promise(resolve=>reservation.close(resolve));
@@ -24,7 +24,7 @@ test('actual server retains sessions and acknowledged attendance after SIGKILL',
   }
   store.close();let child;
   async function start(){
-    child=spawn(process.execPath,['web/server.cjs'],{cwd:path.resolve(__dirname,'..'),env:{PATH:process.env.PATH,PORT:String(port),PUBLIC_ORIGIN:publicOrigin,BP_DATABASE:database,GOOGLE_CLIENT_ID:'test.apps.googleusercontent.com',GOOGLE_HOSTED_DOMAINS:'school.example',ADMIN_EMAILS:'ta@school.example',CAMPUS_CIDRS:'203.0.113.0/24',TRUSTED_PROXY_CIDRS:'127.0.0.1/32',GOOGLE_SHEET_ID:'test-sheet',GOOGLE_APPLICATION_CREDENTIALS:path.join(temp,'absent.json'),QR_SECRET:'test-only-stable-key-'.repeat(4)},stdio:['ignore','pipe','pipe']});
+    child=spawn(process.execPath,['tests/helpers/legacy-server.cjs'],{cwd:path.resolve(__dirname,'..'),env:{PATH:process.env.PATH,PORT:String(port),PUBLIC_ORIGIN:publicOrigin,BP_DATABASE:database,GOOGLE_CLIENT_ID:'test.apps.googleusercontent.com',GOOGLE_HOSTED_DOMAINS:'school.example',ADMIN_EMAILS:'ta@school.example',CAMPUS_CIDRS:'203.0.113.0/24',TRUSTED_PROXY_CIDRS:'127.0.0.1/32',GOOGLE_SHEET_ID:'test-sheet',GOOGLE_APPLICATION_CREDENTIALS:path.join(temp,'absent.json'),QR_SECRET:'test-only-stable-key-'.repeat(4)},stdio:['ignore','pipe','pipe']});
     let error='';child.stderr.on('data',chunk=>{error+=chunk;});
     const deadline=Date.now()+10000;
     while(Date.now()<deadline){

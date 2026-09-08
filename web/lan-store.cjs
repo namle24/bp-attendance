@@ -1,0 +1,102 @@
+const {Store}=require('./store.cjs');
+const {fail,hash,today}=require('./security.cjs');
+const ipaddr=require('ipaddr.js');
+const BP=require('./core.cjs');
+
+function clean(value,max,label){
+  if(typeof value!=='string'||/[\p{Cc}\p{Cf}]/u.test(value))fail(400,'INPUT_INVALID',label+' không hợp lệ.');
+  const result=value.normalize('NFC').trim().replace(/\s+/g,' ');
+  if(!result||result.length>max)fail(400,'INPUT_INVALID',label+' cần từ 1 đến '+max+' ký tự.');
+  return result;
+}
+function canonicalIP(value){try{return ipaddr.process(value).toString();}catch{fail(400,'IP_INVALID','Không xác định được IP kết nối.');}}
+function state(row){
+  if(row.review==='REJECTED')return 'REJECTED';
+  if(row.peers>1&&(row.review!=='CONFIRMED'||row.reviewed_peers<row.peers))return 'PENDING';
+  return row.review==='CONFIRMED'?'CONFIRMED':'RECORDED';
+}
+const labels={RECORDED:'Đã ghi nhận',PENDING:'Cần TA xác nhận',CONFIRMED:'TA đã xác nhận',REJECTED:'TA không xác nhận'};
+class LanStore extends Store {
+  constructor(filename){
+    super(filename);
+    // Additive migration: historical Google attendance and roster are preserved.
+    this.db.exec(`CREATE TABLE IF NOT EXISTS lan_attendance (
+      id INTEGER PRIMARY KEY, session_id TEXT NOT NULL REFERENCES sessions(id),
+      student_id TEXT NOT NULL, name TEXT NOT NULL, seat TEXT NOT NULL,
+      ip TEXT NOT NULL, at INTEGER NOT NULL, request_hash TEXT NOT NULL UNIQUE,
+      review TEXT NOT NULL DEFAULT '', reviewed_peers INTEGER NOT NULL DEFAULT 0,
+      review_note TEXT NOT NULL DEFAULT '', reviewed_by TEXT NOT NULL DEFAULT '', reviewed_at INTEGER,
+      UNIQUE(session_id,student_id));
+      CREATE INDEX IF NOT EXISTS lan_session_ip ON lan_attendance(session_id,ip);`);
+    if(!this.meta('lanSchema')){this.setMeta('lanSchema','1');this.dirty();}
+  }
+  open(date,minutes,actor,now=Date.now()){return super.open(date,minutes,actor,now,false);}
+  sessions(){return super.sessions().map(s=>({...s,count:s.count+this.db.prepare('SELECT COUNT(*) AS n FROM lan_attendance WHERE session_id=?').get(s.id).n}));}
+  entries(sid){
+    const rows=this.db.prepare(`WITH peers AS (SELECT session_id,ip,COUNT(*) AS peers FROM lan_attendance GROUP BY session_id,ip)
+      SELECT a.*,s.date,p.peers FROM lan_attendance a JOIN sessions s ON s.id=a.session_id
+      JOIN peers p ON p.session_id=a.session_id AND p.ip=a.ip ${sid?'WHERE a.session_id=?':''} ORDER BY a.id`).all(...(sid?[sid]:[]));
+    return rows.map(({request_hash,...r})=>({...r,status:state(r),statusLabel:labels[state(r)]}));
+  }
+  receipt(row,duplicate){
+    const peers=this.db.prepare('SELECT COUNT(*) AS n FROM lan_attendance WHERE session_id=? AND ip=?').get(row.session_id,row.ip).n;
+    return {studentId:row.student_id,name:row.name,seat:row.seat,date:this.session(row.session_id).date,at:row.at,duplicate,status:state({...row,peers})};
+  }
+  submit(body,address,now=Date.now()){
+    const sid=clean(body.sessionId,64,'Phiên'),studentId=clean(body.studentId,40,'MSSV').toUpperCase();
+    if(!/^[A-Z0-9][A-Z0-9._-]{0,39}$/.test(studentId))fail(400,'ID_INVALID','MSSV chỉ gồm chữ, số, dấu chấm, gạch ngang hoặc gạch dưới.');
+    const name=clean(body.name,120,'Họ tên'),seat=clean(body.seat,32,'Vị trí ngồi');
+    if(typeof body.requestId!=='string'||!/^([a-f0-9]{32}|[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12})$/i.test(body.requestId))fail(400,'REQUEST_INVALID','Tải lại trang và gửi lại điểm danh.');
+    const requestHash=hash(body.requestId),ip=canonicalIP(address);
+    return this.tx(()=>{
+      const previous=this.db.prepare('SELECT * FROM lan_attendance WHERE request_hash=?').get(requestHash);
+      if(previous){
+        if(previous.session_id!==sid||previous.student_id!==studentId||previous.name!==name||previous.seat!==seat)fail(409,'REQUEST_CHANGED','Lượt gửi trước đã ghi nhận. Liên hệ TA nếu cần sửa thông tin.');
+        return this.receipt(previous,true);
+      }
+      const session=this.session(sid);
+      if(!session||session.mode!=='OFFLINE'||session.date!==today(now)||session.closed_at||now<session.opened_at||now>=session.ends_at)fail(409,'SESSION_CLOSED','Chưa mở điểm danh hoặc phiên đã hết giờ. Liên hệ TA.');
+      if(this.db.prepare('SELECT 1 FROM lan_attendance WHERE session_id=? AND student_id=?').get(sid,studentId)||this.db.prepare('SELECT 1 FROM attendance WHERE session_id=? AND student_id=?').get(sid,studentId))fail(409,'ALREADY_RECORDED','MSSV này đã được ghi nhận trong buổi học. Nhờ TA kiểm tra nếu bạn chưa gửi.');
+      this.db.prepare('INSERT INTO lan_attendance(session_id,student_id,name,seat,ip,at,request_hash) VALUES (?,?,?,?,?,?,?)').run(sid,studentId,name,seat,ip,now,requestHash);
+      this.dirty();
+      return this.receipt(this.db.prepare('SELECT * FROM lan_attendance WHERE request_hash=?').get(requestHash),false);
+    });
+  }
+  reviewEntry(id,review,note,expectedPeers,actor,now=Date.now()){
+    if(!['CONFIRMED','REJECTED'].includes(review))fail(400,'REVIEW_INVALID','Chọn xác nhận hoặc không xác nhận.');
+    note=clean(note,500,'Ghi chú đối chiếu');
+    return this.tx(()=>{
+      const row=this.db.prepare('SELECT * FROM lan_attendance WHERE id=?').get(id);
+      if(!row)fail(404,'ENTRY_UNKNOWN','Không có bản ghi này.');
+      const peers=this.db.prepare('SELECT COUNT(*) AS n FROM lan_attendance WHERE session_id=? AND ip=?').get(row.session_id,row.ip).n;
+      if(expectedPeers!==peers)fail(409,'GROUP_CHANGED','Nhóm IP vừa có thêm sinh viên. Tải lại danh sách rồi đối chiếu lại.');
+      this.db.prepare('UPDATE lan_attendance SET review=?,reviewed_peers=?,review_note=?,reviewed_by=?,reviewed_at=? WHERE id=?').run(review,peers,note,actor,now,id);
+      this.audit(actor,'LAN_REVIEW',{id,studentId:row.student_id,sessionId:row.session_id,ip:row.ip,review,note,peers});this.dirty();
+    });
+  }
+  snapshot(){
+    const old=super.matrix(),entries=this.entries(),dates=[...new Set(this.sessions().map(s=>s.date))].sort();
+    const students=new Map(old.slice(1).map(r=>[r[0],{id:r[0],name:r[1],email:r[2],days:new Map(old[0].slice(3).map((d,i)=>[d,r[i+3]]))}]));
+    for(const row of entries){
+      if(!students.has(row.student_id))students.set(row.student_id,{id:row.student_id,name:row.name,email:'',days:new Map()});
+      const student=students.get(row.student_id),prior=student.days.get(row.date),online=prior==='ON'||prior==='BOTH';
+      student.days.set(row.date,row.status==='PENDING'?(online?'ON · OFF cần xác nhận':'OFF cần xác nhận'):row.status==='REJECTED'?(online?'ON':'OFF không được xác nhận'):(online?'BOTH':'OFF'));
+    }
+    // Explicit attendance corrections still take precedence; review flags remain visible.
+    for(const row of this.db.prepare('SELECT * FROM corrections ORDER BY id').all())students.get(row.student_id)?.days.set(row.date,row.mark);
+    const ordered=[...students.values()].sort((a,b)=>a.id.localeCompare(b.id,'en'));
+    const values=[['MSSV','Họ tên','Email trường',...dates],...ordered.map(s=>[s.id,s.name,s.email,...dates.map(d=>s.days.get(d)||'')])];
+    const positions=new Map(ordered.map((s,i)=>[s.id,i+1]));
+    const detail=[['Ngày','MSSV','Họ tên đã nhập','Vị trí ngồi','IP kết nối','Số MSSV cùng IP','Trạng thái','Ghi chú TA','Người xác nhận','Giờ gửi (VN)','Giờ xác nhận (VN)']];
+    const red=[],detailRed=[];
+    const time=at=>at?new Date(at+7*3600000).toISOString().replace('T',' ').slice(0,19):'';
+    for(const row of entries){
+      detail.push([row.date,row.student_id,row.name,row.seat,row.ip,row.peers,row.statusLabel,row.review_note,row.reviewed_by,time(row.at),time(row.reviewed_at)]);
+      if(row.status==='PENDING'){red.push({row:positions.get(row.student_id),col:3+dates.indexOf(row.date)});detailRed.push(detail.length-1);}
+    }
+    return {values,detail,red,detailRed};
+  }
+  matrix(){return this.snapshot().values;}
+  detailCSV(){return '\uFEFF'+this.snapshot().detail.map(row=>row.map(v=>'"'+BP.safeCell(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');}
+}
+module.exports={LanStore,canonicalIP,state};

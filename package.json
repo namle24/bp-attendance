@@ -1,8 +1,8 @@
 {
   "name": "bp-attendance",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
-  "description": "USTH BP attendance — rotating QR, campus network gate, Google login and Sheets sync",
+  "description": "USTH BP attendance — LAN form, seat and duplicate-IP review, SQLite and Sheets",
   "scripts": {
     "test": "node --test tests/*.test.cjs",
     "check": "node scripts/check.cjs",

@@ -1,0 +1,10 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Điểm danh · Basic Programming · USTH</title><link rel="stylesheet" href="/style.css"><script src="/student.js" defer></script></head>
+<body><main class="student-page"><header><img src="/assets/usth-logo.png" alt="USTH — Vietnam France University"><div><span class="eyebrow">BASIC PROGRAMMING</span><h1>Điểm danh tại lớp</h1></div></header>
+<section class="card"><div class="section-top"><span class="badge">OFFLINE</span><span id="date" class="muted"></span></div><h2>Thông tin của bạn</h2><p>Kết nối Wi-Fi của lớp và nhập đúng thông tin để TA đối chiếu.</p>
+<div id="notice" role="status" aria-live="polite">Đang kết nối máy host…</div>
+<form id="attendance-form" hidden><label for="student-id">Mã số sinh viên</label><input id="student-id" name="studentId" maxlength="40" required autocomplete="off" autocapitalize="characters" placeholder="MSSV do trường cấp">
+<label for="full-name">Họ và tên</label><input id="full-name" name="name" maxlength="120" required autocomplete="name" placeholder="Nhập đầy đủ họ và tên">
+<label for="seat">Vị trí ngồi</label><input id="seat" name="seat" maxlength="32" required autocomplete="off" placeholder="Ví dụ: hàng B, ghế 12"><small>Dùng cách đánh số hàng, ghế TA hướng dẫn trong phòng.</small>
+<button id="submit" type="submit">Gửi điểm danh</button><p class="muted">MSSV, họ tên, ghế ngồi, thời gian gửi và IP kết nối được lưu để TA kiểm tra điểm danh.</p></form>
+<div id="receipt" class="receipt" hidden role="status"><span class="badge">ĐÃ LƯU TRÊN MÁY HOST</span><h2>Đã ghi nhận điểm danh</h2><dl id="receipt-fields"></dl><p>TA có thể đối chiếu thông tin tại chỗ. Nếu cần sửa thông tin, hãy báo TA.</p></div>
+<button id="reload" class="secondary" type="button">Kiểm tra phiên điểm danh</button></section><footer>USTH · Basic Programming · Hỗ trợ: trợ giảng tại lớp</footer></main></body></html>

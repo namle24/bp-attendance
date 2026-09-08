@@ -3,7 +3,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const {randomBytes}=require('node:crypto');
 const {parseEnv}=require('node:util');
-const {Store}=require('../web/store.cjs');
+const {LanStore:Store}=require('../web/lan-store.cjs');
 const root=path.resolve(__dirname,'..');
 function prepare(rootDirectory=root){
   for(const dir of ['data','data/bin','data/secrets','data/certs','data/caddy','data/systemd','data/backups','data/reports'])fs.mkdirSync(path.join(rootDirectory,dir),{recursive:true,mode:0o700});
@@ -27,7 +27,7 @@ function prepare(rootDirectory=root){
   return {envFile,proxyFile,database};
 }
 if(require.main===module){
-  try{prepare();console.log('Đã chuẩn bị .env riêng, QR secret, thư mục credentials/chứng chỉ và SQLite. Giữ nguyên cấu hình/dữ liệu đã có.');}
+  try{prepare();console.log('Đã chuẩn bị .env riêng và SQLite. Giữ nguyên cấu hình và dữ liệu đã có. Luồng LAN không yêu cầu Google đăng nhập hoặc chứng chỉ.');}
   catch(error){console.error('Không chuẩn bị được laptop: '+error.message);process.exitCode=1;}
 }
 module.exports={prepare};

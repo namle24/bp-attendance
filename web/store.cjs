@@ -82,11 +82,11 @@ class Store {
     const result=this.db.prepare('INSERT INTO code_limits VALUES (?,?,1) ON CONFLICT(sub) DO UPDATE SET started=CASE WHEN started<=? THEN excluded.started ELSE started END,count=CASE WHEN started<=? THEN 1 ELSE count+1 END RETURNING count').get(sub,now,now-60000,now-60000);
     if(result.count>10)fail(429,'CODE_RATE_LIMIT','Đã nhập mã quá nhiều lần. Vui lòng chờ một phút hoặc quét QR bằng điện thoại.');
   }
-  open(date,minutes,actor,now=Date.now()) {
+  open(date,minutes,actor,now=Date.now(),requireRoster=true) {
     try{BP.date(date);}catch(e){fail(400,'DATE_INVALID',e.message);}
     if(date!==today(now))fail(400,'DATE_NOT_TODAY','Chỉ mở phiên cho ngày hôm nay, theo giờ Việt Nam.');
     if(!Number.isInteger(minutes)||minutes<2||minutes>30)fail(400,'DURATION_INVALID','Thời gian mở từ 2 đến 30 phút.');
-    if(!this.roster(true).length)fail(409,'ROSTER_EMPTY','Nhập danh sách lớp trước khi mở phiên.');
+    if(requireRoster&&!this.roster(true).length)fail(409,'ROSTER_EMPTY','Nhập danh sách lớp trước khi mở phiên.');
     return this.tx(()=>{
       if(this.db.prepare('SELECT id FROM sessions WHERE date=? AND mode=?').get(date,'OFFLINE'))fail(409,'SESSION_EXISTS','Ngày này đã có phiên offline; không mở lại mốc đã đóng.');
       const id=randomUUID();this.db.prepare('INSERT INTO sessions VALUES (?,?,?,?,?,?,?)').run(id,date,'OFFLINE',now,now+minutes*60000,null,actor);
