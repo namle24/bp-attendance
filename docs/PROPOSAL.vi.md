@@ -2,7 +2,7 @@
 
 **Phương án đã chọn:** QR động đổi mỗi 30 giây + đăng nhập Google USTH + chỉ truy cập qua dải mạng USTH được IT xác nhận. Server kiểm tra cả ba điều kiện lúc nhận điểm danh, lưu kết quả rồi đồng bộ sang Google Sheets theo ngày. Có thể kiểm tra thẻ chọn mẫu để hạn chế việc dùng tài khoản của người khác. Xem [giới hạn chống điểm danh hộ](ANTI-PROXY.vi.md).
 
-Online do một trợ giảng đối chiếu báo cáo từ nền tảng học rồi nhập cùng bảng ngày. Gần 700 là tổng hybrid; cần chốt số offline và sức chứa Wi‑Fi. Bản web đã có mã nguồn và demo cục bộ, chưa cấu hình/triển khai tại USTH. Bản Forms ban đầu được giữ riêng, không có kiểm tra mạng/QR động.
+Online do một trợ giảng đối chiếu báo cáo từ nền tảng học rồi nhập cùng bảng ngày. Gần 700 là tổng hybrid; cần chốt số offline và sức chứa Wi‑Fi. Bản web đã có mã nguồn và kiểm thử cục bộ, chưa cấu hình/triển khai tại USTH.
 
 ## So sánh ba lựa chọn
 
@@ -47,6 +47,6 @@ Theo thông tin người dùng cung cấp, Wi‑Fi USTH yêu cầu đăng nhập
 
 ## Có thể trình bày với thầy
 
-> Em đề xuất QR đổi mỗi 30 giây, sinh viên đăng nhập Google USTH và chỉ gửi được từ mạng trường được IT xác nhận. Mỗi buổi mở khoảng 5–8 phút, kết quả tự lên cột ngày trên Google Sheets. Em đã chuẩn bị web app và demo, cần IT xác nhận dải mạng/domain và thử nghiệm tài khoản thật. Hệ thống hạn chế gửi từ ngoài trường; người trong trường dùng tài khoản của bạn khác vẫn là giới hạn, nên có thể thêm kiểm tra thẻ mẫu. Online có một TA đối chiếu báo cáo rồi nhập cùng bảng.
+> Em đề xuất QR đổi mỗi 30 giây, sinh viên đăng nhập Google USTH và chỉ gửi được từ mạng trường được IT xác nhận. Mỗi buổi mở khoảng 5–8 phút, kết quả tự lên cột ngày trên Google Sheets. Em đã chuẩn bị web app, cần IT xác nhận dải mạng/domain và thử nghiệm tài khoản thật. Hệ thống hạn chế gửi từ ngoài trường; người trong trường dùng tài khoản của bạn khác vẫn là giới hạn, nên có thể thêm kiểm tra thẻ mẫu. Online có một TA đối chiếu báo cáo rồi nhập cùng bảng.
 
 Web app cần kiểm soát IP nguồn và thời hạn QR phía server. Dữ liệu lưu cục bộ trước, ghi Sheets theo lô để tránh một API call cho mỗi sinh viên. Xem [cài đặt](WEB-SETUP.vi.md) và [hạn mức Sheets](https://developers.google.com/workspace/sheets/api/limits). Chưa có thử tải thật tại USTH.

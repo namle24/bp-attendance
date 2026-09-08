@@ -6,7 +6,7 @@ Logo tại `web/public/assets/usth-logo.png` được trích xuất nguyên ản
 
 QR vẫn đen trên nền trắng; đỏ dùng cho điểm nhấn và trạng thái cần chú ý, xanh là màu nút chính. Giao diện dùng font hệ thống, không tải font từ dịch vụ bên ngoài.
 
-Các ảnh trong README và hướng dẫn TA được chụp từ app đang chạy với database/tài khoản giả bằng `scripts/test-web-ui.cjs`. Script đồng thời kiểm tra đăng nhập demo, receipt, mất mạng trước/sau khi ghi, QR thay theo thời gian thật, đóng phiên và màn điện thoại/trình chiếu.
+Các ảnh trong README và hướng dẫn TA được chụp từ app đang chạy với database/tài khoản giả bằng `scripts/test-web-ui.cjs`. Script đồng thời kiểm tra luồng đăng nhập với provider Google cô lập, nhập mã trên laptop, receipt, mất mạng trước/sau khi ghi, QR thay theo thời gian thật, đóng phiên và màn điện thoại/trình chiếu.
 
 Muốn chụp lại, chuẩn bị `playwright-core` và Chromium; đặt `BP_PLAYWRIGHT_MODULE` và `BP_CHROMIUM` tới module/binary của máy rồi chạy:
 
@@ -14,4 +14,4 @@ Muốn chụp lại, chuẩn bị `playwright-core` và Chromium; đặt `BP_PLA
 node scripts/test-web-ui.cjs
 ```
 
-Script dùng cổng localhost 4181 và database tạm, tự dọn sau khi xong; không cần Google thật. Ảnh thay đổi theo ngày/giờ chạy. Theme mới áp dụng cho bản web; bản Forms cũ trong `apps-script/` giữ giao diện lịch sử và không nằm trong luồng hướng dẫn TA mới.
+Script dùng HTTPS localhost trên cổng ngẫu nhiên và database tạm, tự dọn sau khi xong; cần OpenSSL, không cần tài khoản Google. Nút Google trong ảnh do fixture provider dựng để kiểm thử; khi triển khai, Google Identity Services tự dựng nút theo tài khoản/trình duyệt. Ảnh kiểm thử không chứng minh đã tích hợp tài khoản USTH hoặc ghi Sheet thật. Không có dữ liệu thử được tự thêm khi ứng dụng khởi động.

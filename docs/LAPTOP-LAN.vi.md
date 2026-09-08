@@ -46,7 +46,6 @@ Nếu không vào được: kiểm tra lại IP, firewall laptop, mạng của �
 Giữ Node chỉ nghe localhost; Caddy nhận HTTPS trên card mạng trường:
 
 ```dotenv
-BP_MODE=live
 BIND_HOST=127.0.0.1
 PORT=4180
 PUBLIC_ORIGIN=https://TEN_MIEN_DA_CAP

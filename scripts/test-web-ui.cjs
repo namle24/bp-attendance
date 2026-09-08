@@ -1,41 +1,38 @@
-// Optional browser integration test: starts an isolated DEMO with temporary SQLite.
+// Browser integration test: production UI + real HTTPS/SQLite with isolated Google/Sheets fixtures.
 const {chromium}=require(process.env.BP_PLAYWRIGHT_MODULE||'playwright-core');
 const assert=require('node:assert/strict');
-const {spawn}=require('node:child_process');
-const fs=require('node:fs');
-const os=require('node:os');
 const path=require('node:path');
+const {startFixture}=require('../tests/helpers/browser-fixture.cjs');
 (async()=>{
-  const root=path.resolve(__dirname,'..'),temp=fs.mkdtempSync(path.join(os.tmpdir(),'bp-web-ui-'));
-  const origin='http://127.0.0.1:4181';
-  const child=spawn(process.execPath,['web/server.cjs'],{cwd:root,env:{...process.env,BP_MODE:'demo',PORT:'4181',BIND_HOST:'127.0.0.1',PUBLIC_ORIGIN:origin,BP_DATABASE:path.join(temp,'demo.sqlite'),GOOGLE_CLIENT_ID:'',GOOGLE_SHEET_ID:'',CAMPUS_CIDRS:'',TRUSTED_PROXY_CIDRS:''},stdio:['ignore','pipe','pipe']});
+  const root=path.resolve(__dirname,'..'),fixture=await startFixture(),origin=fixture.origin;
+  const taIdentity={email:'ta@school.example',sub:'g-ta'},studentIdentity={email:'a@school.example',sub:'g-a'};
   let browser;
   try{
-    await new Promise((resolve,reject)=>{child.stdout.once('data',resolve);child.once('error',reject);child.once('exit',code=>reject(Error('Demo exit '+code)));});
     browser=await chromium.launch({headless:true,...(process.env.BP_CHROMIUM?{executablePath:process.env.BP_CHROMIUM}:{}),args:['--no-sandbox']});
     const errors=[],requests=[];
-    const context=await browser.newContext({viewport:{width:1140,height:950}});
+    const context=await fixture.context(browser,taIdentity);
     const admin=await context.newPage();admin.on('pageerror',e=>errors.push(e.message));admin.on('request',r=>requests.push(r.url()));
-    await admin.goto(origin);await admin.locator('#demo-admin').waitFor();
+    await admin.goto(origin);await admin.locator('#google-button button').waitFor();
     await admin.screenshot({path:path.join(root,'docs/web-login.png'),fullPage:true});
-    const narrowContext=await browser.newContext({viewport:{width:390,height:844}});
-    const narrowLogin=await narrowContext.newPage();await narrowLogin.goto(origin);await narrowLogin.locator('#demo-admin').waitFor();
+    const narrowContext=await fixture.context(browser,studentIdentity,{width:390,height:844});
+    const narrowLogin=await narrowContext.newPage();await narrowLogin.goto(origin);await narrowLogin.locator('#google-button button').waitFor();
     assert.ok(await narrowLogin.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
     await narrowLogin.screenshot({path:path.join(root,'docs/web-login-mobile.png'),fullPage:true});await narrowContext.close();
-    await admin.locator('#demo-admin').click();await admin.locator('#admin').waitFor();
-    await admin.getByText('Mở buổi mới',{exact:true}).click();await admin.locator('#open').click();await admin.locator('#qr svg').waitFor();
+    await admin.locator('#google-button button').click();await admin.locator('#admin').waitFor();
+    await admin.locator('#open').click();await admin.locator('#exit-project').waitFor();await admin.locator('#qr svg').waitFor();
+    assert.equal(await admin.locator('#open').isVisible(),false,'Opening a session goes directly to projection');
+    await admin.locator('#exit-project').click();
     const first=await admin.evaluate(()=>qrInfo.url);
     await admin.evaluate(()=>window.scrollTo(0,0));
     await admin.screenshot({path:path.join(root,'docs/web-session-open.png'),fullPage:true});
-    await admin.getByText('Mở buổi mới',{exact:true}).click();
     await admin.getByText('Nhập danh sách lớp',{exact:true}).click();
-    await admin.locator('#roster-csv').fill('MSSV,Họ tên,Email trường\n001,Sinh viên minh họa A,a@school.example\n002,Sinh viên minh họa B,b@school.example');
+    await admin.locator('#roster-csv').fill('MSSV,Họ tên,Email trường\n001,Nguyễn An,a@school.example\n002,Trần Bình,b@school.example');
     await admin.evaluate(()=>window.scrollTo(0,0));
     await admin.screenshot({path:path.join(root,'docs/web-roster.png'),fullPage:true});
     await admin.getByText('Nhập danh sách lớp',{exact:true}).click();
-    const studentContext=await browser.newContext({viewport:{width:390,height:844}});
+    const studentContext=await fixture.context(browser,studentIdentity,{width:390,height:844});
     const student=await studentContext.newPage();student.on('pageerror',e=>errors.push(e.message));student.on('request',r=>requests.push(r.url()));
-    await student.goto(first);await student.locator('#demo-student').click();await student.locator('#student').waitFor();
+    await student.goto(first);await student.locator('#google-button button').click();await student.locator('#student').waitFor();
     await student.screenshot({path:path.join(root,'docs/web-student-ready.png'),fullPage:true});
     assert.equal(await student.locator('#check-in').isEnabled(),true);
     let checkIns=0;
@@ -58,20 +55,30 @@ const path=require('node:path');
     await admin.waitForFunction(()=>document.getElementById('count').textContent.includes('1 sinh viên'));
     await admin.evaluate(()=>window.scrollTo(0,0));
     await admin.screenshot({path:path.join(root,'docs/web-admin.png'),fullPage:true});
-    await admin.locator('#project').click();await admin.setViewportSize({width:1000,height:780});
+    await admin.locator('#open').click();await admin.locator('#exit-project').waitFor();await admin.setViewportSize({width:1000,height:780});
     assert.equal(await admin.locator('#open').isVisible(),false);
-    assert.ok(await admin.evaluate(()=>document.getElementById('qr-expiry').getBoundingClientRect().bottom<innerHeight));
+    assert.ok(await admin.evaluate(()=>document.getElementById('display-code').getBoundingClientRect().bottom<innerHeight));
     await admin.screenshot({path:path.join(root,'docs/web-projector.png'),fullPage:true});
+    const desktopContext=await fixture.context(browser,{email:'b@school.example',sub:'g-b'});
+    const desktop=await desktopContext.newPage();desktop.on('pageerror',e=>errors.push(e.message));
+    await desktop.goto(origin+'/check-in');await desktop.locator('#google-button button').click();await desktop.locator('#student').waitFor();
+    const code=await admin.evaluate(()=>qrInfo.code);
+    await desktop.locator('#attendance-code').fill(code.slice(0,4)+' '+code.slice(4));
+    await desktop.screenshot({path:path.join(root,'docs/web-student-desktop.png'),fullPage:true});
+    await desktop.locator('#submit-code').click();await desktop.locator('#receipt').waitFor();
+    assert.match(await desktop.locator('#receipt').textContent(),/002/);
+    assert.equal(fixture.store.sessions()[0].count,2);
     // Observe a real server-clock rotation, not just a cosmetic countdown.
     await admin.waitForFunction(old=>typeof qrInfo!=='undefined'&&qrInfo&&qrInfo.url!==old,first,{timeout:35000});
     assert.notEqual(await admin.evaluate(()=>qrInfo.url),first);
-    await admin.locator('#exit-project').click();await admin.locator('#close').click();
+    await admin.locator('#exit-project').click();await admin.getByText('Tùy chọn phiên điểm danh',{exact:true}).click();await admin.locator('#close').click();
     await admin.waitForFunction(()=>!document.querySelector('#qr svg'));
-    assert.deepEqual(errors,[]);assert.ok(requests.every(url=>url.startsWith(origin)),'Demo must not call Google or a third-party QR generator.');
-    console.log('Web UI passed: network failure without false success, lost receipt recovered from SQLite, TA/student logins, real 30s QR rotation, close, mobile, projection and no external calls in demo.');
+    assert.deepEqual(errors,[]);assert.ok(requests.every(url=>url.startsWith(origin)||url==='https://accounts.google.com/gsi/client'));
+    assert.doesNotMatch(await admin.locator('body').innerText(),/demo|minh họa|dữ liệu giả/i);
+    assert.equal(await admin.locator('#open').isEnabled(),false);
+    console.log('Web UI passed: Google-provider fixture, one-click projection, mobile QR, desktop code, real 30s rotation, network loss before/after commit, close, responsive layout and screenshots.');
   }finally{
     if(browser)await browser.close();
-    if(child.exitCode===null){child.kill('SIGTERM');await new Promise(resolve=>child.once('exit',resolve));}
-    fs.rmSync(temp,{recursive:true,force:true});
+    await fixture.close();
   }
 })().catch(e=>{console.error(e);process.exitCode=1;});

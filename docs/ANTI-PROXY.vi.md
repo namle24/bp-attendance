@@ -4,7 +4,9 @@
 
 **Đề xuất khi ưu tiên kiểm tra sự có mặt:** TA xác nhận trực tiếp sinh viên bằng ảnh trên thẻ trường, công cụ hỗ trợ tìm MSSV/quét mã và ghi vào Sheets. QR tự điền là bước thu thập thông tin, chưa thay thế xác nhận này.
 
-Google Forms Verified lấy email của tài khoản Google đã đăng nhập. Điều đó chưa chứng minh người sở hữu tài khoản đang ở phòng học. [Hướng dẫn Google](https://support.google.com/docs/answer/139706?hl=en).
+Ứng dụng xác thực tài khoản Google rồi ghép email–MSSV. Tài khoản đăng nhập chưa chứng minh chính chủ đang ở phòng học. [Xác thực Google](https://developers.google.com/identity/gsi/web/guides/verify-google-id-token).
+
+Mã nhập 8 ký tự trên laptop đổi cùng QR mỗi 30 giây và dùng cùng các điều kiện danh tính/mạng. Giới hạn 10 lần nhập/phút/tài khoản hạn chế đoán mã; mã vẫn có thể bị chuyển tiếp trực tiếp như ảnh QR.
 
 ## Các tình huống phải phân biệt
 
@@ -38,7 +40,7 @@ Quy trình đề xuất cho phần offline:
 
 Đây là phép tính lập kế hoạch, chưa phải số đo thực tế. Gần 700 là tổng hybrid, cần số offline để chốt. Một TA offline vừa xác minh vài trăm người trong vài phút vừa hỗ trợ debug là yêu cầu khó đáp ứng; cần thêm thời gian hoặc người kiểm tra.
 
-**Trạng thái triển khai:** có điều chỉnh `OFF` kèm người sửa, thời gian và lý do cho trường hợp đã check thẻ. Chưa có camera/luồng kiểm tra thẻ hàng loạt. `OFF` từ bản web là kết quả kiểm tra Google + mạng + QR; `OFF` của bản Forms cũ đến từ Form. Cả hai đều không tự đồng nghĩa đã check thẻ.
+**Trạng thái triển khai:** có điều chỉnh `OFF` kèm người sửa, thời gian và lý do cho trường hợp đã check thẻ. Chưa có camera/luồng kiểm tra thẻ hàng loạt. `OFF` tự gửi là kết quả kiểm tra Google + mạng + QR/mã nhập, chưa tự đồng nghĩa đã check thẻ.
 
 ## Phương án B: ít nhân lực, chấp nhận kiểm tra chọn mẫu
 
@@ -60,7 +62,7 @@ Chrome cung cấp tính năng mô phỏng vị trí trong DevTools, nên tọa �
 
 Không dùng “một IP chỉ điểm danh một MSSV”: nhiều thiết bị có thể chung địa chỉ ra Internet qua NAT/NAPT. [RFC 3022](https://www.rfc-editor.org/rfc/rfc3022). Chưa xác minh thiết kế mạng cụ thể của USTH.
 
-Google Forms không có cổng kiểm tra mạng do tool này kiểm soát. Bản web mới trong repo đã bổ sung kiểm tra CIDR, QR luân phiên và xác thực Google phía server; cần cấu hình/kiểm thử trên hạ tầng thật. Cách xác thực token dựa trên [hướng dẫn Google](https://developers.google.com/identity/gsi/web/guides/verify-google-id-token).
+Bản web trong repo có kiểm tra CIDR, QR luân phiên và xác thực Google phía server; cần cấu hình/kiểm thử trên hạ tầng thật. Cách xác thực token dựa trên [hướng dẫn Google](https://developers.google.com/identity/gsi/web/guides/verify-google-id-token).
 
 ## Ghi nhận rõ loại bằng chứng trong phiên bản nâng cấp
 

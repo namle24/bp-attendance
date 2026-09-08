@@ -63,7 +63,7 @@ Bản này chạy một process Node và một SQLite local. Chọn môi trườ
 
 ## Cài dịch vụ trên Linux có systemd
 
-Thực hiện trên máy chủ đã được chọn, với tài khoản quản trị hệ thống. Repo hiện tại **chưa được đưa lên máy chủ hoặc cấp URL thật**. Không chạy các lệnh cài service lên laptop chỉ để xem demo.
+Thực hiện trên máy chủ đã được chọn, với tài khoản quản trị hệ thống. Repo hiện tại **chưa được đưa lên máy chủ hoặc cấp URL thật**. Dùng hướng dẫn service laptop trong HOST-QUICKSTART.vi.md cho mô hình đã chọn.
 
 1. IT tạo user hệ thống `bp-attendance`, đặt bản code đã duyệt ở `/opt/bp-attendance`, cài dependencies bằng `npm ci --omit=dev`. Code chỉ cho quản trị sửa; app chỉ ghi `/var/lib/bp-attendance`.
 2. Cài Node.js 24+ system-wide; mẫu service dùng `/usr/bin/node`. Nếu khác, sửa `ExecStart` thành đường dẫn thật, không dùng Node nằm trong thư mục home bị service chặn. Backup dùng `/usr/bin/python3`.

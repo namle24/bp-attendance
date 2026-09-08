@@ -51,7 +51,6 @@ details p { font-size: 13px; }
 pre { font: 12px/1.5 ui-monospace, monospace; overflow: auto; max-height: 350px; white-space: pre-wrap; word-break: break-word; }
 #notice { white-space: pre-wrap; margin-bottom: 20px; padding: 14px 17px; color: var(--blue-dark); background: #e8edff; border: 1px solid #ced8fc; border-radius: 8px; }
 #notice.error { color: #a21d27; background: #fff1f2; border-color: #f1c6ca; }
-#demo-banner { background: #eef1fb; color: #354279; border-bottom: 1px solid #dce1f2; text-align: center; padding: 9px 16px; font-size: 11px; }
 #login { max-width: 980px; padding: 0; margin: 56px auto 60px; overflow: hidden; }
 .login-grid { display: grid; grid-template-columns: 1fr 1.04fr; }
 .login-intro { background: var(--blue); color: white; padding: 40px; position: relative; }
@@ -68,8 +67,6 @@ pre { font: 12px/1.5 ui-monospace, monospace; overflow: auto; max-height: 350px;
 .login-form h2 { font-size: 26px; margin-top: 18px; }
 .login-form > p { color: var(--muted); font-size: 14px; }
 .login-note { margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--line); }
-#demo-login { margin-top: 24px; display: grid; gap: 5px; }
-#demo-login button { width: 100%; margin: 3px 0; }
 #google-button { margin: 25px 0 12px; }
 #student { max-width: 630px; margin: 38px auto; border-top: 4px solid var(--blue); padding: 30px; }
 #student-name { font-size: 28px; }
@@ -93,9 +90,9 @@ pre { font: 12px/1.5 ui-monospace, monospace; overflow: auto; max-height: 350px;
 .projection #notice:not(.error) { display: none; }
 .projection main { max-width: 100%; padding: 12px; }
 .projection .layout { display: block; }
-.projection .qr-card { position: relative; min-height: calc(100dvh - 72px); margin: 0; padding: 16px; }
+.projection .qr-card { position: relative; min-height: calc(100dvh - 29px); margin: 0; padding: 16px; }
 .projection .projector-brand { display: block; }
-.projection #qr { width: min(45dvh, 500px); margin: 0; }
+.projection #qr { width: min(37dvh, 440px); margin: 0; }
 .projection h2 { font-size: 27px; margin: 8px 0 0; }
 .projection #exit-project { position: absolute; right: 18px; top: 8px; }
 .projection #projector > p { margin: 7px 0; }
@@ -131,3 +128,28 @@ pre { font: 12px/1.5 ui-monospace, monospace; overflow: auto; max-height: 350px;
   .card { padding: 20px; }
 }
 @media (prefers-reduced-motion: reduce) { button { transition: none; } }
+
+.primary-action { width: 100%; padding: 15px; margin-bottom: 22px; }
+.code-entry { display: flex; gap: 10px; align-items: stretch; }
+.code-entry input { flex: 1; min-width: 0; text-transform: uppercase; font: 600 20px ui-monospace, monospace; letter-spacing: 2px; }
+.code-entry input::placeholder { font: 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 0; text-transform: none; }
+.code-entry button { margin: 0; }
+#code-form { margin: 24px 0; }
+#projector-code { border-top: 1px solid var(--line); padding-top: 12px; width: 100%; }
+#student-url { color: var(--blue); font-weight: 650; overflow-wrap: anywhere; }
+#display-code { font: 700 34px/1.4 ui-monospace, monospace; color: var(--blue-dark); letter-spacing: 5px; }
+.projection #projector-code { max-width: 660px; padding-top: 6px; }
+.projection #student-url { font-size: 21px; }
+.projection #display-code { font-size: 36px; }
+
+@media (min-width: 821px) {
+  .projection .qr-card { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); column-gap: 24px; row-gap: 10px; align-content: center; justify-items: center; padding: 50px 28px 28px; }
+  .projection .projector-brand { grid-column: 2; grid-row: 1; margin: 0; }
+  .projection #session-state { grid-column: 2; grid-row: 2; }
+  .projection #session-title { grid-column: 2; grid-row: 3; font-size: 25px; }
+  .projection #projector > p:first-of-type { grid-column: 2; grid-row: 4; }
+  .projection #qr { grid-column: 1; grid-row: 1 / 8; width: min(65dvh, 100%, 620px); }
+  .projection #qr-expiry { grid-column: 1; grid-row: 8; }
+  .projection #projector-code { grid-column: 2; grid-row: 5 / 8; padding-top: 16px; }
+  .projection #session-end { grid-column: 2; grid-row: 8; }
+}

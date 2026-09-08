@@ -4,10 +4,9 @@ const {createApp}=require('./app.cjs');
 const {SheetsWriter,SyncWorker}=require('./sheets.cjs');
 try{
   const config=loadConfig();const store=new Store(config.database);
-  if(config.demo&&!store.roster().length)store.importRoster('MSSV,Họ tên,Email trường\n001,Sinh viên minh họa A,a@school.example\n002,Sinh viên minh họa B,b@school.example','demo-setup');
-  const worker=new SyncWorker(store,config.demo?null:new SheetsWriter(config,store));
+  const worker=new SyncWorker(store,new SheetsWriter(config,store));
   const app=createApp(config,store,worker);
-  const server=app.listen(config.port,config.host,()=>console.log((config.demo?'DEMO (dữ liệu giả): ':'BP Attendance: ')+config.origin));
+  const server=app.listen(config.port,config.host,()=>console.log('BP Attendance: '+config.origin));
   server.headersTimeout=15000;server.requestTimeout=20000;server.keepAliveTimeout=5000;
   server.setTimeout(30000,socket=>socket.destroy());
   const timer=setInterval(()=>worker.sync(),15000);timer.unref();

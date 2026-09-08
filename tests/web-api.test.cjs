@@ -7,7 +7,7 @@ const {ranges}=require('../web/security.cjs');
 
 async function fixture(overrides={}){
   const now={value:Date.parse('2026-09-09T06:00:00Z')};
-  const config={demo:false,origin:'https://attendance.school.example',clientId:'test-client',domains:['school.example'],admins:['ta@school.example'],secret:'k'.repeat(64),campusCidrs:['203.0.113.0/24'],campus:ranges(['203.0.113.0/24']),proxies:ranges(['127.0.0.1/32']),...overrides};
+  const config={origin:'https://attendance.school.example',clientId:'test-client',domains:['school.example'],admins:['ta@school.example'],secret:'k'.repeat(64),campusCidrs:['203.0.113.0/24'],campus:ranges(['203.0.113.0/24']),proxies:ranges(['127.0.0.1/32']),...overrides};
   const store=new Store(':memory:');store.importRoster('MSSV,Họ tên,Email trường\n001,An,a@school.example\n002,Bình,b@school.example','test');
   const worker=new SyncWorker(store,null);
   const app=createApp(config,store,worker,{clock:()=>now.value,verifyGoogle:async token=>JSON.parse(token)});
@@ -118,9 +118,49 @@ test('700 students behind one campus IP can log in and submit with idempotent re
     // Actual local HTTP + SQLite; Google verification and clock are simulated.
     for(let start=0;start<700;start+=100)await Promise.all(Array.from({length:100},async(_,j)=>{
       const i=start+j,c=f.client();assert.equal((await c.login('s'+i+'@school.example','sub-'+i)).status,200);
-      const first=await c.request('/api/check-in',{token:qr.token});assert.equal(first.status,200);
+      const first=await c.request('/api/check-in',i%2?{code:qr.code}:{token:qr.token});assert.equal(first.status,200);
       assert.equal((await c.request('/api/check-in',{token:qr.token})).body.receipt.duplicate,true);
     }));
     assert.equal(f.store.sessions()[0].count,700);assert.equal(f.store.matrix().length,703); // Previously enrolled students keep history rows.
+  }finally{await f.close();}
+});
+
+test('desktop code uses the same identity, campus, expiration, deduplication and closed-session gates',async()=>{
+  const f=await fixture();try{
+    const admin=f.client();await admin.login('ta@school.example','g-ta');
+    const {session}=(await admin.request('/api/admin/sessions',{date:'2026-09-09',minutes:5})).body;
+    const getQr=async()=>(await admin.request('/api/admin/sessions/'+session.id+'/qr')).body;
+    const qr=await getQr(),student=f.client();await student.login();
+    assert.equal((await f.client().request('/api/check-in',{code:qr.code})).status,401);
+    assert.equal((await admin.request('/api/check-in',{code:qr.code})).status,403);
+    assert.equal((await student.request('/api/check-in',{code:qr.code},{'X-Forwarded-For':'198.51.100.1'})).status,403);
+    assert.equal((await student.request('/api/check-in',{code:'WRONG123'})).status,400);
+    assert.equal((await student.request('/api/check-in',{code:qr.code,token:qr.token})).status,400);
+    assert.equal(f.store.sessions()[0].count,0);
+    const response=await student.request('/api/check-in',{code:qr.code.slice(0,4).toLowerCase()+' '+qr.code.slice(4),studentId:'002'});
+    assert.equal(response.status,200);assert.equal(response.body.receipt.studentId,'001');
+    assert.equal(f.store.db.prepare('SELECT note FROM attendance').get().note,'GOOGLE_CAMPUS_CODE');
+    assert.equal((await student.request('/api/check-in',{token:qr.token})).body.receipt.duplicate,true);
+    f.now.value+=30000;
+    assert.equal((await student.request('/api/check-in',{code:qr.code})).body.code,'CODE_INVALID');
+    const fresh=await getQr();assert.notEqual(qr.code,fresh.code);
+    assert.equal((await student.request('/api/check-in',{code:fresh.code})).body.receipt.duplicate,true);
+    await admin.request('/api/admin/sessions/'+session.id+'/close',{});
+    assert.equal((await student.request('/api/check-in',{code:fresh.code})).body.code,'SESSION_CLOSED');
+    assert.equal(f.store.sessions()[0].count,1);
+  }finally{await f.close();}
+});
+test('code guessing quota belongs to Google identity across logins, while QR remains usable',async()=>{
+  const f=await fixture();try{
+    const session=f.store.open('2026-09-09',5,'ta',f.now.value);
+    const {issueQr}=require('../web/security.cjs');
+    const a=f.client(),b=f.client();await a.login();await b.login();
+    for(let i=0;i<10;i++)assert.equal((await (i%2?a:b).request('/api/check-in',{code:'WRONG123'})).status,400);
+    const qr=issueQr(session,f.config.secret,f.now.value);
+    assert.equal((await a.request('/api/check-in',{code:qr.code})).body.code,'CODE_RATE_LIMIT');
+    assert.equal((await b.request('/api/check-in',{token:qr.token})).status,200);
+    f.now.value+=60000;
+    const next=issueQr(session,f.config.secret,f.now.value);
+    assert.equal((await b.request('/api/check-in',{code:next.code})).status,200);
   }finally{await f.close();}
 });

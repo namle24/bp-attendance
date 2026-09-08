@@ -1,5 +1,4 @@
 const express=require('express');
-const fs=require('node:fs');
 const path=require('node:path');
 const {AttendanceGoogleClient}=require('./google.cjs');
 const {fail,equal,contains,today,issueQr,verifyQr,validateIdentity}=require('./security.cjs');
@@ -12,15 +11,15 @@ function createApp(config,store,worker,options={}){
   const app=express(),clock=options.clock||Date.now;
   const google=new AttendanceGoogleClient(config.clientId);
   const verify=options.verifyGoogle|| (async token=>(await google.verifyIdToken({idToken:token,audience:config.clientId})).getPayload());
-  const secure=!config.demo,cookieOptions={httpOnly:true,secure,sameSite:'lax',path:'/'};
-  const authName=secure?'__Host-bp_auth':'bp_auth',challengeName=secure?'__Host-bp_login':'bp_login';
+  const cookieOptions={httpOnly:true,secure:true,sameSite:'lax',path:'/'};
+  const authName='__Host-bp_auth',challengeName='__Host-bp_login';
   app.disable('x-powered-by');
   app.set('trust proxy',address=>contains(address,config.proxies));
   app.use((req,res,next)=>{
     res.set({'Cache-Control':'no-store','Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff','X-Frame-Options':'DENY',
       'Cross-Origin-Opener-Policy':'same-origin-allow-popups',
       'Content-Security-Policy':"default-src 'self'; script-src 'self' https://accounts.google.com; style-src 'self' 'unsafe-inline' https://accounts.google.com; frame-src https://accounts.google.com; connect-src 'self' https://accounts.google.com; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"});
-    if(secure)res.set('Strict-Transport-Security','max-age=31536000');
+    res.set('Strict-Transport-Security','max-age=31536000');
     next();
   });
   // Health contains no account/session data; every user-facing route is network gated.
@@ -30,7 +29,6 @@ function createApp(config,store,worker,options={}){
     catch{res.status(503).json({ok:false});}
   });
   app.use((req,res,next)=>{
-    if(config.demo&&(req.headers['x-forwarded-for']||req.headers.forwarded||req.headers.host!==new URL(config.origin).host))return res.status(403).json({code:'DEMO_LOCAL_ONLY',error:'Demo chỉ dùng trực tiếp trên localhost.'});
     if(!contains(req.ip,config.campus)){
       if(req.method==='GET'&&!req.path.startsWith('/api/')&&req.accepts('html'))return res.status(403).sendFile(path.join(__dirname,'public/network.html'));
       return res.status(403).json({code:'NETWORK_DENIED',error:'Chỉ điểm danh khi kết nối mạng USTH được cho phép. Kiểm tra Wi-Fi và tắt 4G/VPN rồi thử lại.'});
@@ -85,25 +83,30 @@ function createApp(config,store,worker,options={}){
   }
   app.get('/api/bootstrap',(req,res)=>{
     let user;try{user=current(req);}catch(e){if(![401,403].includes(e.status))throw e;}
-    if(user)return res.json({demo:config.demo,today:today(clock()),user:{email:user.email,admin:user.admin,studentId:user.student?.id,name:user.student?.name},csrf:user.csrf,serverTime:clock()});
+    if(user)return res.json({today:today(clock()),user:{email:user.email,admin:user.admin,studentId:user.student?.id,name:user.student?.name},csrf:user.csrf,serverTime:clock()});
     const c=store.challenge(clock());res.cookie(challengeName,c.token,{...cookieOptions,maxAge:5*60000});
-    res.json({demo:config.demo,clientId:config.clientId,nonce:c.nonce,csrf:c.csrf,serverTime:clock()});
+    res.json({clientId:config.clientId,nonce:c.nonce,csrf:c.csrf,serverTime:clock()});
   });
   app.post('/api/auth/google',async(req,res)=>{
     const c=challenge(req);let payload;
     try{payload=await verify(text(req.body.credential,10000));}catch{fail(401,'GOOGLE_LOGIN_FAILED','Không xác thực được Google. Hãy đăng nhập lại.');}
     const identity=validateIdentity(payload,config,c.nonce,clock());finishLogin(req,res,c,identity);
   });
-  if(config.demo)app.post('/api/demo/login',(req,res)=>{
-    const c=challenge(req),kind=req.body.kind;
-    if(!['admin','student'].includes(kind))fail(400,'DEMO_ROLE','Chọn vai trò demo.');
-    finishLogin(req,res,c,kind==='admin'?{sub:'demo-ta',email:'ta@school.example'}:{sub:'demo-student',email:'a@school.example'});
-  });
   app.use('/api',authenticated);
   app.post('/api/logout',(req,res)=>{store.logout(cookie(req,authName));res.clearCookie(authName,cookieOptions);res.json({ok:true});});
   app.post('/api/check-in',(req,res)=>{
-    const p=verifyQr(req.body.token,config.secret,clock());
-    const receipt=store.checkIn(p.sid,req.user,req.ip,clock());res.json({receipt,sync:worker.status()});
+    if(!req.user.student)fail(403,'STUDENT_REQUIRED','Chỉ tài khoản sinh viên trong lớp được điểm danh.');
+    let sid,method='QR';const now=clock();
+    if(req.body.code!==undefined){
+      if(req.body.token!==undefined)fail(400,'INPUT_INVALID','Chỉ dùng QR hoặc mã trên màn chiếu.');
+      store.attemptCode(req.user.sub,now);
+      const code=text(req.body.code,20).replace(/[\s-]/g,'').toUpperCase();
+      if(!/^[A-HJ-NP-Z2-9]{8}$/.test(code))fail(400,'CODE_INVALID','Nhập đúng 8 ký tự của mã đang chiếu.');
+      const session=store.activeSession(now);if(!session)fail(409,'SESSION_CLOSED','Chưa có phiên đang mở. Liên hệ trợ giảng.');
+      if(!equal(code,issueQr(session,config.secret,now).code))fail(400,'CODE_INVALID','Mã không đúng hoặc đã hết hạn. Nhập mã mới đang chiếu.');
+      sid=session.id;method='CODE';
+    }else sid=verifyQr(req.body.token,config.secret,now).sid;
+    const receipt=store.checkIn(sid,req.user,req.ip,clock(),method);res.json({receipt,sync:worker.status()});
   });
   app.get('/api/me/attendance',(req,res)=>{
     if(!req.user.student)return res.json({records:[]});
@@ -125,15 +128,12 @@ function createApp(config,store,worker,options={}){
   app.get('/api/admin/export.csv',(req,res)=>res.type('text/csv').attachment('bp-attendance.csv').send(store.csv()));
   app.get('/api/admin/audit',(req,res)=>res.json({events:store.db.prepare('SELECT * FROM audit ORDER BY id DESC LIMIT 100').all(),corrections:store.db.prepare('SELECT * FROM corrections ORDER BY id DESC LIMIT 100').all()}));
   app.use('/api',(req,res)=>res.status(404).json({error:'Không có API này.'}));
-  app.get('/qr.js',(req,res)=>{
-    const vendor=fs.readFileSync(path.resolve(__dirname,'../apps-script/Qr.html'),'utf8').replace(/^<script>\s*/,'').replace(/\s*<\/script>\s*$/,'');
-    res.type('application/javascript').send(vendor);
-  });
   app.use(express.static(path.join(__dirname,'public'),{index:false}));
   for(const route of ['/','/check-in','/admin'])app.get(route,(req,res)=>res.sendFile(path.join(__dirname,'public/index.html')));
   app.use((err,req,res,next)=>{
     if(res.headersSent)return next(err);
     const status=err.status||500;
+    if(status===429)res.set('Retry-After','60');
     // Do not echo JWTs, database statements, OAuth payloads or credentials into logs/responses.
     res.status(status).json({code:err.code||'SERVER_ERROR',error:status>=500?'Server chưa xử lý được yêu cầu. Vui lòng thử lại; dữ liệu đã lưu không bị xóa.':err.message});
   });

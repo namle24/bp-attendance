@@ -27,7 +27,6 @@ cp .env.example .env
 
 | Biến | Giá trị |
 | --- | --- |
-| BP_MODE | `live` |
 | PUBLIC_ORIGIN | HTTPS origin thật, không có `/` cuối |
 | PORT / BIND_HOST | `4180` / `127.0.0.1` khi dùng Caddy cùng máy |
 | GOOGLE_CLIENT_ID | OAuth client Web application |
@@ -37,8 +36,8 @@ cp .env.example .env
 | TRUSTED_PROXY_CIDRS | Chỉ proxy trước Node; mẫu Caddy cùng máy: `127.0.0.1/32,::1/128` |
 | QR_SECRET | Bí mật ngẫu nhiên ít nhất 32 ký tự |
 | GOOGLE_SHEET_ID | ID Sheet dành riêng cho bản web |
-| GOOGLE_APPLICATION_CREDENTIALS | Đường dẫn service account ngoài repo, chỉ tài khoản app đọc được; hoặc dùng Application Default Credentials của hosting |
-| BP_DATABASE | SQLite trên ổ bền vững, ví dụ `/var/lib/bp-attendance/attendance.sqlite` |
+| GOOGLE_APPLICATION_CREDENTIALS | Đường dẫn tuyệt đối tới JSON service account trên laptop, chỉ tài khoản app đọc được |
+| BP_DATABASE | SQLite trên ổ bền vững, ví dụ `./data/web-live.sqlite` |
 
 Tạo bí mật trên server, lưu vào cấu hình riêng:
 
@@ -69,13 +68,14 @@ Mỗi lượt sinh viên ghi SQLite trước; worker ghi snapshot theo lô, gi�
 
 ## 5. HTTPS và IP nguồn
 
-Mẫu [Caddyfile](../deploy/Caddyfile) dành cho **một Caddy cùng máy Node, chưa có CDN/proxy phía trước**. Đặt `ATTENDANCE_HOST` bằng hostname thật. Caddy quản lý HTTPS, chuyển về localhost và ghi đè `X-Forwarded-For` bằng IP từ kết nối vào Caddy.
+Dùng [Caddyfile LAN](../deploy/Caddyfile.lan) cho Caddy cùng laptop Node. Cấp `ATTENDANCE_HOST`, `LAPTOP_LAN_IP`, `ATTENDANCE_CERT_FILE`, `ATTENDANCE_KEY_FILE` trong môi trường Caddy. Hostname trỏ về laptop; chứng chỉ được điện thoại tin cậy. Caddy chuyển về localhost và ghi đè `X-Forwarded-For` bằng IP từ kết nối vào Caddy.
 
 Chỉ mở HTTPS qua proxy, không mở cổng Node 4180 ra Internet. `TRUSTED_PROXY_CIDRS` phải đúng proxy đó; không đặt `trust proxy=true`. Nếu có CDN/load balancer, cần xác định nơi xóa header giả và chuỗi IP thực tế, rồi kiểm thử lại. [Express](https://expressjs.com/en/guide/behind-proxies/), [Caddy](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy).
 
 Chạy một process dưới service manager của máy chủ:
 
 ```bash
+npm run preflight
 npm start
 ```
 
@@ -83,14 +83,17 @@ Service cần tự restart, giữ SQLite và QR_SECRET qua restart. Không dùng
 
 ## 6. Thử nghiệm trước buổi thật
 
-1. TA trên mạng trường đăng nhập, nhập roster và mở buổi thử; sinh viên trường xác nhận, kiểm tra MSSV, cột ngày và Sheets.
+Dùng database và Sheet nghiệm thu riêng. Mỗi ngày chỉ một phiên; không dùng buổi thử để chiếm phiên ngày học trên database chính thức. Sau nghiệm thu, dừng app, chuyển cấu hình về database/Sheet của lớp rồi khởi động lại. Không xóa dữ liệu buổi đã thu để mở lại phiên.
+
+
+1. Trên database/Sheet nghiệm thu riêng, TA trên mạng trường đăng nhập, nhập roster và mở buổi thử; sinh viên trường xác nhận, kiểm tra MSSV, cột ngày và Sheets.
 2. Dùng 4G/Wi‑Fi ngoài trường: trang/API phải trả `403 NETWORK_DENIED`.
 3. Đăng nhập ở USTH rồi chuyển 4G: gửi điểm danh vẫn bị từ chối.
 4. Thử IPv4, IPv6, các khu vực/đường ra; CIDR thiếu sẽ chặn nhầm, cần IT xác nhận rồi sửa.
 5. Gửi `X-Forwarded-For` giả từ ngoài trường qua hostname thật: vẫn từ chối. Test repo chưa xác nhận proxy đã triển khai.
-6. Giữ QR quá 30 giây: `QR_EXPIRED`; đóng phiên khi QR còn hạn: vẫn từ chối.
+6. Kiểm tra cả điện thoại quét QR và laptop nhập mã. Giữ QR quá 30 giây: `QR_EXPIRED`; mã nhập cũ phải bị từ chối; đóng phiên khi QR còn hạn: vẫn từ chối.
 7. Tài khoản cá nhân, domain khác hoặc email ngoài roster không được nhận. MSSV gửi thêm từ client không thay đổi danh tính trong roster.
 8. Trên Sheet thử, tạm ngắt quyền Sheets, điểm danh rồi khôi phục quyền: receipt vẫn có trong database, đồng bộ lại không mất/trùng.
 9. Thử tải tăng dần trên Wi‑Fi thật, gồm đăng nhập và quét QR qua HTTPS. [Benchmark cục bộ](LOAD-TEST.vi.md) đã đo 700 lượt gửi dồn với SQLite trên filesystem và đồng hồ thật, nhưng tạo sẵn phiên đăng nhập và không qua Wi‑Fi/Google/TLS; chưa chứng minh năng lực toàn bộ hệ thống sản xuất.
 
-Nếu thiếu CIDR/domain/quyền OAuth, chưa mở buổi thật; không dùng demo hoặc bỏ chặn mạng để thay thế cấu hình.
+Nếu thiếu CIDR/domain/quyền OAuth, chưa mở buổi thật; hoàn tất cấu hình và kiểm tra trước khi dùng.

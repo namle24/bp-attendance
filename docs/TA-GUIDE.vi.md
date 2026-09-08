@@ -1,6 +1,6 @@
 # Hướng dẫn trợ giảng · BP Attendance
 
-Tài liệu dành cho TA vận hành buổi học. Nếu bạn là người mở server trên laptop, làm [HOST-QUICKSTART.vi.md](HOST-QUICKSTART.vi.md) trước. Các ảnh dưới đây là demo; buổi thật đăng nhập bằng Google, không có nút chọn vai trò demo.
+Tài liệu dành cho TA vận hành buổi học. Nếu bạn là người mở server trên laptop, làm [HOST-QUICKSTART.vi.md](HOST-QUICKSTART.vi.md) trước.
 
 ## 1. Vào đúng website của lớp
 
@@ -14,13 +14,7 @@ Thấy màn TA thì đã có quyền quản trị. Nếu chỉ thấy màn sinh 
 
 Thường làm trước buổi đầu; chỉ nhập lại khi roster thay đổi. Mở **Nhập danh sách lớp**, chọn file CSV hoặc dán nội dung, rồi bấm **Nhập danh sách**.
 
-```csv
-MSSV,Họ tên,Email trường
-001,Sinh viên minh họa A,a@school.example
-002,Sinh viên minh họa B,b@school.example
-```
-
-Đây là ví dụ giả; thay bằng danh sách chính thức. Giữ nguyên MSSV có số 0 đầu; dùng đúng email chính đã được trường xác nhận. File mẫu có sẵn ở [examples/roster.csv](../examples/roster.csv).
+File CSV cần đúng ba cột **MSSV,Họ tên,Email trường**, mỗi sinh viên một dòng. Tải [mẫu tiêu đề CSV](../examples/roster.csv) rồi điền danh sách chính thức. Giữ MSSV có số 0 đầu; dùng đúng email chính được trường xác nhận.
 
 ![Nhập danh sách lớp](web-roster.png)
 
@@ -28,28 +22,27 @@ MSSV,Họ tên,Email trường
 
 ## 3. Mở buổi và chiếu QR
 
-1. Trong **Phiên điểm danh**, mở **Mở buổi mới**.
-2. Kiểm tra ngày hôm nay, chọn **5 hoặc 8 phút**, bấm **Mở điểm danh**.
-3. Kiểm tra trạng thái đang mở và thời gian đóng; bấm **Chiếu QR**.
-4. Nhắc sinh viên quét bằng camera rồi bấm **Xác nhận điểm danh** trên trang.
-
-![Mở buổi mới](web-session-open.png)
-
-Sau khi mở, có thể thu gọn phần Mở buổi mới để theo dõi phiên:
+1. Trên màn TA, bấm **Mở QR điểm danh**. App mở phiên hôm nay trong **8 phút** và chuyển thẳng sang màn chiếu.
+2. Nếu cần thời gian khác, chọn trước trong **Tùy chọn phiên điểm danh**. Nếu phiên đang mở, nút **Mở màn chiếu QR** đưa bạn trở lại màn chiếu, không tạo phiên mới.
+3. Nhắc sinh viên: điện thoại quét QR rồi xác nhận; máy tính mở URL dưới QR rồi nhập mã 8 ký tự.
 
 ![Màn điều khiển TA](web-admin.png)
 
 ![Màn trình chiếu](web-projector.png)
 
-QR thay mỗi **30 giây**; phiên vẫn tiếp tục tới giờ đóng. Chỉ chiếu QR trong phòng, tránh đưa vào luồng học online. Nếu mã hết hạn khi sinh viên còn đăng nhập, cho quét lại mã mới. Không cần tạo phiên mới khi QR thay đổi.
+QR và mã nhập thay cùng nhau mỗi **30 giây**; phiên vẫn tiếp tục tới giờ đóng. Chỉ chiếu QR/mã trong phòng, tránh đưa vào luồng học online. Nếu mã hết hạn khi sinh viên còn đăng nhập, cho quét lại mã mới. Không cần tạo phiên mới khi QR thay đổi.
 
 ## 4. Sinh viên thấy gì?
 
-Sau khi đăng nhập và quét mã, trang hiện tên/MSSV/email của chính tài khoản đó. Sinh viên bấm **Xác nhận điểm danh** rồi chờ kết quả.
+**Trên điện thoại:** sau khi đăng nhập và quét mã, trang hiện tên/MSSV/email của chính tài khoản đó. Sinh viên bấm **Xác nhận điểm danh** rồi chờ kết quả.
 
 | Trước khi xác nhận | Đã ghi nhận |
 | --- | --- |
 | ![Sẵn sàng xác nhận](web-student-ready.png) | ![Receipt đã lưu](web-student.png) |
+
+**Trên máy tính:** mở địa chỉ HTTPS dưới QR, đăng nhập Google trường. Nhập đúng mã 8 ký tự đang chiếu (không phân biệt hoa/thường, có thể thêm khoảng trắng), bấm **Điểm danh** rồi chờ xác nhận. Không cần camera. Mã cũ hết hạn thì nhập mã mới; quá 10 lần gửi mã/phút/tài khoản cần chờ hoặc dùng QR trên điện thoại.
+
+![Điểm danh bằng máy tính](web-student-desktop.png)
 
 “Đã ghi nhận” hoặc “Bạn đã được ghi nhận trước đó” đều có nghĩa server đã tìm thấy bản ghi. Gửi lại không nhân đôi. Khi mất kết nối, sinh viên kiểm tra lịch sử hoặc quét lại mã mới; không tự coi thông báo đang chờ/lỗi là điểm danh thành công.
 
@@ -57,7 +50,7 @@ Số lượng trên màn TA cập nhật định kỳ, có thể chậm vài gi�
 
 ## 5. Đóng phiên, xử lý online và sửa ngoại lệ
 
-Hết giờ, server tự chặn lượt mới. Nếu kết thúc sớm, bấm **Đóng phiên**. **Mỗi ngày chỉ một phiên offline, không mở lại phiên đã đóng.** Nếu bấm đóng nhầm hoặc sinh viên lỗi máy, TA đối chiếu rồi dùng **Điều chỉnh có lý do** theo quyết định của giảng viên.
+Hết giờ, server tự chặn lượt mới. Nếu kết thúc sớm, thoát trình chiếu → mở **Tùy chọn phiên điểm danh** → bấm **Đóng phiên**. **Mỗi ngày chỉ một phiên offline, không mở lại phiên đã đóng.** Nếu bấm đóng nhầm hoặc sinh viên lỗi máy, TA đối chiếu rồi dùng **Điều chỉnh có lý do** theo quyết định của giảng viên.
 
 - **Nhập online đã đối chiếu:** chọn ngày đã học, nhập MSSV mỗi dòng, ghi nguồn/tiêu chí đã kiểm tra rồi xác nhận. Chưa tự lấy dữ liệu Zoom/Meet.
 - **Điều chỉnh có lý do:** chọn ngày đã có phiên, MSSV, kết quả và lý do cụ thể. App giữ người sửa, thời gian và lịch sử điều chỉnh.
@@ -79,8 +72,8 @@ Hết giờ, server tự chặn lượt mới. Nếu kết thúc sớm, bấm **
 | Điện thoại không mở được website | Báo người host kiểm tra app/Caddy, IP, Wi‑Fi, sleep và HTTPS; đây có thể là lỗi đường mạng |
 | Yêu cầu kết nối mạng USTH | Kiểm tra CONNECT/4G/VPN; nhiều người cùng lỗi thì nhờ IT kiểm tra CIDR, không bỏ cổng mạng |
 | Tài khoản chưa có trong lớp | Đối chiếu email Google với roster, báo TA quản lý danh sách |
-| QR hết hạn | Quét lại mã mới; phiên đăng nhập vẫn giữ |
-| Phiên đã đóng | TA xác minh ngoại lệ theo tiêu chí giảng viên; không tự mở Form khác để thu bù |
+| QR/mã nhập hết hạn | Quét QR mới hoặc nhập mã đang chiếu; phiên đăng nhập vẫn giữ |
+| Phiên đã đóng | TA xác minh ngoại lệ theo tiêu chí giảng viên; dùng điều chỉnh có lý do sau khi xác minh |
 | Chưa xác nhận được kết quả | Kiểm tra lịch sử; khi mạng ổn định quét lại/gửi lại, dữ liệu đã lưu không bị nhân đôi |
 | Sheets đang lỗi | Giữ laptop/database, báo người host; receipt đã cấp vẫn có thể đã lưu đầy đủ |
 

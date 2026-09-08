@@ -12,7 +12,7 @@ async function serverProcess(){
   const {createApp}=require('../web/app.cjs');
   const {SyncWorker}=require('../web/sheets.cjs');
   const {ranges,issueQr,today,hash}=require('../web/security.cjs');
-  const config={demo:false,origin:'https://attendance.school.example',clientId:'unused',domains:['school.example'],admins:['ta@school.example'],secret:'benchmark-only-secret-'.repeat(3),campusCidrs:['203.0.113.0/24'],campus:ranges(['203.0.113.0/24']),proxies:ranges(['127.0.0.1/32'])};
+  const config={origin:'https://attendance.school.example',clientId:'unused',domains:['school.example'],admins:['ta@school.example'],secret:'benchmark-only-secret-'.repeat(3),campusCidrs:['203.0.113.0/24'],campus:ranges(['203.0.113.0/24']),proxies:ranges(['127.0.0.1/32'])};
   const filename=process.argv[3],count=Number(process.argv[4]);
   const store=new Store(filename);
   store.importRoster('MSSV,Họ tên,Email trường\n'+Array.from({length:count},(_,i)=>`S${i},Student ${i},s${i}@school.example`).join('\n'),'benchmark');
@@ -63,9 +63,9 @@ function receive(child,kind){
 }
 function command(child,kind){const result=receive(child,kind);child.send(kind);return result;}
 
-async function burst(port,identities,token){
+async function burst(port,identities,qr){
   const agent=new http.Agent({keepAlive:true,maxSockets:identities.length});
-  const payload=JSON.stringify({token}),start=performance.now();
+  const payload=JSON.stringify(process.env.BP_BENCH_METHOD==='code'?{code:qr.code}:{token:qr.token}),start=performance.now();
   let lastDispatch=start;
   const pending=identities.map(identity=>new Promise(resolve=>{
     const before=performance.now();lastDispatch=before;
@@ -92,8 +92,8 @@ async function measure(count,run){
   try{
     const ready=await receive(child,'ready');
     const started=await command(child,'start');
-    const first=await burst(ready.port,ready.identities,started.qr.token);
-    const retry=await burst(ready.port,ready.identities,started.qr.token);
+    const first=await burst(ready.port,ready.identities,started.qr);
+    const retry=await burst(ready.port,ready.identities,started.qr);
     const stats=await command(child,'stats');
     const stopped=await command(child,'stop');
     const result={count,run,first,retry,records:stats.records,persistedRecords:stopped.persistedRecords,sheetsBlocked:stats.sync.busy&&stats.sync.pending,rssMiB:Math.round(stats.rssMiB),sqlite:ready.sqlite};
@@ -109,8 +109,8 @@ async function measure(count,run){
 }
 
 async function main(){
-  const report={measuredAt:new Date().toISOString(),node:process.version,cpu:os.cpus()[0]?.model,availableParallelism:os.availableParallelism(),totalMemoryGiB:Math.round(os.totalmem()/1024**3),method:'Separate server/load processes, loopback HTTP, temporary disk SQLite WAL, real clock and 30-second QR; already logged-in users; one simulated campus IP; Sheets writer held pending; no Google, TLS, Wi-Fi or browser load.',results:[]};
-  for(const count of [100,300,700])for(let run=1;run<=3;run++)report.results.push(await measure(count,run));
+  const report={measuredAt:new Date().toISOString(),node:process.version,cpu:os.cpus()[0]?.model,availableParallelism:os.availableParallelism(),totalMemoryGiB:Math.round(os.totalmem()/1024**3),method:'Separate server/load processes, loopback HTTP, temporary disk SQLite WAL, real clock and 30-second QR; already logged-in users; one simulated campus IP; Sheets writer held pending; no Google, TLS, Wi-Fi or browser load.',submission:process.env.BP_BENCH_METHOD==='code'?'code':'QR',results:[]};
+  for(const count of (process.env.BP_BENCH_COUNTS||'100,300,700').split(',').map(Number))for(let run=1;run<=3;run++)report.results.push(await measure(count,run));
   if(process.argv[2])writeFileSync(path.resolve(process.argv[2]),JSON.stringify(report,null,2)+'\n');
   console.log('All bursts and duplicate retries passed; records persisted after reopening SQLite.');
 }

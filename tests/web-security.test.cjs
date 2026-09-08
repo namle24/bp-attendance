@@ -16,6 +16,7 @@ test('QR rotates at 30 seconds with zero stale-code grace and rejects tampering'
   const s={id:'session-1',mode:'OFFLINE',opened_at:now,ends_at:now+300000};
   const a=issueQr(s,secret,now+1000),same=issueQr(s,secret,now+29999),b=issueQr(s,secret,now+30000);
   assert.equal(a.token,same.token);assert.notEqual(a.token,b.token);
+  assert.match(a.code,/^[A-HJ-NP-Z2-9]{8}$/);assert.equal(a.code,same.code);assert.notEqual(a.code,b.code);
   assert.equal(verifyQr(a.token,secret,now+29999).sid,s.id);
   assert.throws(()=>verifyQr(a.token,secret,now+30000),e=>e.code==='QR_EXPIRED');
   assert.throws(()=>verifyQr(a.token+'x',secret,now+1000),e=>e.code==='QR_INVALID');
@@ -31,9 +32,7 @@ test('Google identity requires hosted domain, verified email, audience, issuer, 
 });
 test('live startup fails closed when deployment credentials or network ranges are absent',()=>{
   assert.throws(()=>loadConfig({}),/CAMPUS_CIDRS/);
-  assert.throws(()=>loadConfig({BP_MODE:'demo',BIND_HOST:'0.0.0.0'}),/localhost/);
-  assert.throws(()=>loadConfig({BP_MODE:'demo',GOOGLE_CLIENT_ID:'live-client'}),/cấu hình Google/);
-  assert.equal(loadConfig({BP_MODE:'demo'}).demo,true);
+  assert.throws(()=>loadConfig({BP_MODE:'demo'}),/chỉ hỗ trợ/);
   assert.throws(()=>loadConfig({PUBLIC_ORIGIN:'https://school.example',GOOGLE_CLIENT_ID:'test.apps.googleusercontent.com',GOOGLE_HOSTED_DOMAINS:'school.example',ADMIN_EMAILS:'ta@school.example',QR_SECRET:secret,GOOGLE_SHEET_ID:'sheet',CAMPUS_CIDRS:'127.0.0.1/32'}),/localhost/);
 });
 test('attendance and sheet ownership survive closing and reopening the database',()=>{

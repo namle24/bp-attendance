@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const BP = require('../apps-script/Core.gs');
+const BP = require('../web/core.cjs');
 const list = () => BP.roster([['001','An','an@school.example'],['002','Bình','binh@school.example']]);
 const session = (date='2026-09-09') => ({id:date+'|OFFLINE',date,state:'OPEN',code:'ABC123',openedAt:date+'T06:00:00.000Z',closesAt:date+'T06:08:00.000Z'});
 const response = extra => ({studentId:'001',email:'an@school.example',timestamp:'2026-09-09T06:02:00.000Z',code:'ABC123',...extra});

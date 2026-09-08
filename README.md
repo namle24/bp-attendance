@@ -2,102 +2,94 @@
 
 # BP Attendance · USTH
 
-Công cụ hỗ trợ trợ giảng môn **Basic Programming**: sinh viên đăng nhập Google của trường, quét QR thay mỗi 30 giây, nhận xác nhận điểm danh. Kết quả lưu trên laptop host rồi tự đồng bộ Google Sheets, mỗi ngày học một cột.
+Điểm danh môn **Basic Programming** trên laptop host tại lớp. TA đăng nhập và bấm **Mở QR điểm danh**. Sinh viên dùng điện thoại quét QR hoặc mở website trên máy tính và nhập mã đang chiếu. Kết quả lưu vào SQLite rồi tự đồng bộ Google Sheets, mỗi ngày học một cột.
 
-**Mô hình sử dụng:** một laptop host và sinh viên cùng kết nối `USTH_CONNECT`. Các TA dùng chung địa chỉ website của laptop đó.
+Laptop host và sinh viên kết nối **USTH_CONNECT**. Mọi lượt gửi đều qua kiểm tra Google của trường, danh sách MSSV–email, mạng được phép và thời hạn phiên. QR và mã 8 ký tự đổi cùng nhau mỗi **30 giây**.
 
-**Trạng thái:** đã chạy và kiểm thử cục bộ; **chưa nghiệm thu trên Wi‑Fi USTH**. Có thể chạy demo ngay. Trước khi thu điểm danh thật cần cấu hình Google, tên miền/HTTPS và mạng trường. Đây là công cụ hỗ trợ môn học, chưa phải dịch vụ điểm danh chính thức do USTH công bố.
+![Giao diện đăng nhập](docs/web-login.png)
 
-![Giao diện đăng nhập USTH](docs/web-login.png)
+## Tài liệu sử dụng
 
-## Bắt đầu từ đâu?
-
-| Bạn cần làm gì? | Đọc tài liệu |
+| Người sử dụng | Hướng dẫn |
 | --- | --- |
-| Thử giao diện ngay trên máy mình | [Chạy demo bên dưới](#chạy-demo-trong-vài-bước) |
-| Là TA, cần biết bấm gì trước/trong/sau buổi | **[Hướng dẫn TA có ảnh](docs/TA-GUIDE.vi.md)** |
-| Là người mang laptop tới lớp và host | **[Các bước host trên laptop](docs/HOST-QUICKSTART.vi.md)** |
-| Cấu hình Google, roster và Sheets | [Thiết lập tài khoản và dữ liệu](docs/WEB-SETUP.vi.md) |
-| Kiểm tra Wi‑Fi, HTTPS, service và không sleep | [Chi tiết laptop trong LAN](docs/LAPTOP-LAN.vi.md) |
-| Xem khả năng chịu tải và giới hạn chống điểm danh hộ | [Đo tải](docs/LOAD-TEST.vi.md) · [Căn cứ điểm danh](docs/ANTI-PROXY.vi.md) |
+| TA đứng lớp | **[Thao tác từng bước, có ảnh](docs/TA-GUIDE.vi.md)** |
+| TA phụ trách laptop host | **[Cài đặt và chạy ứng dụng](docs/HOST-QUICKSTART.vi.md)** |
+| Người cấu hình Google / Sheets | [Thông số và thiết lập tài khoản](docs/WEB-SETUP.vi.md) |
+| Người kiểm tra mạng tại trường | [LAN, DNS, HTTPS, firewall, giữ laptop hoạt động](docs/LAPTOP-LAN.vi.md) |
+| Người nghiệm thu | [Kết quả đo tải](docs/LOAD-TEST.vi.md) · [Phạm vi kiểm tra](docs/WEB-VALIDATION.md) · [Căn cứ điểm danh](docs/ANTI-PROXY.vi.md) |
 
-## Chạy demo trong vài bước
+## Cài đặt trên laptop host
 
-Cài **Git và Node.js 24 trở lên**. Lệnh chạy demo dùng được trên Linux, macOS và Windows; hướng dẫn host với service hiện dành cho Linux.
+Cần **Node.js 24+, Git, Python 3** và Caddy cho HTTPS. Hướng dẫn dịch vụ tự khởi động lại dành cho Linux/systemd.
 
 ```bash
 git clone https://github.com/namle24/bp-attendance.git
 cd bp-attendance
 npm ci
-npm run demo:web
+cp .env.example .env
 ```
 
-Mở **http://127.0.0.1:4180** trên chính máy đang chạy app.
-
-1. Chọn **Demo trợ giảng** → **Mở buổi mới** → **Mở điểm danh**.
-2. Bấm **Sao chép link QR hiện tại**.
-3. Mở link trong cửa sổ ẩn danh → **Demo sinh viên** → **Xác nhận điểm danh**.
-4. Quay lại màn TA, đợi số sinh viên cập nhật. Bấm **Chiếu QR** để xem màn trình chiếu.
-
-QR có hạn 30 giây: nếu thao tác chậm, lấy link mới. Demo dùng dữ liệu giả, chỉ mở trên localhost và không gọi Google hoặc ghi Sheets thật. Dừng bằng `Ctrl+C`. Chạy demo không cần tạo `.env`.
-
-## Giao diện chính
-
-| Màn trợ giảng | Sinh viên trên điện thoại |
-| --- | --- |
-| [![Điều khiển phiên và QR](docs/web-admin.png)](docs/web-admin.png) | [![Xác nhận điểm danh](docs/web-student.png)](docs/web-student.png) |
-
-![Màn chiếu QR tại lớp](docs/web-projector.png)
-
-Xem thêm: [nhập roster](docs/web-roster.png) · [sinh viên trước xác nhận](docs/web-student-ready.png) · [đăng nhập trên điện thoại](docs/web-login-mobile.png). Tất cả ảnh chụp từ demo, không có dữ liệu sinh viên thật.
-
-## Thu điểm danh trong buổi thật
-
-1. Người host khởi động **một bản live** đã cấu hình. Các TA khác mở cùng URL HTTPS và đăng nhập email có trong `ADMIN_EMAILS`.
-2. TA nhập roster đầy đủ `MSSV,Họ tên,Email trường`; sinh viên đăng nhập Google USTH trước giờ quét.
-3. Mở phiên 5–8 phút, chiếu QR **trong phòng học**. QR tự thay mỗi 30 giây trong suốt phiên.
-4. Sinh viên quét và xác nhận. Server kiểm tra Google–MSSV, IP mạng được phép, chữ ký/hạn QR và phiên đang mở.
-5. **Đã ghi nhận** nghĩa là đã lưu SQLite trên laptop. Gửi lại không tạo bản ghi trùng. Sheets được đồng bộ theo lô khoảng 15 giây khi có thay đổi; có thể chậm hơn nếu kết nối lỗi.
-6. Cuối buổi, đóng phiên, đối chiếu ngoại lệ, kiểm tra Sheets và backup. Mỗi lớp dùng một laptop/database làm nguồn chung.
-
-| Ký hiệu trên bảng | Ý nghĩa |
-| --- | --- |
-| `OFF` | Ghi nhận offline hoặc TA điều chỉnh |
-| `ON` | TA nhập danh sách online đã đối chiếu |
-| `BOTH` | Có cả offline và online trong cùng ngày; cần kiểm tra |
-| `V` / `EXCUSED` | TA xác nhận vắng / có phép |
-| Ô trống | Chưa ghi nhận; **không tự kết luận vắng** |
-
-Mỗi ngày một phiên offline; phiên đã đóng không mở lại. Buổi sau có cột ngày mới khi TA mở buổi đó, không phải tự thêm cột mỗi ngày theo lịch. Chưa tự kết nối Zoom/Meet. Nút tải trong app xuất **CSV**; cần `.xlsx` thì xuất từ Google Sheets.
-
-## Những điều cần xác nhận tại trường
-
-- Cùng tên Wi‑Fi chưa chắc các thiết bị liên lạc được: dùng `npm run lan:probe` theo [hướng dẫn](docs/LAPTOP-LAN.vi.md).
-- IT cần xác nhận IP laptop, CIDR nguồn CONNECT, cách loại Guest/VPN, hostname và HTTPS. App không đọc SSID hoặc nhận danh tính từ cổng Wi‑Fi.
-- QR + Google + mạng trường hạn chế điểm danh hộ nhưng chưa xác minh đúng người/đúng phòng. Giảng viên chốt tiêu chí, đối chiếu thẻ và cách xử lý ngoại lệ.
-- Một laptop có thể mất mạng/ngủ/hỏng; giữ máy hoạt động, có backup và quy trình TA ghi ngoại lệ. Không dùng demo để thu buổi thật.
-
-## Kiểm tra và cấu trúc repo
+Điền `.env` theo [hướng dẫn cấu hình](docs/WEB-SETUP.vi.md): URL HTTPS, OAuth client, domain Google của trường, email TA, CIDR mạng, QR secret, Sheet và đường dẫn credentials. Thiết lập DNS/chứng chỉ và [Caddyfile LAN](deploy/Caddyfile.lan) trước khi cho sinh viên truy cập.
 
 ```bash
-npm test          # 39 kiểm thử, dữ liệu giả; cần Python 3 cho bài backup
-npm run check    # kiểm tra cú pháp
-npm run bench:web # đo tải local; chạy trước buổi, không chạy cạnh lớp đang điểm danh
+npm run preflight
+npm start
 ```
 
-Đã kiểm tra phục hồi sau SIGKILL, gửi lại không trùng, lỗi đồng bộ, mất phản hồi trình duyệt và 700 lượt gửi dồn. Có một đợt tải chậm 7,88 giây; xem [báo cáo đầy đủ](docs/LOAD-TEST.vi.md). Các kết quả này chưa chứng minh Wi‑Fi/Google/HTTPS thực tế tại trường.
+`preflight` kiểm tra cấu hình và file credentials tại máy, không xác nhận quyền Google hay kết nối tại trường. `npm start` chạy ứng dụng; thiếu cấu hình bắt buộc sẽ dừng và báo rõ biến cần điền. Node chỉ nghe `127.0.0.1:4180`; sinh viên mở **URL HTTPS chung** qua Caddy. `localhost` trên điện thoại không phải laptop host.
+
+Để giữ app chạy và tự restart khi process lỗi, dùng `npm run laptop:prepare` rồi cài service theo [các bước host](docs/HOST-QUICKSTART.vi.md). Mỗi lớp dùng một database chung; không chạy nhiều bản app ghi riêng cho cùng buổi.
+
+**Tình trạng nghiệm thu:** đã kiểm thử cục bộ; chưa có cấu hình Google/HTTPS của lớp và chưa nghiệm thu trên Wi‑Fi USTH. Cần hoàn tất các mục này trước khi thu điểm danh chính thức.
+
+## Mỗi buổi học
+
+1. Người host bật app/Caddy, kiểm tra kết nối và Sheets. Danh sách lớp đầy đủ đã nhập trước buổi đầu.
+2. TA và sinh viên mở URL chung, đăng nhập Google trường. TA bấm **Mở QR điểm danh**; app chuyển thẳng sang màn chiếu, mặc định mở 8 phút.
+3. **Điện thoại:** quét QR → bấm **Xác nhận điểm danh**. **Máy tính:** mở URL dưới QR → nhập mã 8 ký tự → bấm **Điểm danh**.
+4. Sinh viên chờ **Đã ghi nhận điểm danh**. Thông báo này xác nhận bản ghi đã lưu; gửi lại không tạo bản ghi trùng.
+5. Phiên tự đóng khi hết giờ. TA kiểm tra Sheets, xử lý ngoại lệ và người host backup trước khi dừng app.
+
+![Màn chiếu QR và mã nhập trên máy tính](docs/web-projector.png)
+
+| Màn TA | Sinh viên trên điện thoại |
+| --- | --- |
+| [![Bảng điều khiển TA](docs/web-admin.png)](docs/web-admin.png) | [![Kết quả điểm danh](docs/web-student.png)](docs/web-student.png) |
+
+Xem thêm [màn máy tính](docs/web-student-desktop.png) và [nhập danh sách lớp](docs/web-roster.png). Ảnh được tạo trong kiểm thử giao diện bằng tài khoản hư cấu; [cách chụp và phạm vi](docs/BRANDING.md).
+
+## Kết quả và vận hành
+
+| Ký hiệu | Ý nghĩa |
+| --- | --- |
+| `OFF` | Offline hợp lệ hoặc TA điều chỉnh |
+| `ON` | Online do TA nhập sau đối chiếu |
+| `BOTH` | Có cả hai hình thức trong cùng ngày; cần đối chiếu |
+| `V` / `EXCUSED` | TA xác nhận vắng / có phép |
+| Ô trống | Chưa ghi nhận, chưa kết luận vắng |
+
+Sheets đồng bộ theo lô khoảng 15 giây khi có thay đổi; lỗi kết nối sẽ được thử lại. Buổi kế tiếp tạo cột ngày mới khi TA mở phiên, không tự tạo cột cho ngày không học. Mỗi ngày một phiên offline, không mở lại phiên đã đóng; ngoại lệ dùng **Điều chỉnh có lý do**. Chưa kết nối tự động Zoom/Meet. Nút tải trong app xuất CSV; cần `.xlsx` thì xuất từ Google Sheets.
+
+Cùng SSID chưa bảo đảm thiết bị sinh viên truy cập được laptop. Cần thử LAN và nhờ IT xác nhận CIDR CONNECT, cách tách Guest/VPN, DNS và HTTPS. QR/mã ngắn hạn cùng Google/mạng trường hạn chế chuyển tiếp từ ngoài trường nhưng chưa chứng minh đúng người hoặc đúng phòng; giảng viên chốt cách đối chiếu thẻ và xử lý ngoại lệ.
+
+## Kiểm tra và mã nguồn
+
+```bash
+npm test
+npm run check
+npm run bench:web
+```
+
+Bộ kiểm thử gồm xác thực, QR/mã nhập, 700 tài khoản cùng IP, lỗi Sheets, backup và phục hồi sau SIGKILL. Kiểm tra trình duyệt gồm điện thoại, laptop, trình chiếu, đổi mã và mất kết nối trước/sau khi ghi. Các phép đo cục bộ không thay thế nghiệm thu Wi‑Fi/Google/HTTPS tại trường; xem [số liệu và giới hạn](docs/LOAD-TEST.vi.md).
 
 ```text
-web/              Server, xác thực, QR, SQLite, đồng bộ Sheets
-web/public/       Giao diện USTH và logo tham chiếu
-deploy/           Caddyfile LAN và mẫu service
-scripts/          Demo, chụp giao diện, thử LAN, service laptop, backup, đo tải
-docs/             Hướng dẫn TA/host, ảnh giao diện và báo cáo
-examples/         CSV roster và danh sách online giả
-tests/            Kiểm thử với dữ liệu giả
-apps-script/      Bản Forms cũ, chỉ lưu tham khảo
+web/              Server, Google, QR/mã nhập, SQLite, Sheets
+web/public/       Giao diện USTH, logo và bộ tạo QR cục bộ
+deploy/           Caddy và mẫu service
+scripts/          Kiểm tra cấu hình, thử LAN, backup, đo tải, chụp ảnh
+docs/             Hướng dẫn TA/host, ảnh và báo cáo
+examples/         CSV chỉ có tiêu đề để nhập danh sách chính thức
+tests/            Kiểm thử cô lập; không dùng dữ liệu lớp
 ```
 
-`.env`, database, backup và credentials được bỏ qua bởi Git. Roster trong repo chỉ là dữ liệu minh họa. Logo/màu được tham chiếu từ tài liệu USTH đã cung cấp; [ghi chú giao diện và tài nguyên](docs/BRANDING.md).
-
-Bản Google Forms cũ ở [FORMS-VERSION.md](docs/FORMS-VERSION.md) không có cổng kiểm tra mạng/QR động như bản web; tài liệu TA mới dùng bản web làm mặc định.
+`.env`, database, backup và credentials được Git bỏ qua. Dữ liệu thử chỉ được tạo bởi bộ kiểm thử trong database riêng; ứng dụng khởi động với danh sách lớp trống. Logo/màu tham chiếu từ tài liệu được cung cấp: [tài nguyên giao diện](docs/BRANDING.md).

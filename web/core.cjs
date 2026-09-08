@@ -1,4 +1,4 @@
-/* Pure attendance rules; shared by Apps Script and local Node tests. */
+/* Pure attendance rules used by the web store and unit tests. */
 var BP = (function () {
   'use strict';
   function str(v) { return String(v == null ? '' : v).trim(); }
@@ -25,7 +25,7 @@ var BP = (function () {
     if (!students.length) throw new Error('Hãy nhập danh sách MSSV – họ tên – email trường vào BP_Roster.');
     return { students: students, ids: ids, emails: emails };
   }
-  // Timestamps are server timestamps from Forms, never browser timestamps.
+  // Timestamps are server timestamps, never browser timestamps.
   function assess(response, session, list, seen) {
     var studentId = id(response.studentId), account = email(response.email);
     var time = Date.parse(response.timestamp), start = Date.parse(session.openedAt), end = Date.parse(session.closesAt);

@@ -3,7 +3,7 @@ const {mkdirSync}=require('node:fs');
 const path=require('node:path');
 const {randomUUID}=require('node:crypto');
 const {parse}=require('csv-parse/sync');
-const BP=require('../apps-script/Core.gs');
+const BP=require('./core.cjs');
 const {fail,random,hash,today}=require('./security.cjs');
 
 class Store {
@@ -18,6 +18,7 @@ class Store {
       CREATE TABLE IF NOT EXISTS attendance (session_id TEXT REFERENCES sessions(id),student_id TEXT REFERENCES students(id),sub TEXT,at INTEGER NOT NULL,ip TEXT NOT NULL,actor TEXT NOT NULL,note TEXT NOT NULL,PRIMARY KEY(session_id,student_id));
       CREATE TABLE IF NOT EXISTS auth (hash TEXT PRIMARY KEY,sub TEXT NOT NULL,email TEXT NOT NULL,csrf TEXT NOT NULL,expires INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS challenges (hash TEXT PRIMARY KEY,nonce TEXT NOT NULL,csrf TEXT NOT NULL,expires INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS code_limits (sub TEXT PRIMARY KEY,started INTEGER NOT NULL,count INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS audit (id INTEGER PRIMARY KEY,at INTEGER NOT NULL,actor TEXT NOT NULL,event TEXT NOT NULL,detail TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS corrections (id INTEGER PRIMARY KEY,date TEXT NOT NULL,student_id TEXT REFERENCES students(id),mark TEXT NOT NULL,reason TEXT NOT NULL,actor TEXT NOT NULL,at INTEGER NOT NULL);`);
   }
@@ -76,6 +77,11 @@ class Store {
   logout(token) {if(token)this.db.prepare('DELETE FROM auth WHERE hash=?').run(hash(token));}
   sessions() {return this.db.prepare('SELECT s.*, (SELECT COUNT(*) FROM attendance a WHERE a.session_id=s.id) AS count FROM sessions s ORDER BY date DESC,opened_at DESC').all();}
   session(id) {return this.db.prepare('SELECT * FROM sessions WHERE id=?').get(id);}
+  activeSession(now=Date.now()) {return this.db.prepare("SELECT * FROM sessions WHERE date=? AND mode='OFFLINE' AND closed_at IS NULL AND opened_at<=? AND ends_at>?").get(today(now),now,now);}
+  attemptCode(sub,now=Date.now()) {
+    const result=this.db.prepare('INSERT INTO code_limits VALUES (?,?,1) ON CONFLICT(sub) DO UPDATE SET started=CASE WHEN started<=? THEN excluded.started ELSE started END,count=CASE WHEN started<=? THEN 1 ELSE count+1 END RETURNING count').get(sub,now,now-60000,now-60000);
+    if(result.count>10)fail(429,'CODE_RATE_LIMIT','Đã nhập mã quá nhiều lần. Vui lòng chờ một phút hoặc quét QR bằng điện thoại.');
+  }
   open(date,minutes,actor,now=Date.now()) {
     try{BP.date(date);}catch(e){fail(400,'DATE_INVALID',e.message);}
     if(date!==today(now))fail(400,'DATE_NOT_TODAY','Chỉ mở phiên cho ngày hôm nay, theo giờ Việt Nam.');
@@ -94,13 +100,13 @@ class Store {
       return this.session(id);
     });
   }
-  checkIn(sid,identity,ip,now=Date.now()) {
+  checkIn(sid,identity,ip,now=Date.now(),method='QR') {
     return this.tx(()=>{
       const s=this.session(sid);
       if(!s||s.mode!=='OFFLINE'||s.closed_at||now<s.opened_at||now>=s.ends_at)fail(409,'SESSION_CLOSED','Phiên đã đóng hoặc hết giờ.');
       const student=this.db.prepare('SELECT * FROM students WHERE sub=? AND email=? AND active=1').get(identity.sub,identity.email);
       if(!student)fail(403,'NOT_ENROLLED','Không tìm thấy MSSV hợp lệ cho tài khoản này.');
-      const inserted=this.db.prepare('INSERT OR IGNORE INTO attendance VALUES (?,?,?,?,?,?,?)').run(sid,student.id,identity.sub,now,ip,identity.email,'GOOGLE_CAMPUS_QR');
+      const inserted=this.db.prepare('INSERT OR IGNORE INTO attendance VALUES (?,?,?,?,?,?,?)').run(sid,student.id,identity.sub,now,ip,identity.email,'GOOGLE_CAMPUS_'+method);
       if(inserted.changes)this.dirty();
       const record=this.db.prepare('SELECT at FROM attendance WHERE session_id=? AND student_id=?').get(sid,student.id);
       return {studentId:student.id,name:student.name,date:s.date,at:record.at,duplicate:!inserted.changes};

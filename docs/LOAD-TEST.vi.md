@@ -4,7 +4,19 @@ Bản web sau tối ưu nhận đủ **700 lượt gửi dồn trong 1,96–1,98
 
 Đây là kết quả API khi sinh viên đã đăng nhập, chưa bao gồm Google login, HTTPS hoặc Wi‑Fi tại USTH.
 
-## Kết quả sau tối ưu
+## Luồng nhập mã trên máy tính
+
+Sau khi bổ sung mã nhập 8 ký tự, chạy riêng mức **700 lượt nhập mã**, ba lần, ngày 08/09/2026. Lượt đầu hoàn tất trong **3,48 / 3,29 / 3,28 giây**, p95 **3,26 / 3,07 / 3,08 giây**. Gửi lại 700 lượt trong **2,11 / 2,00 / 2,02 giây**; tất cả trả bản ghi đã tồn tại. Đủ **4.200/4.200 yêu cầu**, mở lại SQLite vẫn đúng 700 sinh viên mỗi lần.
+
+Luồng này ghi thêm quota nhập mã theo Google subject vào SQLite, vẫn giữ WAL/FULL và Sheets writer ở trạng thái chờ. Máy đo dùng chung với kiểm tra trình duyệt trong một phần thời gian, nên không dùng chênh lệch này để kết luận hiệu năng tương đối với QR. Đây vẫn là HTTP localhost với phiên đăng nhập tạo trước, chưa đo Wi‑Fi/Google/HTTPS của lớp. Báo cáo: [load-2026-09-08-code.json](load-2026-09-08-code.json).
+
+Chạy lại riêng luồng mã:
+
+```bash
+BP_BENCH_METHOD=code BP_BENCH_COUNTS=700 npm run bench:web -- /tmp/bp-code-load.json
+```
+
+## Kết quả QR sau tối ưu
 
 Tra danh tính theo chỉ mục thay vì đọc cả roster, dọn bảng quota theo chu kỳ, chỉ cấp quota riêng cho phiên đăng nhập hợp lệ. Giữ SQLite WAL/FULL, điều kiện xác thực và kiểm tra QR.
 

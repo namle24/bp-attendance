@@ -36,7 +36,12 @@ function issueQr(session,secret,now=Date.now()) {
   const payload={v:1,sid:session.id,iat:start,exp:Math.min(start+30000,session.ends_at)};
   const encoded=Buffer.from(JSON.stringify(payload)).toString('base64url');
   const sig=crypto.createHmac('sha256',secret).update(encoded).digest('base64url');
-  return {token:encoded+'.'+sig,expiresAt:payload.exp,serverTime:now};
+  const token=encoded+'.'+sig;
+  const bytes=crypto.createHmac('sha256',secret).update('attendance-code:'+token).digest();
+  const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let value=BigInt('0x'+bytes.subarray(0,5).toString('hex')),code='';
+  for(let i=0;i<8;i++){code=alphabet[Number(value&31n)]+code;value>>=5n;}
+  return {token,code,expiresAt:payload.exp,serverTime:now};
 }
 function verifyQr(token,secret,now=Date.now()) {
   if(typeof token!=='string'||token.length>1000) fail(400,'QR_INVALID','QR không hợp lệ.');

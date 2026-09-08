@@ -1,4 +1,5 @@
 Vendored qrcode-generator 2.0.4 by Kazuhiko Arase.
+Local file: web/public/qr.js
 MIT License
 
 Copyright (c) 2009 Kazuhiko Arase

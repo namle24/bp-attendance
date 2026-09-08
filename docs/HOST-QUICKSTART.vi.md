@@ -1,10 +1,10 @@
 # Host trên laptop · Thứ tự thao tác
 
-Dành cho **một TA phụ trách laptop host** của lớp. Các TA còn lại chỉ cần URL HTTPS và email quản trị. Hướng dẫn service hiện dành cho Linux/systemd; demo vẫn chạy được trên Windows/macOS.
+Dành cho **một TA phụ trách laptop host** của lớp. Các TA còn lại chỉ cần URL HTTPS và email quản trị. Hướng dẫn service hiện dành cho Linux/systemd.
 
 ## A. Làm ở nhà trước khi mang máy tới trường
 
-### 1. Tải và thử giao diện
+### 1. Tải mã nguồn và cài thư viện
 
 Cài Git, Node.js 24+, Python 3 (backup/kiểm thử). Trong terminal:
 
@@ -12,10 +12,7 @@ Cài Git, Node.js 24+, Python 3 (backup/kiểm thử). Trong terminal:
 git clone https://github.com/namle24/bp-attendance.git
 cd bp-attendance
 npm ci
-npm run demo:web
 ```
-
-Mở `http://127.0.0.1:4180`, thử hai vai trò theo [README](../README.md#chạy-demo-trong-vài-bước). Dừng bằng Ctrl+C trước khi chạy live trên cùng cổng.
 
 ### 2. Chuẩn bị các thông tin chạy thật
 
@@ -38,7 +35,6 @@ cp .env.example .env
 Mở `.env` bằng trình soạn thảo, điền đầy đủ theo [WEB-SETUP.vi.md](WEB-SETUP.vi.md). Giữ:
 
 ```dotenv
-BP_MODE=live
 BIND_HOST=127.0.0.1
 PORT=4180
 BP_DATABASE=./data/web-live.sqlite
@@ -46,6 +42,14 @@ TRUSTED_PROXY_CIDRS=127.0.0.1/32,::1/128
 ```
 
 `PUBLIC_ORIGIN` là URL HTTPS thật; `CAMPUS_CIDRS` là nguồn nội bộ IT xác nhận; `ADMIN_EMAILS` gồm các TA, ngăn cách dấu phẩy. Tạo QR secret ngẫu nhiên theo hướng dẫn rồi giữ ổn định qua restart. `.env`, database và credentials không đưa lên GitHub.
+
+Kiểm tra cấu hình trước khi khởi động:
+
+```bash
+npm run preflight
+```
+
+Lệnh này kiểm tra các trường bắt buộc và file service account; chưa kiểm tra Google/HTTPS/mạng trường. Nếu cần chạy trong terminal để xem log sau khi cấu hình hoàn chỉnh, dùng `npm start`, dừng bằng Ctrl+C trước khi chuyển sang service.
 
 ### 4. Chuẩn bị HTTPS
 
@@ -88,7 +92,7 @@ npm run lan:probe -- --host IP_WIFI_CUA_LAPTOP
 
 Thay `IP_WIFI_CUA_LAPTOP` bằng địa chỉ thật. Mở URL được in ra trên điện thoại. Trang chỉ kiểm tra kết nối, tự đóng sau 5 phút. Nếu không vào được, kiểm tra firewall/client isolation/VLAN cùng IT. Probe thành công chưa thay cho thử HTTPS/Google.
 
-3. Mở `https://HOSTNAME_THAT/readyz` từ điện thoại, phải nhận `{"ok":true}`. Sau đó mở trang chính, thử Google TA và sinh viên, kiểm tra MSSV/QR/receipt/Sheet.
+3. Mở `https://HOSTNAME_THAT/readyz` từ điện thoại, phải nhận `{"ok":true}`. Sau đó mở trang chính, thử Google TA và sinh viên, kiểm tra MSSV/QR/mã nhập trên laptop/receipt/Sheet.
 4. Dùng mạng khách/4G: phải bị chặn theo tiêu chí đã chốt. Kiểm tra cả nguồn IPv4/IPv6 thực tế nếu có.
 5. Thử nhiều điện thoại, rồi tăng tải trên môi trường thử. Benchmark local không chứng minh độ ổn định Wi‑Fi thật. Không đo tải tổng hợp cạnh buổi đang điểm danh chính thức.
 
@@ -99,7 +103,7 @@ Chỉ chia sẻ **URL HTTPS chung** cho các TA/sinh viên sau khi nghiệm thu.
 | Thời điểm | Người host làm |
 | --- | --- |
 | Trước giờ học | Cắm sạc, giữ nắp mở; kiểm tra IP/DNS/chứng chỉ, app/Caddy, `/readyz`, Sheets; backup và roster |
-| Trước khi quét | Nhắc sinh viên đăng nhập sớm; TA mở phiên 5–8 phút và chiếu QR trong phòng |
+| Trước khi quét | Nhắc sinh viên đăng nhập sớm; TA bấm **Mở QR điểm danh**, mặc định 8 phút, chiếu trong phòng |
 | Trong phiên | Giữ laptop/Wi‑Fi hoạt động; không reboot, cập nhật, đổi config hoặc chạy benchmark; theo dõi lỗi và hỗ trợ TA |
 | Sau buổi | Đối chiếu kết quả/Sheets, backup; dừng app khi đã hoàn tất |
 
