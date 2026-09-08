@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer"><title>BP · Điểm danh USTH</title>
+  <link rel="stylesheet" href="/style.css"><script defer src="/qr.js"></script><script defer src="/app.js"></script>
+</head>
+<body>
+  <div id="demo-banner" hidden>DEMO · Dữ liệu giả · Mạng localhost · Không xác thực Google hoặc ghi Google Sheets thật</div>
+  <main>
+    <header><div class="brand"><img class="brand-logo" src="/assets/usth-logo.png" alt="USTH — Vietnam France University" width="369" height="213"><div class="brand-copy"><span class="eyebrow">BASIC PROGRAMMING</span><h1>Điểm danh buổi học</h1><p class="header-caption">University of Science and Technology of Hanoi</p></div></div><button id="logout" class="secondary" hidden>Đăng xuất</button></header>
+    <div id="notice" role="status" aria-live="polite" hidden></div>
+    <section id="login" class="card" hidden>
+      <div class="login-grid"><div class="login-intro"><span class="eyebrow">USTH · LỚP HỌC OFFLINE</span><h2>Sẵn sàng cho<br>buổi học hôm nay.</h2><p>Điểm danh ngay tại lớp bằng tài khoản trường và mã QR của buổi học.</p><ol class="login-steps"><li><span class="step-number">01</span><div><strong>Kết nối USTH_CONNECT</strong><small>Hoàn tất đăng nhập Wi‑Fi của trường.</small></div></li><li><span class="step-number">02</span><div><strong>Đăng nhập email trường</strong><small>Dùng tài khoản khớp với MSSV của bạn.</small></div></li><li><span class="step-number">03</span><div><strong>Quét QR và xác nhận</strong><small>Chờ thông báo đã ghi nhận điểm danh.</small></div></li></ol></div>
+      <div class="login-form"><span class="badge">BASIC PROGRAMMING</span><h2>Đăng nhập để bắt đầu</h2><p>Hãy đăng nhập trước giờ điểm danh. Khi trợ giảng mở phiên, quét QR đang chiếu trong phòng.</p><div id="google-button"></div><div id="demo-login" hidden><button id="demo-admin">Demo trợ giảng</button><button id="demo-student" class="secondary">Demo sinh viên</button></div><p class="muted login-note">QR đổi mỗi 30 giây. Nếu mã hết hạn trong lúc đăng nhập, hãy quét lại mã mới; bạn vẫn giữ phiên đăng nhập.</p></div></div>
+    </section>
+    <section id="student" class="card" hidden>
+      <span class="badge">ĐIỂM DANH OFFLINE</span><h2 id="student-name"></h2><p id="student-account" class="muted"></p>
+      <p id="student-instruction">Quét QR đang chiếu trong phòng để điểm danh.</p>
+      <button id="check-in" disabled>Xác nhận điểm danh</button><p id="student-expiry" class="muted"></p>
+      <div id="receipt" class="receipt" hidden></div>
+      <details id="demo-paste" hidden><summary>Demo: dán link QR từ màn trợ giảng</summary><label for="pasted-link">Link demo</label><input id="pasted-link"><button id="use-link" class="secondary">Dùng QR này</button></details>
+      <h3>Lượt đã ghi nhận</h3><div id="my-attendance" class="muted"></div>
+    </section>
+    <section id="admin" hidden>
+      <div class="admin-bar"><span class="badge" id="roster-count"></span><span id="sync-state" class="muted"></span><button id="sync" class="secondary">Đồng bộ Sheets</button><a href="/api/admin/export.csv">Tải CSV / Excel</a></div>
+      <div class="layout">
+        <div class="controls">
+          <section class="card"><h2>Phiên điểm danh</h2><label for="session">Buổi học</label><select id="session"></select>
+            <div class="row"><button id="project" class="secondary">Chiếu QR</button><button id="close" class="danger">Đóng phiên</button></div>
+            <details><summary>Mở buổi mới</summary><label for="session-date">Ngày học</label><input id="session-date" type="date"><label for="duration">Thời gian mở</label><select id="duration"><option value="5">5 phút</option><option value="8" selected>8 phút</option><option value="10">10 phút</option><option value="15">15 phút</option></select><button id="open">Mở điểm danh</button></details>
+            <p class="muted">QR đổi sau mỗi 30 giây. Chỉ chiếu trong phòng; sinh viên đăng nhập trước khi quét.</p>
+          </section>
+          <section class="card"><details><summary>Nhập danh sách lớp</summary><p class="muted">CSV gồm MSSV,Họ tên,Email trường. Nhập danh sách đầy đủ: người không có trong lần nhập mới sẽ ngừng được tự điểm danh, lịch sử vẫn được giữ.</p><label for="roster-file">Chọn CSV</label><input id="roster-file" type="file" accept=".csv,text/csv"><label for="roster-csv">Nội dung</label><textarea id="roster-csv" placeholder="MSSV,Họ tên,Email trường"></textarea><button id="import-roster">Nhập danh sách</button></details></section>
+          <section class="card"><details><summary>Nhập online đã đối chiếu</summary><label for="online-date">Ngày</label><input id="online-date" type="date"><label for="online-list">MSSV, mỗi người một dòng</label><textarea id="online-list"></textarea><label for="online-evidence">Nguồn và tiêu chí đã kiểm tra</label><input id="online-evidence"><button id="import-online">Ghi nhận online</button></details></section>
+          <section class="card"><details><summary>Điều chỉnh có lý do</summary><label for="correction-date">Ngày</label><input id="correction-date" type="date"><label for="correction-id">MSSV</label><input id="correction-id"><label for="correction-mark">Kết quả</label><select id="correction-mark"><option>OFF</option><option>ON</option><option>BOTH</option><option>V</option><option>EXCUSED</option></select><label for="correction-reason">Lý do</label><input id="correction-reason"><button id="correct">Lưu điều chỉnh</button></details></section>
+          <section class="card"><details><summary>Nhật ký thao tác gần đây</summary><button id="load-audit" class="secondary">Tải nhật ký</button><pre id="audit"></pre></details></section>
+        </div>
+        <section id="projector" class="card qr-card"><button id="exit-project" class="secondary" hidden>Thoát trình chiếu</button><img class="projector-brand" src="/assets/usth-logo.png" alt="USTH" width="369" height="213"><span class="badge" id="session-state">CHƯA MỞ PHIÊN</span><h2 id="session-title">Quét QR tại phòng học</h2><p>USTH_CONNECT → email trường → xác nhận điểm danh</p><div id="qr"></div><p id="qr-expiry"></p><p class="muted" id="session-end"></p><button id="copy-qr" class="secondary controls" disabled>Sao chép link QR hiện tại</button><p id="count" class="controls muted"></p></section>
+      </div>
+    </section>
+    <footer class="page-footer">USTH <span>•</span> Basic Programming <span>•</span> Cần hỗ trợ? Liên hệ trợ giảng tại lớp.</footer>
+  </main>
+</body>
+</html>

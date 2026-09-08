@@ -1,0 +1,31 @@
+[Unit]
+Description=BP attendance web server
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=120
+StartLimitBurst=10
+
+[Service]
+Type=simple
+User=bp-attendance
+Group=bp-attendance
+WorkingDirectory=/opt/bp-attendance
+EnvironmentFile=/etc/bp-attendance/app.env
+# Node 24+ must be installed system-wide at this path (adjust if necessary).
+ExecStart=/usr/bin/node /opt/bp-attendance/web/server.cjs
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=45
+KillSignal=SIGTERM
+LimitNOFILE=65536
+UMask=0077
+StateDirectory=bp-attendance
+StateDirectoryMode=0700
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/bp-attendance
+
+[Install]
+WantedBy=multi-user.target

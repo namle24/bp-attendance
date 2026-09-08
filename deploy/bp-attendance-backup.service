@@ -1,0 +1,16 @@
+[Unit]
+Description=Create a verified local BP attendance database snapshot
+
+[Service]
+Type=oneshot
+User=bp-attendance
+Group=bp-attendance
+ExecStart=/usr/bin/python3 /opt/bp-attendance/scripts/backup-db.py /var/lib/bp-attendance/attendance.sqlite /var/lib/bp-attendance/backups
+TimeoutStartSec=90
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateNetwork=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/bp-attendance

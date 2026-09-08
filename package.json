@@ -1,0 +1,25 @@
+{
+  "name": "bp-attendance",
+  "version": "0.2.0",
+  "private": true,
+  "description": "USTH BP attendance — rotating QR, campus network gate, Google login and Sheets sync",
+  "scripts": {
+    "test": "node --test tests/*.test.cjs",
+    "check": "node scripts/check.cjs",
+    "demo": "node scripts/demo.cjs",
+    "start": "node --env-file-if-exists=.env web/server.cjs",
+    "demo:web": "node scripts/demo-web.cjs",
+    "bench:web": "node scripts/bench-web.cjs",
+    "lan:probe": "node scripts/lan-probe.cjs",
+    "laptop:prepare": "node scripts/prepare-laptop.cjs"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "csv-parse": "6.2.1",
+    "express": "5.2.1",
+    "google-auth-library": "10.9.1",
+    "ipaddr.js": "2.5.0"
+  }
+}

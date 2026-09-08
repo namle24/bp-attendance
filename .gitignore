@@ -1,0 +1,16 @@
+.clasp.json
+.clasprc.json
+node_modules/
+.env*
+!.env.example
+data/
+*.xlsx
+*.log
+*.sqlite*
+credentials*.json
+service-account*.json
+*.pem
+*.key
+*.p12
+*.pfx
+.DS_Store

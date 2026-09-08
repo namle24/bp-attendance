@@ -1,0 +1,352 @@
+{
+  "measuredAt": "2026-09-08T05:36:59.275Z",
+  "node": "v24.19.0",
+  "cpu": "Intel(R) Core(TM) i5-9300H CPU @ 2.40GHz",
+  "availableParallelism": 8,
+  "totalMemoryGiB": 8,
+  "method": "Separate server/load processes, loopback HTTP, temporary disk SQLite WAL, real clock and 30-second QR; already logged-in users; one simulated campus IP; Sheets writer held pending; no Google, TLS, Wi-Fi or browser load.",
+  "results": [
+    {
+      "count": 100,
+      "run": 1,
+      "first": {
+        "requests": 100,
+        "success": 100,
+        "duplicates": 0,
+        "errors": {},
+        "dispatchMs": 22.8,
+        "elapsedMs": 420.3,
+        "p50Ms": 237.2,
+        "p95Ms": 384.5,
+        "maxMs": 397.5
+      },
+      "retry": {
+        "requests": 100,
+        "success": 100,
+        "duplicates": 100,
+        "errors": {},
+        "dispatchMs": 16.4,
+        "elapsedMs": 214.9,
+        "p50Ms": 114.4,
+        "p95Ms": 191,
+        "maxMs": 198.5
+      },
+      "records": 100,
+      "persistedRecords": 100,
+      "sheetsBlocked": true,
+      "rssMiB": 95,
+      "sqlite": {
+        "journal": {
+          "journal_mode": "wal"
+        },
+        "synchronous": {
+          "synchronous": 2
+        }
+      }
+    },
+    {
+      "count": 100,
+      "run": 2,
+      "first": {
+        "requests": 100,
+        "success": 100,
+        "duplicates": 0,
+        "errors": {},
+        "dispatchMs": 18.4,
+        "elapsedMs": 413.6,
+        "p50Ms": 228,
+        "p95Ms": 376.1,
+        "maxMs": 395.1
+      },
+      "retry": {
+        "requests": 100,
+        "success": 100,
+        "duplicates": 100,
+        "errors": {},
+        "dispatchMs": 16.9,
+        "elapsedMs": 204.4,
+        "p50Ms": 106,
+        "p95Ms": 180.2,
+        "maxMs": 187.5
+      },
+      "records": 100,
+      "persistedRecords": 100,
+      "sheetsBlocked": true,
+      "rssMiB": 97,
+      "sqlite": {
+        "journal": {
+          "journal_mode": "wal"
+        },
+        "synchronous": {
+          "synchronous": 2
+        }
+      }
+    },
+    {
+      "count": 100,
+      "run": 3,
+      "first": {
+        "requests": 100,
+        "success": 100,
+        "duplicates": 0,
+        "errors": {},
+        "dispatchMs": 8.8,
+        "elapsedMs": 377,
+        "p50Ms": 218.1,
+        "p95Ms": 354.3,
+        "maxMs": 368.1
+      },
+      "retry": {
+        "requests": 100,
+        "success": 100,
+        "duplicates": 100,
+        "errors": {},
+        "dispatchMs": 15.5,
+        "elapsedMs": 179.8,
+        "p50Ms": 96.9,
+        "p95Ms": 157.8,
+        "maxMs": 164.3
+      },
+      "records": 100,
+      "persistedRecords": 100,
+      "sheetsBlocked": true,
+      "rssMiB": 95,
+      "sqlite": {
+        "journal": {
+          "journal_mode": "wal"
+        },
+        "synchronous": {
+          "synchronous": 2
+        }
+      }
+    },
+    {
+      "count": 300,
+      "run": 1,
+      "first": {
+        "requests": 300,
+        "success": 300,
+        "duplicates": 0,
+        "errors": {},
+        "dispatchMs": 27.4,
+        "elapsedMs": 1264.2,
+        "p50Ms": 686.8,
+        "p95Ms": 1179.1,
+        "maxMs": 1236.7
+      },
+      "retry": {
+        "requests": 300,
+        "success": 300,
+        "duplicates": 300,
+        "errors": {},
+        "dispatchMs": 21.6,
+        "elapsedMs": 813.1,
+        "p50Ms": 303.1,
+        "p95Ms": 747.9,
+        "maxMs": 791.4
+      },
+      "records": 300,
+      "persistedRecords": 300,
+      "sheetsBlocked": true,
+      "rssMiB": 121,
+      "sqlite": {
+        "journal": {
+          "journal_mode": "wal"
+        },
+        "synchronous": {
+          "synchronous": 2
+        }
+      }
+    },
+    {
+      "count": 300,
+      "run": 2,
+      "first": {
+        "requests": 300,
+        "success": 300,
+        "duplicates": 0,
+        "errors": {},
+        "dispatchMs": 25.4,
+        "elapsedMs": 1326.4,
+        "p50Ms": 671.6,
+        "p95Ms": 1239.6,
+        "maxMs": 1301
+      },
+      "retry": {
+        "requests": 300,
+        "success": 300,
+        "duplicates": 300,
+        "errors": {},
+        "dispatchMs": 21.8,
+        "elapsedMs": 610,
+        "p50Ms": 318.9,
+        "p95Ms": 567.9,
+        "maxMs": 588.1
+      },
+      "records": 300,
+      "persistedRecords": 300,
+      "sheetsBlocked": true,
+      "rssMiB": 123,
+      "sqlite": {
+        "journal": {
+          "journal_mode": "wal"
+        },
+        "synchronous": {
+          "synchronous": 2
+        }
+      }
+    },
+    {
+      "count": 300,
+      "run": 3,
+      "first": {
+        "requests": 300,
+        "success": 300,
+        "duplicates": 0,
+        "errors": {},
+        "dispatchMs": 28.3,
+        "elapsedMs": 1290.3,
+        "p50Ms": 657.6,
+        "p95Ms": 1208.4,
+        "maxMs": 1261.9
+      },
+      "retry": {
+        "requests": 300,
+        "success": 300,
+        "duplicates": 300,
+        "errors": {},
+        "dispatchMs": 23.7,
+        "elapsedMs": 676.5,
+        "p50Ms": 348.1,
+        "p95Ms": 626.8,
+        "maxMs": 652.7
+      },
+      "records": 300,
+      "persistedRecords": 300,
+      "sheetsBlocked": true,
+      "rssMiB": 123,
+      "sqlite": {
+        "journal": {
+          "journal_mode": "wal"
+        },
+        "synchronous": {
+          "synchronous": 2
+        }
+      }
+    },
+    {
+      "count": 700,
+      "run": 1,
+      "first": {
+        "requests": 700,
+        "success": 700,
+        "duplicates": 0,
+        "errors": {},
+        "dispatchMs": 70.9,
+        "elapsedMs": 3594.5,
+        "p50Ms": 1821.2,
+        "p95Ms": 3335.3,
+        "maxMs": 3523.6
+      },
+      "retry": {
+        "requests": 700,
+        "success": 700,
+        "duplicates": 700,
+        "errors": {},
+        "dispatchMs": 49.3,
+        "elapsedMs": 2064.9,
+        "p50Ms": 1061.2,
+        "p95Ms": 1924.4,
+        "maxMs": 2015.4
+      },
+      "records": 700,
+      "persistedRecords": 700,
+      "sheetsBlocked": true,
+      "rssMiB": 171,
+      "sqlite": {
+        "journal": {
+          "journal_mode": "wal"
+        },
+        "synchronous": {
+          "synchronous": 2
+        }
+      }
+    },
+    {
+      "count": 700,
+      "run": 2,
+      "first": {
+        "requests": 700,
+        "success": 700,
+        "duplicates": 0,
+        "errors": {},
+        "dispatchMs": 61.1,
+        "elapsedMs": 3415,
+        "p50Ms": 1725.4,
+        "p95Ms": 3199.4,
+        "maxMs": 3353.8
+      },
+      "retry": {
+        "requests": 700,
+        "success": 700,
+        "duplicates": 700,
+        "errors": {},
+        "dispatchMs": 39.4,
+        "elapsedMs": 1945.4,
+        "p50Ms": 953,
+        "p95Ms": 1790.1,
+        "maxMs": 1905.9
+      },
+      "records": 700,
+      "persistedRecords": 700,
+      "sheetsBlocked": true,
+      "rssMiB": 152,
+      "sqlite": {
+        "journal": {
+          "journal_mode": "wal"
+        },
+        "synchronous": {
+          "synchronous": 2
+        }
+      }
+    },
+    {
+      "count": 700,
+      "run": 3,
+      "first": {
+        "requests": 700,
+        "success": 700,
+        "duplicates": 0,
+        "errors": {},
+        "dispatchMs": 41.4,
+        "elapsedMs": 3382,
+        "p50Ms": 1729.7,
+        "p95Ms": 3179.1,
+        "maxMs": 3340.5
+      },
+      "retry": {
+        "requests": 700,
+        "success": 700,
+        "duplicates": 700,
+        "errors": {},
+        "dispatchMs": 61,
+        "elapsedMs": 1971.2,
+        "p50Ms": 969,
+        "p95Ms": 1789.6,
+        "maxMs": 1910.1
+      },
+      "records": 700,
+      "persistedRecords": 700,
+      "sheetsBlocked": true,
+      "rssMiB": 167,
+      "sqlite": {
+        "journal": {
+          "journal_mode": "wal"
+        },
+        "synchronous": {
+          "synchronous": 2
+        }
+      }
+    }
+  ]
+}
