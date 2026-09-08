@@ -11,7 +11,7 @@ BP_PLAYWRIGHT_MODULE=/path/to/playwright BP_CHROMIUM=/path/to/chromium node scri
 BP_BENCH_COUNTS=700 node scripts/bench-web.cjs data/reports/load-lan.json
 ```
 
-Validation run on 2026-09-08: **46 tests passed, 0 failed, 0 skipped**, plus the browser scenario and syntax check.
+Validation run on 2026-09-08: **51 tests passed, 0 failed, 0 skipped**, plus the browser scenario and syntax check.
 
 LAN-specific checks cover:
 
@@ -22,7 +22,9 @@ LAN-specific checks cover:
 - 700 anonymous submissions from one IP plus 700 retries, all accepted exactly once with all 700 peers flagged.
 - Sheets RAW writes into two owned tabs, red formatting on both summary and details, color removal after review, error retries and consistent revision snapshots during concurrent arrivals.
 - Production `web/server.cjs` terminated by SIGKILL and restarted against a temporary on-disk database: receipts, seats, IPs, reviews and flags survive; TA port cannot be reached using the laptop LAN address.
-- Browser: phone and laptop forms, QR projection, lost request before commit, lost response after commit, reload/retry recovery, both IP peers red, TA dialog, closed session, responsive layout and screenshots.
+- Daily/all reports: exact date boundaries, leading-zero MSSV, rejection notes and CSV escaping, unknown/malformed date/status queries rejected, empty-day headers, student access blocked, read-only exports and persistence after reopening the database.
+- Case lists: pending versus rejected filters by day/all dates, reasons and counts, confirmation removes only the relevant case while retaining history.
+- Browser: phone and laptop forms, QR projection, lost request before commit, lost response after commit, reload/retry recovery, both IP peers red, TA dialog, closed session, multi-day history, real daily/all CSV downloads, case filters and review, navigation/reload, responsive layout and screenshots.
 
 Tests also retain coverage of historical Google/rotating-code data paths, Caddy forwarding and SQLite backup. Those modules do not expose student login in the current production entry point. Fixture identity/data is confined to temporary test databases.
 

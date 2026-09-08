@@ -44,10 +44,44 @@ Ghi chú bắt buộc. Kết quả được lưu trên laptop và đồng bộ s
 
 Dùng app để lưu xác nhận, không chỉnh trực tiếp trạng thái/màu trong tab do app đồng bộ. Danh sách chi tiết có ghi chú và thời gian; lịch sử các lần xác nhận lưu trong database và API TA `/api/audit`.
 
-## 4. Kết thúc buổi học
+## 4. Màn riêng cho các trường hợp cần xử lý
+
+Chọn **Cần xử lý** trên thanh điều hướng. Mặc định hiển thị các buổi đã lưu và hai nhóm:
+
+- **Chờ TA đối chiếu:** trùng IP, chưa kết luận điểm danh không hợp lệ.
+- **TA xác nhận không hợp lệ:** TA đã đối chiếu và chọn không xác nhận, có ghi chú lý do.
+
+Chọn **Ngày học** để xem riêng một buổi hoặc **Tất cả các ngày**. Chọn **Trạng thái** để lọc một nhóm hoặc cả hai. Mỗi dòng là một lượt điểm danh của một MSSV trong một buổi; một sinh viên có thể xuất hiện ở nhiều ngày. Bộ đếm hiển thị cả số bản ghi và số MSSV khác nhau.
+
+![Danh sách cần xử lý theo ngày và trạng thái](web-cases.png)
+
+Bấm **Đối chiếu** để xử lý ngay tại đây. Xác nhận có mặt sẽ đưa lượt đó ra khỏi danh sách cần xử lý, nhưng không xóa khỏi lịch sử. Nếu đổi lại quyết định sau đối chiếu, ghi chú mới và lịch sử xử lý được lưu như bình thường.
+
+**Tải danh sách CSV** xuất đúng ngày và trạng thái đang chọn, gồm ghế, IP, số MSSV cùng IP, lý do, ghi chú và thời gian. Ví dụ `BP_Review_2026-09-09_rejected.csv` chỉ gồm lượt TA không xác nhận trong ngày 09/09/2026. CSV không lưu màu; đọc cột trạng thái/lý do để xử lý.
+
+## 5. Tra cứu và xuất từng ngày hoặc toàn bộ
+
+Chọn **Lịch sử & xuất dữ liệu**. Dữ liệu được lưu theo ngày học trong cùng database, không cần đổi hoặc tạo lại database sau mỗi buổi.
+
+![Màn lịch sử và các nút xuất](web-history.png)
+
+1. Chọn ngày đã học trong **Ngày học**, hoặc **Tất cả các ngày**.
+2. Kiểm tra bảng bên dưới: ngày, MSSV/họ tên, ghế, IP, trạng thái và ghi chú TA.
+3. Chọn **Tải bảng tổng CSV** hoặc **Tải chi tiết offline CSV**.
+
+| Báo cáo | Theo một ngày | Toàn bộ |
+| --- | --- | --- |
+| Bảng tổng | MSSV có kết quả ngày đó, một cột ngày; gồm kết quả online đã nhập nếu có | Tất cả sinh viên và cột ngày học đã lưu |
+| Chi tiết offline | Các lượt gửi LAN trong ngày, gồm ghế/IP/trạng thái/ghi chú/giờ gửi | Toàn bộ lượt gửi LAN, mỗi bản ghi có cột ngày |
+
+Ví dụ: `BP_Attendance_2026-09-09.csv`, `BP_Offline_Check_2026-09-09.csv`; xuất toàn bộ có `_all.csv` trong tên. Ngày đã mở nhưng chưa có bản ghi sẽ xuất file chỉ có tiêu đề. Xuất file không đánh vắng các sinh viên chưa gửi.
+
+CSV là dữ liệu tại thời điểm tải. TA đối chiếu bổ sung sau đó thì tải lại để lấy kết quả mới. Các bộ lọc chỉ ảnh hưởng màn đang xem/file tải, không thu hẹp dữ liệu đồng bộ Sheet hoặc xóa các ngày khác. Hai màn này chỉ truy cập trên laptop host, không công khai danh sách sinh viên qua trang điểm danh.
+
+## 6. Kết thúc buổi học
 
 Phiên tự hết hạn hoặc TA bấm **Đóng phiên**. Mỗi ngày chỉ mở một phiên, vì vậy kiểm tra thời gian trước khi mở/đóng. Không xóa database để mở lại phiên.
 
-Xem trạng thái đồng bộ. Nếu Sheet chưa cấu hình/lỗi mạng, bản ghi vẫn ở laptop; tải **bảng tổng CSV** và **chi tiết CSV**. CSV không giữ màu, nhưng vẫn có trạng thái và số MSSV cùng IP. Muốn Excel có màu, xuất `.xlsx` từ Google Sheets sau khi đồng bộ.
+Xem trạng thái đồng bộ. Nếu Sheet chưa cấu hình/lỗi mạng, bản ghi vẫn ở laptop; vào **Lịch sử & xuất dữ liệu** để tải bảng tổng và chi tiết theo phạm vi cần dùng. CSV không giữ màu, nhưng vẫn có trạng thái và số MSSV cùng IP. Muốn Excel có màu, xuất `.xlsx` từ Google Sheets sau khi đồng bộ.
 
 Người host backup rồi dừng app theo [hướng dẫn host](HOST-QUICKSTART.vi.md). Các TA khác có thể xem Sheet theo quyền của lớp; thao tác quản lý app trên laptop host.

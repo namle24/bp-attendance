@@ -32,6 +32,8 @@ App sử dụng scope Sheets, không yêu cầu tài khoản Google của sinh v
 
 Bản ghi `Cần TA xác nhận` được tô nền đỏ cả hàng chi tiết và ô ngày tương ứng ở bảng tổng. Xác nhận qua trang TA làm cập nhật trạng thái và bỏ màu đỏ ở lần đồng bộ kế tiếp. Việc định dạng dùng [Sheets batchUpdate / repeatCell](https://developers.google.com/workspace/sheets/api/samples/formatting), không tạo công thức từ nội dung sinh viên nhập.
 
+Các bộ lọc ngày/trạng thái trong app chỉ dùng để xem và tải CSV. Đồng bộ Sheet luôn lấy đầy đủ dữ liệu các buổi đã lưu.
+
 **Không sửa trực tiếp giá trị/màu trong hai tab này.** App ghi lại phần dữ liệu mình quản lý. Muốn ghi chú riêng hoặc hợp nhất Google Form online thủ công, tạo tab khác. Dùng nút **Đối chiếu** trong app để xác nhận và giữ lịch sử; không nhập xác nhận trực tiếp vào Sheet rồi chờ đồng bộ ngược.
 
 App gắn metadata sở hữu tab theo database. Nếu tên tab trùng nhưng không có metadata đúng, app từ chối ghi đè. Dùng tab được app tạo, file Sheet khác, hoặc khôi phục đúng database sở hữu tab; không xóa dữ liệu có sẵn để vượt kiểm tra.

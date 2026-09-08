@@ -16,6 +16,17 @@ function state(row){
   return row.review==='CONFIRMED'?'CONFIRMED':'RECORDED';
 }
 const labels={RECORDED:'Đã ghi nhận',PENDING:'Cần TA xác nhận',CONFIRMED:'TA đã xác nhận',REJECTED:'TA không xác nhận'};
+function issueReason(row){
+  if(row.status==='REJECTED')return row.review_note;
+  if(row.status==='PENDING')return 'Trùng IP giữa '+row.peers+' MSSV trong buổi học.'+(row.review==='CONFIRMED'?' Có thêm MSSV sau lần đối chiếu trước.':'');
+  return '';
+}
+function detailTable(entries){
+  const time=at=>at?new Date(at+7*3600000).toISOString().replace('T',' ').slice(0,19):'';
+  return [['Ngày','MSSV','Họ tên đã nhập','Vị trí ngồi','IP kết nối','Số MSSV cùng IP','Trạng thái','Ghi chú TA','Người xác nhận','Giờ gửi (VN)','Giờ xác nhận (VN)'],
+    ...entries.map(row=>[row.date,row.student_id,row.name,row.seat,row.ip,row.peers,row.statusLabel,row.review_note,row.reviewed_by,time(row.at),time(row.reviewed_at)])];
+}
+function toCSV(rows){return '\uFEFF'+rows.map(row=>row.map(v=>'"'+BP.safeCell(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');}
 class LanStore extends Store {
   constructor(filename){
     super(filename);
@@ -32,11 +43,46 @@ class LanStore extends Store {
   }
   open(date,minutes,actor,now=Date.now()){return super.open(date,minutes,actor,now,false);}
   sessions(){return super.sessions().map(s=>({...s,count:s.count+this.db.prepare('SELECT COUNT(*) AS n FROM lan_attendance WHERE session_id=?').get(s.id).n}));}
-  entries(sid){
+  entries(sid,date){
+    const where=[],params=[];
+    if(sid){where.push('a.session_id=?');params.push(sid);}
+    if(date){where.push('s.date=?');params.push(date);}
     const rows=this.db.prepare(`WITH peers AS (SELECT session_id,ip,COUNT(*) AS peers FROM lan_attendance GROUP BY session_id,ip)
       SELECT a.*,s.date,p.peers FROM lan_attendance a JOIN sessions s ON s.id=a.session_id
-      JOIN peers p ON p.session_id=a.session_id AND p.ip=a.ip ${sid?'WHERE a.session_id=?':''} ORDER BY a.id`).all(...(sid?[sid]:[]));
+      JOIN peers p ON p.session_id=a.session_id AND p.ip=a.ip ${where.length?'WHERE '+where.join(' AND '):''} ORDER BY a.id`).all(...params);
     return rows.map(({request_hash,...r})=>({...r,status:state(r),statusLabel:labels[state(r)]}));
+  }
+  reportDate(value){
+    if(value===undefined||value==='')return '';
+    if(typeof value!=='string')fail(400,'DATE_INVALID','Chọn một ngày học hoặc tất cả các ngày.');
+    let date;try{date=BP.date(value);}catch(error){fail(400,'DATE_INVALID',error.message);}
+    if(!this.db.prepare('SELECT 1 FROM sessions WHERE date=?').get(date))fail(404,'DATE_UNKNOWN','Chưa có buổi học trong ngày này.');
+    return date;
+  }
+  history(date){return this.entries(undefined,this.reportDate(date));}
+  issues(date,status='ALL'){
+    if(!['ALL','PENDING','REJECTED'].includes(status))fail(400,'STATUS_INVALID','Chọn chờ đối chiếu, không hợp lệ hoặc cả hai trạng thái.');
+    const rows=this.history(date).filter(row=>['PENDING','REJECTED'].includes(row.status));
+    return {counts:{pending:rows.filter(r=>r.status==='PENDING').length,rejected:rows.filter(r=>r.status==='REJECTED').length},
+      entries:rows.filter(row=>status==='ALL'||row.status===status).map(row=>({...row,reason:issueReason(row)}))};
+  }
+  report(kind,date,status='ALL'){
+    date=this.reportDate(date);let rows;
+    if(kind==='summary'){
+      rows=this.matrix();
+      if(date){
+        const col=rows[0].indexOf(date);
+        // A daily report contains only results belonging to that date. Students
+        // recorded only on other days must not leak into this day's export.
+        rows=[rows[0],...rows.slice(1).filter(row=>row[col]!=='')].map(row=>[...row.slice(0,3),row[col]]);
+      }
+    }else if(kind==='detail')rows=detailTable(this.entries(undefined,date));
+    else if(kind==='issues'){
+      const entries=this.issues(date,status).entries;rows=detailTable(entries);
+      rows[0].push('Lý do cần xử lý');entries.forEach((row,i)=>rows[i+1].push(row.reason));
+    }else fail(400,'REPORT_INVALID','Loại báo cáo không hợp lệ.');
+    const prefix={summary:'BP_Attendance',detail:'BP_Offline_Check',issues:'BP_Review'}[kind];
+    return {csv:toCSV(rows),filename:prefix+'_'+(date||'all')+(kind==='issues'?'_'+status.toLowerCase():'')+'.csv'};
   }
   receipt(row,duplicate){
     const peers=this.db.prepare('SELECT COUNT(*) AS n FROM lan_attendance WHERE session_id=? AND ip=?').get(row.session_id,row.ip).n;
@@ -87,16 +133,13 @@ class LanStore extends Store {
     const ordered=[...students.values()].sort((a,b)=>a.id.localeCompare(b.id,'en'));
     const values=[['MSSV','Họ tên','Email trường',...dates],...ordered.map(s=>[s.id,s.name,s.email,...dates.map(d=>s.days.get(d)||'')])];
     const positions=new Map(ordered.map((s,i)=>[s.id,i+1]));
-    const detail=[['Ngày','MSSV','Họ tên đã nhập','Vị trí ngồi','IP kết nối','Số MSSV cùng IP','Trạng thái','Ghi chú TA','Người xác nhận','Giờ gửi (VN)','Giờ xác nhận (VN)']];
+    const detail=detailTable(entries);
     const red=[],detailRed=[];
-    const time=at=>at?new Date(at+7*3600000).toISOString().replace('T',' ').slice(0,19):'';
-    for(const row of entries){
-      detail.push([row.date,row.student_id,row.name,row.seat,row.ip,row.peers,row.statusLabel,row.review_note,row.reviewed_by,time(row.at),time(row.reviewed_at)]);
-      if(row.status==='PENDING'){red.push({row:positions.get(row.student_id),col:3+dates.indexOf(row.date)});detailRed.push(detail.length-1);}
-    }
+    entries.forEach((row,i)=>{if(row.status==='PENDING'){red.push({row:positions.get(row.student_id),col:3+dates.indexOf(row.date)});detailRed.push(i+1);}});
     return {values,detail,red,detailRed};
   }
   matrix(){return this.snapshot().values;}
-  detailCSV(){return '\uFEFF'+this.snapshot().detail.map(row=>row.map(v=>'"'+BP.safeCell(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');}
+  csv(date){return this.report('summary',date).csv;}
+  detailCSV(date){return this.report('detail',date).csv;}
 }
 module.exports={LanStore,canonicalIP,state};

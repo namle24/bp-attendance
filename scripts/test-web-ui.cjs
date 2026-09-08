@@ -1,4 +1,7 @@
-const assert=require('node:assert/strict'),path=require('node:path');
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const {randomBytes}=require('node:crypto');
+const {today}=require('../web/security.cjs');
+const {parse}=require('csv-parse/sync');
 const {startFixture}=require('../tests/helpers/lan-browser-fixture.cjs');
 const {chromium}=require(process.env.BP_PLAYWRIGHT_MODULE||'playwright');
 (async()=>{
@@ -30,11 +33,35 @@ const {chromium}=require(process.env.BP_PLAYWRIGHT_MODULE||'playwright');
     await admin.screenshot({path:'docs/web-admin.png',fullPage:true});
     await admin.locator('#entries button').first().click();await admin.locator('#review-note').fill('Đã đối chiếu thẻ sinh viên và người ngồi ghế B-12.');
     await admin.screenshot({path:'docs/web-review.png',fullPage:true});await admin.locator('#save-review').click();await admin.waitForFunction(()=>document.querySelectorAll('#entries tr.flagged').length===1);
-    assert.equal(fixture.store.entries()[0].status,'CONFIRMED');await admin.locator('#close').click();await admin.waitForFunction(()=>!document.querySelector('#qr svg'));
+    assert.equal(fixture.store.entries()[0].status,'CONFIRMED');
+    const currentDate=fixture.store.sessions()[0].date,previousTime=Date.now()-7*86400000,previousDate=today(previousTime);
+    const previous=fixture.store.open(previousDate,8,'TA kiểm thử',previousTime);
+    for(const id of ['001','099'])fixture.store.submit({sessionId:previous.id,studentId:id,name:id==='001'?'Nguyễn An':'Lê Minh',seat:id==='001'?'A-02':'A-03',requestId:randomBytes(16).toString('hex')},'127.0.0.1',previousTime);
+    const previousRejected=fixture.store.entries(previous.id).find(e=>e.student_id==='099');fixture.store.reviewEntry(previousRejected.id,'REJECTED','Không có mặt tại ghế A-03 khi đối chiếu.',2,'TA kiểm thử',previousTime+1000);
+    async function navigate(name){await admin.locator('.screen-nav a[href="#'+name+'"]').click();await admin.waitForFunction(()=>!busy);}
+    async function download(id){const pending=admin.waitForEvent('download');await admin.locator('#'+id).click();const file=await pending;return {name:file.suggestedFilename(),rows:parse(fs.readFileSync(await file.path(),'utf8'),{bom:true})};}
+    await navigate('issues');await admin.waitForFunction(()=>document.querySelectorAll('#issues-entries tr[data-entry-id]').length===3);
+    assert.match(await admin.locator('#issues-pending').textContent(),/2 chờ đối chiếu/);assert.match(await admin.locator('#issues-rejected').textContent(),/1 không hợp lệ/);
+    await admin.screenshot({path:'docs/web-cases.png',fullPage:true});
+    await admin.locator('#issues-status').selectOption('REJECTED');await admin.waitForFunction(()=>document.querySelectorAll('#issues-entries tr[data-entry-id]').length===1&&!busy);
+    const cases=await download('issues-export');assert.match(cases.name,/all_rejected\.csv$/);assert.equal(cases.rows.length,2);assert.equal(cases.rows[1][1],'099');
+    await admin.locator('#issues-date').selectOption(currentDate);await admin.waitForFunction(()=>!busy);assert.match(await admin.locator('#issues-entries').textContent(),/Không có bản ghi phù hợp/);
+    await admin.locator('#issues-status').selectOption('ALL');await admin.waitForFunction(()=>document.querySelectorAll('#issues-entries tr[data-entry-id]').length===1&&!busy);
+    await admin.locator('#issues-entries button').click();await admin.locator('#review-note').fill('Không có mặt tại ghế B-13 khi đối chiếu.');await admin.locator('#review-result').selectOption('REJECTED');await admin.locator('#save-review').click();
+    await admin.waitForFunction(()=>document.querySelector('#issues-entries tr.rejected'));
+    await navigate('history');await admin.waitForFunction(()=>document.querySelectorAll('#history-entries tr[data-entry-id]').length===4&&!busy);
+    await admin.screenshot({path:'docs/web-history.png',fullPage:true});
+    const all=await download('history-summary-export');assert.deepEqual(all.rows[0].slice(3),[previousDate,currentDate]);assert.equal(all.rows.length,4);assert.match(all.name,/all\.csv$/);
+    await admin.locator('#history-date').selectOption(currentDate);await admin.waitForFunction(()=>document.querySelectorAll('#history-entries tr[data-entry-id]').length===2&&!busy);
+    const day=await download('history-summary-export');assert.equal(day.name,'BP_Attendance_'+currentDate+'.csv');assert.deepEqual(day.rows[0].slice(3),[currentDate]);assert.deepEqual(day.rows.slice(1).map(r=>r[0]),['001','002']);
+    const detail=await download('history-detail-export');assert.equal(detail.rows.length,3);assert.ok(detail.rows.slice(1).every(r=>r[0]===currentDate));assert.match(detail.rows[2][7],/ghế B-13/);
+    await admin.locator('#history-date').selectOption(previousDate);await admin.waitForFunction(()=>!busy);assert.match(await admin.locator('#history-entries').textContent(),/099/);assert.doesNotMatch(await admin.locator('#history-entries').textContent(),/002/);
+    await admin.reload();await admin.waitForFunction(()=>!busy);assert.equal(await admin.locator('#screen-history').isVisible(),true);assert.equal(await admin.locator('#screen-attendance').isVisible(),false);
+    await navigate('attendance');await admin.locator('#close').click();await admin.waitForFunction(()=>!document.querySelector('#qr svg'));
     const closed=await browser.newPage();await closed.goto(fixture.origin);await closed.waitForFunction(()=>document.getElementById('notice').textContent.includes('Chưa mở điểm danh'));
     assert.equal(await closed.locator('#attendance-form').isVisible(),false);
     assert.deepEqual(errors,[]);assert.ok(requests.every(url=>url.startsWith(fixture.origin)||url.startsWith(fixture.adminOrigin)));
     assert.doesNotMatch(await admin.locator('body').innerText(),/demo|minh họa|dữ liệu giả/i);
-    console.log('LAN UI passed: three-field mobile/desktop form, QR projection, network loss before/after commit, reload recovery, both IP peers red, TA review, closed window, local assets and screenshots.');
+    console.log('LAN UI passed: three-field mobile/desktop form, QR projection, network loss before/after commit, reload recovery, both IP peers red, TA review, multi-day history, daily/all CSV downloads, case status/date filters, case review, closed window, local assets and screenshots.');
   }finally{if(browser)await browser.close();await fixture.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

@@ -14,6 +14,6 @@ Chuẩn bị `playwright` hoặc `playwright-core` và Chromium; đặt đườn
 BP_PLAYWRIGHT_MODULE=/path/to/playwright BP_CHROMIUM=/path/to/chromium node scripts/test-web-ui.cjs
 ```
 
-Script dùng HTTP localhost trên hai cổng ngẫu nhiên và database tạm, tự dọn sau khi xong. Các ảnh hiện tại: `web-projector.png`, `web-admin.png`, `web-student-ready.png`, `web-student.png`, `web-student-desktop.png`, `web-review.png`.
+Script dùng HTTP localhost trên hai cổng ngẫu nhiên và database tạm, tự dọn sau khi xong. Các ảnh hiện tại: `web-projector.png`, `web-admin.png`, `web-student-ready.png`, `web-student.png`, `web-student-desktop.png`, `web-review.png`, `web-history.png`, `web-cases.png`.
 
 Không dùng QR/URL trong ảnh cho lớp: đó là địa chỉ kiểm thử localhost. App tại trường hiển thị IP Wi-Fi thật của laptop. Ảnh kiểm thử không chứng minh kết nối USTH hoặc đồng bộ Sheet thật. Database lớp không được điền dữ liệu thử.

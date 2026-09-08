@@ -53,6 +53,20 @@ App chọn IPv4 của card Wi-Fi tại mỗi lần khởi động; mặc định
 
 Ảnh chụp qua kiểm thử trình duyệt với dữ liệu hư cấu trong database tạm, không đưa vào database lớp. IP localhost/cổng ngẫu nhiên trong ảnh là địa chỉ của kiểm thử; sinh viên thật dùng IP Wi-Fi được máy host in ra.
 
+## Lịch sử theo ngày và danh sách cần xử lý
+
+Trang TA có ba màn: **Điểm danh tại lớp**, **Lịch sử & xuất dữ liệu**, **Cần xử lý**.
+
+- **Lịch sử & xuất dữ liệu:** chọn một ngày hoặc **Tất cả các ngày**, xem các lượt gửi offline và tải bảng tổng/chi tiết CSV. Bảng tổng theo ngày chỉ có một cột ngày và các MSSV có kết quả ngày đó; bản toàn bộ giữ đủ cột của các buổi. Tên file chứa ngày hoặc `all`.
+- **Cần xử lý:** danh sách các bản ghi chờ đối chiếu hoặc TA không xác nhận. Lọc theo ngày và trạng thái, xem ghế/IP/lý do, lưu đối chiếu trực tiếp hoặc tải danh sách CSV theo đúng bộ lọc.
+- Dữ liệu các ngày cùng lưu trong SQLite trên laptop, giữ nguyên khi khởi động lại. Xem/xuất không sửa dữ liệu gốc hoặc phạm vi đồng bộ Sheet. Bản ghi đã được xác nhận có mặt rời danh sách cần xử lý và vẫn có trong lịch sử.
+
+![Lịch sử và xuất dữ liệu theo ngày hoặc toàn bộ](docs/web-history.png)
+
+![Danh sách chờ đối chiếu và các lượt TA không xác nhận](docs/web-cases.png)
+
+CSV mở được bằng Excel nhưng không giữ màu; cột trạng thái, lý do và ghi chú vẫn được xuất đầy đủ trong báo cáo chi tiết/danh sách cần xử lý. Bảng tổng có cả kết quả online đã nhập; màn lịch sử và CSV chi tiết hiển thị lượt gửi offline của luồng LAN.
+
 ## Kết quả và xác nhận
 
 | Kết quả tại một ngày học | Ý nghĩa |
