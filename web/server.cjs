@@ -2,12 +2,13 @@ const {loadLanConfig}=require('./lan-config.cjs');
 const {LanStore}=require('./lan-store.cjs');
 const {createStudentApp,createAdminApp}=require('./lan-app.cjs');
 const {SheetsWriter,SyncWorker}=require('./sheets.cjs');
+const {listen:listenHTTP}=require('./listener.cjs');
 async function main(){
   const config=loadLanConfig(),store=new LanStore(config.database);
   const worker=new SyncWorker(store,config.spreadsheetId?new SheetsWriter(config,store):null);
   const servers=[];let timer,stopping=false;
   function listen(app,port,host){return new Promise((resolve,reject)=>{
-    const server=app.listen(port,host);servers.push(server);
+    const server=listenHTTP(app,port,host);servers.push(server);
     server.headersTimeout=15000;server.requestTimeout=20000;server.keepAliveTimeout=5000;server.setTimeout(30000,socket=>socket.destroy());
     server.once('error',reject);server.once('listening',()=>{server.on('error',error=>{console.error('Lỗi server: '+error.code);void stop(1);});resolve(server);});
   });}

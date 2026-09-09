@@ -6,6 +6,7 @@ const {createStudentApp,createAdminApp}=require('../web/lan-app.cjs');
 const {loadLanConfig}=require('../web/lan-config.cjs');
 const {SheetsWriter,SyncWorker}=require('../web/sheets.cjs');
 const {ranges}=require('../web/security.cjs');
+const {listen}=require('../web/listener.cjs');
 const now=Date.parse('2026-09-09T06:00:00Z');
 const payload=(sid,id='001')=>({sessionId:sid,studentId:id,name:'Nguyễn An',seat:'B-12',requestId:randomBytes(16).toString('hex')});
 function setup(){const store=new LanStore(':memory:');const session=store.open('2026-09-09',8,'TA',now);return {store,session};}
@@ -69,7 +70,7 @@ test('LAN config selects current Wi-Fi subnet, rejects public/loopback and runs 
 async function fixture(){
   const {store,session}=setup(),worker=new SyncWorker(store,null);
   const config={origin:'',adminOrigins:[],campus:ranges(['127.0.0.1/32']),campusCidrs:['127.0.0.1/32'],network:'test'};
-  const start=app=>new Promise(resolve=>{const s=app.listen(0,'127.0.0.1',()=>resolve(s));});
+  const start=app=>new Promise(resolve=>{const s=listen(app,0,'127.0.0.1',()=>resolve(s));});
   const student=await start(createStudentApp(config,store,{clock:()=>now})),admin=await start(createAdminApp(config,store,worker,{clock:()=>now}));
   config.origin='http://127.0.0.1:'+student.address().port;config.adminOrigins=['http://127.0.0.1:'+admin.address().port];
   return {store,session,config,async close(){await Promise.all([student,admin].map(s=>new Promise(resolve=>s.close(resolve))));store.close();}};

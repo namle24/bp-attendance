@@ -22,7 +22,7 @@ async function serverProcess(){
   const pendingSheets=new Promise(resolve=>{releaseSheets=resolve;});
   const worker=new SyncWorker(store,{write:()=>pendingSheets});
   const app=createStudentApp(config,store);
-  const server=await new Promise(resolve=>{const s=app.listen(0,'127.0.0.1',()=>resolve(s));});
+  const server=await new Promise(resolve=>{const s=require('../web/listener.cjs').listen(app,0,'127.0.0.1',()=>resolve(s));});
   config.origin='http://127.0.0.1:'+server.address().port;
   process.on('message',async message=>{
     if(message==='start'){
