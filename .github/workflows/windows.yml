@@ -22,5 +22,10 @@ jobs:
         run: npm run laptop:setup
       - name: Install command must work without systemd
         run: npm run host:install
+      - name: Three 700-student bursts with a separate server and disk database
+        env:
+          BP_BENCH_COUNTS: '700'
+        run: node scripts/bench-web.cjs
       - name: Windows startup, persistence, attendance and exports
+        if: always()
         run: node --test tests/portable-host.test.cjs tests/lan.test.cjs tests/lan-reports.test.cjs tests/lan-restart.test.cjs
