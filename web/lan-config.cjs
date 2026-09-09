@@ -11,7 +11,10 @@ function networkAdapters(interfaces,platform=process.platform,knownWifi){
     wifi:wifi.has(name)||(platform==='linux'?fs.existsSync('/sys/class/net/'+name+'/wireless'):platform==='win32'&&/^(?:wi[\s\u2010-\u2015-]?fi|wlan)(?:\s+\d+)?$/iu.test(name))})));
 }
 function chooseNetwork(env=process.env,interfaces,platform=process.platform,knownWifi){
-  const addresses=networkAdapters(interfaces,platform,knownWifi);
+  // An explicit/current adapter or an unambiguous conventional Wi-Fi name needs
+  // no slow PowerShell/networksetup call. Query hardware only for unknown names.
+  let addresses=networkAdapters(interfaces||os.networkInterfaces(),platform,knownWifi||[]);
+  if(!env.LAN_INTERFACE&&!interfaces&&!addresses.some(a=>a.wifi))addresses=networkAdapters(undefined,platform,knownWifi);
   const selected=env.LAN_INTERFACE?addresses.filter(a=>a.name===env.LAN_INTERFACE):addresses.filter(a=>a.wifi);
   if(selected.length!==1){const error=Error('Chạy npm start để chọn mạng trên trình duyệt. Nâng cao: npm run network:list và LAN_INTERFACE trong .env.');error.code='NETWORK_CHOICE_REQUIRED';throw error;}
   const network=selected[0];
