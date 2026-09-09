@@ -1,6 +1,8 @@
 # Chạy BP Attendance trên laptop
 
-Cần Node.js 24+, npm, Git và Python 3. Dịch vụ dưới đây dành cho Linux/systemd, chạy theo user hiện tại và không tự bật khi đăng nhập.
+**Windows:** dùng [hướng dẫn CMD/PowerShell](WINDOWS.vi.md). `host:start` chạy trực tiếp trong terminal, Ctrl+C để dừng; không dùng service systemd.
+
+Các lệnh dịch vụ/backup dưới đây dành cho **Linux**: cần Node.js 24+, npm, Git và Python 3. Service chạy theo user hiện tại, không tự bật khi đăng nhập.
 
 ## Cài lần đầu hoặc cập nhật từ bản Google/QR cũ
 
@@ -35,7 +37,7 @@ npm run host:start
 
 Mở **http://127.0.0.1:4181** trên laptop host. Sinh viên dùng IP Wi-Fi được in ra, cổng 4180; không dùng `localhost` trên điện thoại.
 
-App tự tìm một card Wi-Fi có IPv4 và chỉ nghe tại địa chỉ đó. Mạng mặc định là subnet hiện tại của card. Nếu không chọn được một card duy nhất, xem `ip -br addr` và điền `LAN_INTERFACE` trong `.env`. Không dùng card Docker/VPN để phục vụ lớp.
+App tự tìm một card Wi-Fi có IPv4 và chỉ nghe tại địa chỉ đó. Mạng mặc định là subnet hiện tại của card. Nếu không chọn được một card duy nhất, chạy `npm run network:list` và điền `LAN_INTERFACE` trong `.env`. Không dùng card Docker/VPN để phục vụ lớp.
 
 Nếu sinh viên ở subnet khác, cần IT xác nhận routing và dải IP trước khi điền thêm `CAMPUS_CIDRS`. Không mở `/0`, không đưa proxy/VPN Internet vào đường truy cập này. Port TA 4181 chỉ nghe localhost.
 

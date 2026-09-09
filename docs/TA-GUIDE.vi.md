@@ -2,7 +2,7 @@
 
 ## 1. Mở phiên trên laptop host
 
-Người host bật dịch vụ. Trên chính laptop đó, mở **http://127.0.0.1:4181**. Trang TA không mở từ điện thoại/laptop khác qua Wi-Fi.
+Người host bật app bằng `npm run host:start`. Trên Windows giữ cửa sổ terminal mở; xem [hướng dẫn Windows](WINDOWS.vi.md). Trên chính laptop đó, mở **http://127.0.0.1:4181**. Trang TA không mở từ điện thoại/laptop khác qua Wi-Fi.
 
 Kiểm tra đúng ngày, thống nhất cách ghi ghế (ví dụ hàng B, ghế 12), chọn thời gian rồi bấm **Mở QR điểm danh**. Mặc định 8 phút. App chuyển sang màn chiếu, có QR và URL cho sinh viên dùng máy tính.
 

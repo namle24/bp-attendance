@@ -2,13 +2,14 @@
 // This does not edit CAMPUS_CIDRS or open an attendance session.
 const fs=require('node:fs');
 const path=require('node:path');
-const os=require('node:os');
+const {networkAdapters,chooseNetwork}=require('../web/lan-config.cjs');
+const {readEnv}=require('./host-check.cjs');
 const {spawn}=require('node:child_process');
 const root=path.resolve(__dirname,'..');
 const requested=process.argv[2];
-const candidates=Object.entries(os.networkInterfaces()).flatMap(([name,addresses])=>
-  addresses.filter(a=>a.family==='IPv4'&&!a.internal).map(a=>({name,address:a.address,wifi:fs.existsSync('/sys/class/net/'+name+'/wireless')})));
-const wifi=candidates.filter(c=>c.wifi),selected=requested?candidates.find(c=>c.address===requested):(wifi.length===1?wifi[0]:null);
+const candidates=networkAdapters();
+let selected;
+try{selected=requested?candidates.find(c=>c.address===requested):chooseNetwork({...readEnv(path.join(root,'.env')),...process.env});}catch{}
 if(!selected){
   console.error('Chưa chọn được một IP Wi-Fi. Kết nối Wi-Fi hoặc chạy npm run campus:test -- IP_WIFI_CUA_LAPTOP.');
   for(const c of candidates)console.log(c.name+': '+c.address+(c.wifi?' (Wi-Fi)':''));
@@ -31,7 +32,9 @@ if(!selected){
         const file=path.join(reportDir,'wifi-test.html');
         fs.writeFileSync(file,'<!doctype html><html lang="vi"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>BP kiểm tra Wi-Fi</title><style>body{font:18px system-ui;text-align:center;margin:40px;color:#293896}svg{width:min(75vw,450px);display:block;margin:20px auto}a{overflow-wrap:anywhere}</style><h1>Kiểm tra kết nối tới laptop</h1>'+svg+'<a href="'+info.url+'">'+info.url+'</a><p>Điện thoại kết nối cùng USTH_CONNECT rồi quét QR.</p><p>Chỉ kiểm tra mạng, chưa ghi nhận điểm danh. URL tự đóng sau 5 phút.</p></html>',{mode:0o600});
         console.log('Mở file này trên laptop để điện thoại quét QR: '+file);
-        if(!process.env.BP_NO_OPEN)spawn('xdg-open',[file],{stdio:'ignore'}).on('error',()=>{});
+        if(!process.env.BP_NO_OPEN&&process.platform==='linux')spawn('xdg-open',[file],{stdio:'ignore'}).on('error',()=>{});
+        else if(!process.env.BP_NO_OPEN&&process.platform==='darwin')spawn('open',[file],{stdio:'ignore'}).on('error',()=>{});
+        else if(process.platform==='win32')console.log('Windows: mở file wifi-test.html ở đường dẫn trên bằng trình duyệt để chiếu QR.');
       }catch(error){console.error('Không tạo được trang QR kiểm tra: '+error.message);}
     }
   });

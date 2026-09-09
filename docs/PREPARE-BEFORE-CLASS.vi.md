@@ -2,6 +2,8 @@
 
 Luồng hiện tại là **LAN + nhập MSSV, họ tên, ghế + đối chiếu trùng IP**. Không cần cấu hình tài khoản Google cho sinh viên hoặc QR động.
 
+**Windows:** dùng [hướng dẫn riêng](WINDOWS.vi.md); các lệnh gán biến `BP_DATABASE=...` bên dưới là cú pháp bash/Linux. Trên Windows dùng CMD/PowerShell theo hướng dẫn riêng và Ctrl+C để dừng app.
+
 ## Ở nhà
 
 ```bash

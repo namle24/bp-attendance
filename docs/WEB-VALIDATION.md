@@ -11,7 +11,7 @@ BP_PLAYWRIGHT_MODULE=/path/to/playwright BP_CHROMIUM=/path/to/chromium node scri
 BP_BENCH_COUNTS=700 node scripts/bench-web.cjs data/reports/load-lan.json
 ```
 
-Validation run on 2026-09-08: **51 tests passed, 0 failed, 0 skipped**, plus the browser scenario and syntax check.
+Validation run on Linux on 2026-09-09: **56 tests passed, 0 failed, 0 skipped**, plus the browser scenario and syntax check.
 
 LAN-specific checks cover:
 
@@ -31,3 +31,8 @@ Tests also retain coverage of historical Google/rotating-code data paths, Caddy 
 The load report records three successful bursts of 700 requests plus retries with disk WAL/FULL while Sheets is held pending. See [metrics and exclusions](LOAD-TEST.vi.md).
 
 Not yet verified: actual USTH device-to-laptop routing, observed IPs for different student devices, Wi-Fi under classroom load, and live Sheets credentials/write/format permissions. API request tests do not replace a live Google Sheet check. HTTP transport is unencrypted. No test proves attendance identity from IP.
+
+
+Windows startup coverage is in `tests/portable-host.test.cjs`: foreground dispatch without systemd, `.env` loading before server start, paths containing spaces/backslash-n, Wi-Fi/WLAN selection with explicit-interface fallback, and two-port readiness. The foreground server is exercised against a temporary database.
+
+[Windows CI](https://github.com/namle24/bp-attendance/actions/workflows/windows.yml) runs actual `laptop:setup` and `host:install` on `windows-latest`, then portable-startup, LAN, reports and restart tests. This validates the Windows runtime; it cannot validate a teacher's Wi-Fi adapter name, firewall or USTH routing. Native Wi-Fi selection uses common adapter names, with `network:list` / `LAN_INTERFACE` for renamed or ambiguous adapters.

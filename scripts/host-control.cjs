@@ -6,8 +6,9 @@ const root=path.resolve(__dirname,'..'),units=['bp-attendance-laptop.service','b
 function systemctl(args,quiet=false){return spawnSync('systemctl',['--user',...args],{cwd:root,stdio:quiet?'pipe':'inherit',encoding:'utf8',timeout:45000});}
 async function main(){
   const operation=process.argv[2];
+  if(process.platform!=='linux')return require('./portable-host.cjs').portableHost(operation);
   if(operation==='install'){
-    const result=systemctl(['link',...units.map(name=>path.join(root,'data/systemd',name))]);if(result.status!==0)throw Error('Không liên kết được service.');
+    const result=systemctl(['link',...units.map(name=>path.join(root,'data/systemd',name))]);if(result.status!==0)throw Error(result.error?.code==='ENOENT'?'Không có systemctl trên máy này. Chạy npm start và giữ terminal mở.':'Không liên kết được service systemd của Linux. Chạy npm start để chạy trực tiếp.');
     if(systemctl(['daemon-reload']).status!==0)throw Error('Không tải lại được service.');
     console.log('Đã cài service. Chưa bật app hoặc tự chạy khi đăng nhập.');
   }else if(operation==='start'){

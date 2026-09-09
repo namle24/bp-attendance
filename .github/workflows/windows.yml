@@ -1,0 +1,26 @@
+name: Windows startup and LAN attendance
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run check
+      - name: Prepare laptop on Windows
+        run: npm run laptop:setup
+      - name: Install command must work without systemd
+        run: npm run host:install
+      - name: Windows startup, persistence, attendance and exports
+        run: node --test tests/portable-host.test.cjs tests/lan.test.cjs tests/lan-reports.test.cjs tests/lan-restart.test.cjs

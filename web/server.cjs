@@ -28,4 +28,5 @@ async function main(){
     process.on('SIGINT',()=>void stop());process.on('SIGTERM',()=>void stop());
   }catch(error){await stop(1);throw error;}
 }
-main().catch(error=>{console.error(error.message);process.exitCode=1;});
+if(require.main===module)main().catch(error=>{console.error(error.message);process.exitCode=1;});
+module.exports={main};

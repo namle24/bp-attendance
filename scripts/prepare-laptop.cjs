@@ -3,7 +3,12 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const spec=value=>value.replace(/%/g,'%%');
 function quoted(value){return '"'+spec(value).replace(/\$/g,'$$').replace(/\\/g,'\\\\').replace(/"/g,'\\"')+'"';}
-if(process.platform!=='linux')throw Error('Mẫu dịch vụ này dành cho Linux/systemd. Dùng npm start trên hệ điều hành khác.');
+function prepareService(platform=process.platform,log=console.log){
+if(platform!=='linux'){
+  log('Cấu hình laptop đã sẵn sàng. Windows/macOS chạy trực tiếp: npm run host:start.');
+  log('Giữ terminal mở; Ctrl+C để dừng. Không cần cài systemd.');
+  return;
+}
 const dir=path.join(root,'data/systemd');fs.mkdirSync(dir,{recursive:true,mode:0o700});
 fs.writeFileSync(path.join(dir,'bp-attendance-laptop.service'),`[Unit]
 Description=BP attendance LAN and local TA console
@@ -30,3 +35,6 @@ Wants=bp-attendance-laptop.service
 After=bp-attendance-laptop.service
 `,{mode:0o600});
 console.log('Đã tạo service LAN và trang TA trên localhost. Cài bằng npm run host:install.');
+}
+if(require.main===module)prepareService();
+module.exports={prepareService};

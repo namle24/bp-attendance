@@ -12,7 +12,7 @@ Kết quả được lưu vào SQLite trước khi trả thông báo thành côn
 
 ## Chạy trên laptop
 
-Cần Node.js 24+, Git, Python 3. Dịch vụ giữ máy thức và tự khởi động lại dùng Linux/systemd.
+Cần Node.js 24+ và Git; Python 3 dùng cho script backup. **Windows: xem [hướng dẫn chạy trên CMD/PowerShell](docs/WINDOWS.vi.md)**. Windows chạy trực tiếp trong terminal; dịch vụ giữ máy thức và tự khởi động lại dành cho Linux/systemd.
 
 ```bash
 git clone https://github.com/namle24/bp-attendance.git
@@ -26,10 +26,10 @@ npm run host:start
 
 - **TA:** mở `http://127.0.0.1:4181` trên laptop host, bấm **Mở QR điểm danh**.
 - **Sinh viên:** mở URL IP Wi-Fi mà lệnh in ra, dạng `http://IP_WIFI_LAPTOP:4180`, hoặc quét QR đang chiếu.
-- **Dừng:** `npm run host:stop`. **Xem trạng thái:** `npm run host:status`.
+- **Dừng:** Linux dùng `npm run host:stop`; Windows bấm **Ctrl+C trong cửa sổ đang chạy app**. **Xem trạng thái:** `npm run host:status`.
 - Có thể chạy foreground bằng `npm start`; giữ terminal mở, cắm sạc và tránh sleep.
 
-App chọn IPv4 của card Wi-Fi tại mỗi lần khởi động; mặc định chỉ cho IP thuộc subnet đó truy cập. Nếu nhiều card mạng, điền `LAN_INTERFACE` trong `.env`. Khi đổi Wi-Fi/IP, dừng rồi bật lại app và dùng QR mới. Không tự mở phiên khi bật server.
+App chọn IPv4 của card Wi-Fi tại mỗi lần khởi động; mặc định chỉ cho IP thuộc subnet đó truy cập. Nếu chưa chọn đúng một card, chạy `npm run network:list` rồi điền `LAN_INTERFACE` trong `.env`. Windows nhận diện tên Wi-Fi/WLAN thông dụng; card đổi tên cần chọn thủ công. Khi đổi Wi-Fi/IP, dừng rồi bật lại app và dùng QR mới. Không tự mở phiên khi bật server.
 
 **Tại trường vẫn phải thử điện thoại thật.** Cùng Wi-Fi chưa bảo đảm thiết bị được kết nối tới laptop: client isolation, VLAN hoặc firewall có thể chặn. App không đọc được SSID hoặc tài khoản captive portal của sinh viên. Bản LAN dùng HTTP, dữ liệu truyền chưa mã hóa; cần sử dụng theo yêu cầu mạng của trường. Trang quản lý chỉ nghe trên localhost, không cung cấp qua Wi-Fi.
 
@@ -39,6 +39,7 @@ App chọn IPv4 của card Wi-Fi tại mỗi lần khởi động; mặc định
 | --- | --- |
 | Chuẩn bị ở nhà và thử tại trường | [Chuẩn bị trước buổi học](docs/PREPARE-BEFORE-CLASS.vi.md) |
 | Mở QR, xem bản ghi đỏ, xác nhận | [Hướng dẫn TA có ảnh](docs/TA-GUIDE.vi.md) |
+| Máy Windows của giảng viên/TA | [Windows: sửa lỗi service và chạy app](docs/WINDOWS.vi.md) |
 | Cài đặt, chạy, dừng, backup | [Hướng dẫn máy host](docs/HOST-QUICKSTART.vi.md) |
 | Bật Google Sheets và hiểu các cột | [Cấu hình Sheets](docs/WEB-SETUP.vi.md) |
 | Xử lý mạng trường | [Wi-Fi / LAN](docs/LAPTOP-LAN.vi.md) |

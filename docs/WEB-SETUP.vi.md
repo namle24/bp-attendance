@@ -14,6 +14,8 @@
 
 Luồng LAN không đọc `PUBLIC_ORIGIN`, `BIND_HOST`, `GOOGLE_CLIENT_ID`, `GOOGLE_HOSTED_DOMAINS`, `ADMIN_EMAILS`, `TRUSTED_PROXY_CIDRS` hoặc `QR_SECRET` cũ. Không dùng Caddy trong đường gửi điểm danh mới: app lấy IP từ socket trực tiếp và bỏ qua header IP.
 
+Trên Windows, dùng `/` trong đường dẫn `.env`, ví dụ `C:/Users/ha/bp-attendance/data/secrets/google-service-account.json`. Tìm tên card bằng `npm run network:list`. Xem [hướng dẫn Windows](WINDOWS.vi.md).
+
 ## Bật Sheets
 
 1. Trong Google Cloud của lớp, bật Google Sheets API và tạo service account được phép dùng cho công việc này.

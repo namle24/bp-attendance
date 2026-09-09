@@ -18,7 +18,8 @@
     "host:start": "node scripts/host-control.cjs start",
     "host:stop": "node scripts/host-control.cjs stop",
     "host:status": "node scripts/host-control.cjs status",
-    "campus:test": "node scripts/campus-test.cjs"
+    "campus:test": "node scripts/campus-test.cjs",
+    "network:list": "node scripts/network-list.cjs"
   },
   "engines": {
     "node": ">=24"
