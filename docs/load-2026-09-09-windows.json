@@ -1,0 +1,128 @@
+{
+  "measuredAt": "2026-09-09T05:38:41Z",
+  "platform": "Windows Server 2025, GitHub Actions windows-2025-vs2026",
+  "node": "v24.19.0",
+  "commit": "a6e902e8885994f4eba8054ec2cdaf244b926532",
+  "source": "https://github.com/namle24/bp-attendance/actions/runs/34315646676",
+  "method": "Separate server/load processes; 700 simultaneous HTTP requests, then 700 idempotency retries per run; temporary disk SQLite WAL/FULL; same loopback IP; all peers flagged; Sheets writer held pending.",
+  "limitations": "HTTP API loopback only. No classroom Wi-Fi, student browsers, Windows 10/11 laptop performance, or live Sheets API. Benchmark socket timeout is 45 seconds; browser request timeout is 20 seconds. No guarantee of response time on the teacher's laptop.",
+  "results": [
+    {
+      "count": 700,
+      "run": 1,
+      "first": {
+        "requests": 700,
+        "success": 700,
+        "duplicates": 0,
+        "errors": {},
+        "dispatchMs": 64.7,
+        "elapsedMs": 18223.8,
+        "p50Ms": 7986,
+        "p95Ms": 17067.1,
+        "maxMs": 18158.9
+      },
+      "retry": {
+        "requests": 700,
+        "success": 700,
+        "duplicates": 700,
+        "errors": {},
+        "dispatchMs": 47.1,
+        "elapsedMs": 552.6,
+        "p50Ms": 372.1,
+        "p95Ms": 491.8,
+        "maxMs": 505.5
+      },
+      "records": 700,
+      "flagged": 700,
+      "persistedRecords": 700,
+      "sheetsBlocked": true,
+      "rssMiB": 92,
+      "sqlite": {
+        "journal": {
+          "journal_mode": "wal"
+        },
+        "synchronous": {
+          "synchronous": 2
+        }
+      }
+    },
+    {
+      "count": 700,
+      "run": 2,
+      "first": {
+        "requests": 700,
+        "success": 700,
+        "duplicates": 0,
+        "errors": {},
+        "dispatchMs": 38.7,
+        "elapsedMs": 5172.6,
+        "p50Ms": 3385.1,
+        "p95Ms": 4908.3,
+        "maxMs": 5133.9
+      },
+      "retry": {
+        "requests": 700,
+        "success": 700,
+        "duplicates": 700,
+        "errors": {},
+        "dispatchMs": 48.7,
+        "elapsedMs": 511.6,
+        "p50Ms": 346.2,
+        "p95Ms": 451.1,
+        "maxMs": 462.8
+      },
+      "records": 700,
+      "flagged": 700,
+      "persistedRecords": 700,
+      "sheetsBlocked": true,
+      "rssMiB": 110,
+      "sqlite": {
+        "journal": {
+          "journal_mode": "wal"
+        },
+        "synchronous": {
+          "synchronous": 2
+        }
+      }
+    },
+    {
+      "count": 700,
+      "run": 3,
+      "first": {
+        "requests": 700,
+        "success": 700,
+        "duplicates": 0,
+        "errors": {},
+        "dispatchMs": 24.6,
+        "elapsedMs": 3831.2,
+        "p50Ms": 2060.8,
+        "p95Ms": 3623.6,
+        "maxMs": 3806.6
+      },
+      "retry": {
+        "requests": 700,
+        "success": 700,
+        "duplicates": 700,
+        "errors": {},
+        "dispatchMs": 51.5,
+        "elapsedMs": 560.8,
+        "p50Ms": 398.7,
+        "p95Ms": 498.8,
+        "maxMs": 509.3
+      },
+      "records": 700,
+      "flagged": 700,
+      "persistedRecords": 700,
+      "sheetsBlocked": true,
+      "rssMiB": 108,
+      "sqlite": {
+        "journal": {
+          "journal_mode": "wal"
+        },
+        "synchronous": {
+          "synchronous": 2
+        }
+      }
+    }
+  ]
+}
