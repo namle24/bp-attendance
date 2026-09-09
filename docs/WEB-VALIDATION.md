@@ -42,3 +42,5 @@ The browser scenario checks actual QR rotation over 30 seconds, expired QR rejec
 [Desktop CI](https://github.com/namle24/bp-attendance/actions/workflows/windows.yml) runs on `windows-latest`, `macos-latest` and `ubuntu-latest`: bootstrap from missing dependencies, optional setup compatibility, launcher/QR/LAN/reports/restart tests and three separate-process 700-scan + 700-submission + 700-idempotency-retry bursts. CI hardware is not the teacher's laptop or the USTH Wi-Fi. Native hardware discovery is checked with recorded output; real CI startup uses its available LAN and the picker/explicit interface.
 
 The older Windows 0.4 measurements remain historical in the load report. Current 0.5 scan/submission measurements and CI evidence are recorded separately there.
+
+Verified [desktop run on 2026-09-09](https://github.com/namle24/bp-attendance/actions/runs/34318361647): Windows, macOS and Linux each passed **27/27 tests, no skips**, dependency bootstrap and all three scan/submission/retry bursts. Total benchmark requests: **18,900/18,900**. QR projection also fits a 1280×720 browser viewport without scrolling, verified by the browser scenario.

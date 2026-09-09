@@ -1,5 +1,19 @@
 # Đo tải luồng LAN
 
+## Bản hiện tại 0.5 · QR động trên ba hệ điều hành
+
+[Lần CI ngày 09/09/2026](https://github.com/namle24/bp-attendance/actions/runs/34318361647) đã đạt trên Windows, macOS và Linux. Mỗi hệ điều hành chạy 3 đợt; mỗi đợt gồm **700 lượt xác nhận QR/mã đang chiếu → 700 lượt gửi điểm danh → 700 lượt gửi lại**. Mỗi nhóm phát đồng thời, không giãn lượt gửi hoặc tự bỏ qua/thử lại lỗi mạng.
+
+| Máy CI | Kiểm thử | Request thành công | Quét mã, 3 lần (s) | Gửi điểm danh, 3 lần (s) |
+| --- | --- | --- | --- | --- |
+| macOS | 27/27 | 6.300/6.300 | 0.925 / 2.087 / 0.542 | 2.050 / 1.472 / 4.278 |
+| Linux | 27/27 | 6.300/6.300 | 0.591 / 0.577 / 0.545 | 0.913 / 0.852 / 0.794 |
+| Windows | 27/27 | 6.300/6.300 | 0.717 / 0.681 / 0.754 | 4.392 / 13.658 / 8.476 |
+
+Tổng **18.900/18.900 request**, mỗi database có đúng 700 bản ghi sau khi đóng/mở lại; cả 700 được gắn cờ trùng IP và các lượt gửi lại không nhân đôi dữ liệu. Dùng SQLite trên đĩa WAL/FULL; giữ writer Sheets chờ trong suốt phép đo. Xem [số liệu đầy đủ](load-2026-09-09-desktop-0.5.json), gồm p95, RAM và thời gian gửi lại.
+
+Đây là phép đo API HTTP loopback trên máy CI, không phải cam kết tải trên Wi-Fi USTH hoặc laptop của giảng viên. Chưa đo 700 trình duyệt tải ảnh/trang, AP của trường, firewall hay API Google Sheets thật. Giao diện sinh viên chờ tối đa 45 giây cho thao tác gửi và giữ khóa lượt gửi khi mất phản hồi để khôi phục biên nhận an toàn.
+
 ## Lịch sử 0.4 · Laptop Linux · 08/09/2026
 
 700 biểu mẫu MSSV/họ tên/ghế gửi gần đồng thời tới server trong tiến trình riêng. SQLite nằm trên đĩa, WAL, `synchronous=FULL`. Tất cả kết nối có cùng IP socket loopback; cả 700 MSSV phải được gắn cờ trùng IP. Writer Sheets bị giữ chờ suốt đợt gửi để kiểm tra việc nhận điểm danh không phụ thuộc Google.
