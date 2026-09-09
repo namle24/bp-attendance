@@ -81,6 +81,7 @@ function post(origin,body,headers={}){return {method:'POST',headers:{Origin:orig
 test('HTTP ignores forwarded and submitted IP, separates TA API, enforces origin/host/CSRF and protects receipts',async()=>{
   const f=await fixture();try{
     const origin=f.config.origin,admin=f.config.adminOrigins[0],body=payload(f.session.id);
+    body.scanTicket=f.store.scan({token:f.store.currentQr(now).token},'127.0.0.1',now).scanTicket;
     let res=await fetch(origin+'/api/check-in',post(origin,{...body,ip:'10.1.2.3'},{'X-Forwarded-For':'10.1.2.3'}));assert.equal(res.status,200);assert.equal(f.store.entries()[0].ip,'127.0.0.1');
     assert.equal((await fetch(origin+'/api/dashboard')).status,404);assert.equal((await fetch(origin+'/api/entries')).status,404);
     const wrongHostStatus=await new Promise((resolve,reject)=>{require('node:http').get(origin+'/api/session',{headers:{Host:'evil.example'}},res=>{res.resume();res.on('end',()=>resolve(res.statusCode));}).on('error',reject);});assert.equal(wrongHostStatus,403);
@@ -94,7 +95,7 @@ test('HTTP ignores forwarded and submitted IP, separates TA API, enforces origin
 test('700 same-IP HTTP submissions and retries succeed without Sheets and mark all 700 for review',async()=>{
   const f=await fixture();try{
     const bodies=Array.from({length:700},(_,i)=>payload(f.session.id,'S'+String(i).padStart(4,'0')));
-    const client=new Worker(path.join(__dirname,'helpers/lan-burst-client.cjs'),{workerData:{origin:f.config.origin,bodies}});
+    const client=new Worker(path.join(__dirname,'helpers/lan-burst-client.cjs'),{workerData:{origin:f.config.origin,bodies,token:f.store.currentQr(now).token}});
     try{await new Promise((resolve,reject)=>{
       client.once('message',message=>{assert.equal(message,'complete');resolve();});
       client.once('error',reject);client.once('exit',code=>reject(Error('Load client exited before completion: '+code)));

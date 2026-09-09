@@ -2,22 +2,26 @@
 
 ## 1. Mở phiên trên laptop host
 
-Người host bật app bằng `npm run host:start`. Trên Windows giữ cửa sổ terminal mở; xem [hướng dẫn Windows](WINDOWS.vi.md). Trên chính laptop đó, mở **http://127.0.0.1:4181**. Trang TA không mở từ điện thoại/laptop khác qua Wi-Fi.
+Người host chạy `npm start` trên Windows, macOS hoặc Linux. App tự chuẩn bị dữ liệu và mở trình duyệt. Nếu hiện trang chọn mạng, bấm Wi-Fi đang dùng trong phòng. Trang TA tại **http://127.0.0.1:4181** chỉ mở trên laptop host. Giữ cửa sổ chạy app mở trong giờ học.
 
 Kiểm tra đúng ngày, thống nhất cách ghi ghế (ví dụ hàng B, ghế 12), chọn thời gian rồi bấm **Mở QR điểm danh**. Mặc định 8 phút. App chuyển sang màn chiếu, có QR và URL cho sinh viên dùng máy tính.
 
 ![Màn chiếu](web-projector.png)
 
-QR chứa đường dẫn vào biểu mẫu, không đổi mỗi 30 giây. Phiên nhận điểm danh có thời hạn và do TA mở. Nếu máy host đổi IP, QR/link sẽ đổi khi khởi động lại app.
+**QR và mã 8 ký tự đổi mỗi 30 giây**, có đồng hồ đếm ngược. Mã cũ hết hiệu lực ngay khi đổi. Chỉ màn TA trên laptop lấy được mã hiện tại; trang sinh viên không tự lấy mã mới. Giữ màn chiếu mở trong thời gian điểm danh. Nếu máy host đổi IP, dừng app bằng Ctrl+C rồi chạy lại và chiếu QR mới.
 
 ## 2. Sinh viên gửi thông tin
 
 1. Kết nối cùng Wi-Fi của lớp với laptop host, hoàn tất đăng nhập USTH_CONNECT nếu mạng yêu cầu.
-2. Quét QR bằng điện thoại hoặc gõ URL hiển thị trên máy tính. Gõ cả `http://` và `:4180`.
-3. Nhập **MSSV**, **họ tên đầy đủ**, **vị trí ngồi**.
+2. Quét QR đang chiếu bằng điện thoại. Với máy tính: mở URL hiển thị (gồm `http://` và `:4180`), nhập mã 8 ký tự đang chiếu. Mã không đúng/đã đổi thì nhập mã hiện tại.
+3. Nhập **MSSV**, **họ tên đầy đủ**, **vị trí ngồi** trong thời gian còn lại (tối đa 3 phút từ lúc xác nhận mã, không quá giờ đóng phiên). Giữ nguyên Wi-Fi.
 4. Bấm **Gửi điểm danh**, chờ **Đã ghi nhận điểm danh**.
 
+![Mã đang chiếu dành cho máy tính](web-student-code.png)
+
 ![Biểu mẫu trên điện thoại](web-student-ready.png)
+
+Nếu hết thời gian nhập hoặc đổi IP trước khi gửi, quét/nhập mã mới. Mỗi lượt xác nhận mã chỉ gửi được cho một MSSV. QR động hạn chế dùng lại mã cũ, không tự xác minh danh tính hoặc ngăn được chuyển tiếp mã còn hạn.
 
 Nếu báo chưa xác nhận được kết quả, giữ trang và bấm gửi lại. Lượt gửi được nhận diện bằng khóa ngẫu nhiên của trang, nên không thêm bản ghi trùng khi phản hồi mạng bị mất. Nếu MSSV đã được người khác/thiết bị khác gửi trước, app yêu cầu báo TA. Không lấy MSSV làm mật khẩu để xem biên nhận của người khác.
 

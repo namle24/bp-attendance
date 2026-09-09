@@ -3,8 +3,8 @@ const {LanStore}=require('./lan-store.cjs');
 const {createStudentApp,createAdminApp}=require('./lan-app.cjs');
 const {SheetsWriter,SyncWorker}=require('./sheets.cjs');
 const {listen:listenHTTP}=require('./listener.cjs');
-async function main(){
-  const config=loadLanConfig(),store=new LanStore(config.database);
+async function main(options={}){
+  const config=options.config||loadLanConfig(),store=new LanStore(config.database);
   const worker=new SyncWorker(store,config.spreadsheetId?new SheetsWriter(config,store):null);
   const servers=[];let timer,stopping=false;
   function listen(app,port,host){return new Promise((resolve,reject)=>{
@@ -27,6 +27,7 @@ async function main(){
     console.log('TA trên laptop: '+config.adminOrigins[0]);
     console.log(config.spreadsheetId?'Sheets: đồng bộ theo lô; xem trạng thái trên trang TA.':'Sheets chưa cấu hình. Điểm danh lưu trên laptop; TA tải CSV hoặc cấu hình Sheets để đồng bộ sau.');
     process.on('SIGINT',()=>void stop());process.on('SIGTERM',()=>void stop());
+    return {config,stop};
   }catch(error){await stop(1);throw error;}
 }
 if(require.main===module)main().catch(error=>{console.error(error.message);process.exitCode=1;});

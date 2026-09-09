@@ -1,44 +1,33 @@
-# Chuẩn bị ở nhà, thử tại trường
+# Chuẩn bị trước buổi học
 
-Luồng hiện tại là **LAN + nhập MSSV, họ tên, ghế + đối chiếu trùng IP**. Không cần cấu hình tài khoản Google cho sinh viên hoặc QR động.
+Luồng hiện tại: **Windows/macOS/Linux → tự nhận mạng → QR đổi mỗi 30 giây → MSSV, họ tên, ghế → đối chiếu trùng IP**.
 
-**Windows:** dùng [hướng dẫn riêng](WINDOWS.vi.md); các lệnh gán biến `BP_DATABASE=...` bên dưới là cú pháp bash/Linux. Trên Windows dùng CMD/PowerShell theo hướng dẫn riêng và Ctrl+C để dừng app.
+## Chuẩn bị trước
 
-## Ở nhà
+1. Cài Node.js 24 trở lên, tải/clone repo.
+2. Chạy `npm start` một lần khi có Internet. App tự cài thư viện, tạo dữ liệu và mở trang TA.
+3. Nếu hiện màn chọn mạng, chọn Wi-Fi đang dùng. Xem trang TA trước; chưa bấm **Mở QR điểm danh** thì chưa mở phiên hoặc tạo điểm danh thử.
+4. Thử điện thoại mở link IP Wi-Fi cổng 4180, rồi Ctrl+C dừng app.
 
-```bash
-cd ~/Projects/bp-attendance
-npm ci
-npm run laptop:setup
-npm run host:install
-npm run host:check
-```
+Tại trường cũng dùng đúng `npm start`; không cần cấu hình Google đăng nhập sinh viên. Sheets là tùy chọn theo [hướng dẫn](WEB-SETUP.vi.md). Giữ máy thức, cắm sạc và giữ cửa sổ chạy app mở trong giờ học.
 
-Chuẩn bị service, dependencies và database thật trống. Setup không đưa sinh viên hoặc buổi học thử vào database lớp. Có thể chạy `npm test` để kiểm thử bằng database tạm và `npm run bench:web` để đo tải trên máy.
+## Tại trường
 
-Nếu muốn thử điện thoại tại nhà, chạy `npm run campus:test`, quét QR kiểm tra trên điện thoại cùng Wi-Fi. Đây là endpoint thử kết nối, không ghi điểm danh, tự đóng sau 5 phút. Kết quả ở nhà không chứng minh Wi-Fi USTH cũng cho truy cập.
+- Laptop và ít nhất hai thiết bị thử kết nối USTH_CONNECT, hoàn tất captive portal.
+- Chạy app, thử link từ điện thoại. Nếu không vào được, xử lý firewall/client isolation/VLAN với IT. Kết quả trên Wi-Fi ở nhà không chứng minh mạng trường cũng cho truy cập.
+- Nếu thử gửi, dùng database riêng bên dưới. Kiểm tra QR/mã hết hạn, biên nhận, IP hai thiết bị và cờ trùng IP.
+- Dừng bản thử, mở lại với database lớp. Kiểm tra đúng ngày và dữ liệu lớp trước khi mở phiên.
 
-Muốn xem app trước: `npm run host:start`, mở trang TA và trang sinh viên; khi chưa bấm mở phiên sẽ không có điểm danh. Sau đó `npm run host:stop`. Không dùng MSSV thử trong database lớp. Ảnh thao tác nằm trong [hướng dẫn TA](TA-GUIDE.vi.md).
+## Thử gửi bằng database riêng
 
-Có thể chuẩn bị Google Sheet và service account theo [hướng dẫn](WEB-SETUP.vi.md). Thiếu cấu hình này không chặn ghi điểm danh tại laptop.
+Windows: dùng [CMD/PowerShell trong hướng dẫn Windows](WINDOWS.vi.md#thử-gửi-với-database-riêng).
 
-## Khi đến trường
-
-1. Laptop và ít nhất hai thiết bị thử kết nối USTH_CONNECT, hoàn tất captive portal.
-2. Chạy `npm run campus:test`, cho hai thiết bị mở URL/QR. Nếu không vào được, xử lý client isolation/firewall/VLAN với IT trước. Lệnh thử dùng cổng 4188; app thật dùng 4180, cần thử cả app thật sau đó.
-3. Bật app bằng `npm run host:start`. Mở trang TA trên laptop và link sinh viên trên điện thoại/máy tính. Xác nhận link không dùng IP cũ ở nhà.
-4. **Thử gửi bằng database riêng** trước khi phục vụ lớp, xem hướng dẫn bên dưới. Kiểm tra IP của hai thiết bị có khác nhau không và xem cờ đỏ/ghi chú được đồng bộ sang Sheet thử nếu đã cấu hình.
-5. Dừng bản thử, bật lại service với database lớp. Kiểm tra bảng TA trống hoặc đúng dữ liệu lớp, đúng ngày, đúng link rồi mới mở QR.
-
-Thử server bằng database riêng, không làm mất lượt mở phiên trong database lớp:
+macOS/Linux: dừng app rồi chạy trong Terminal:
 
 ```bash
-npm run host:stop
 BP_DATABASE=./data/campus-check.sqlite GOOGLE_SHEET_ID= npm start
 ```
 
-Lệnh dùng cùng app thật nhưng file riêng, tắt đồng bộ Sheet cho dữ liệu thử. Dùng Ctrl+C để dừng. Sau đó `npm run host:start` quay về database lớp trong `.env`. Không sao chép dữ liệu thử vào lớp; không dùng chung tab Sheet cho hai database.
+Dùng Ctrl+C để dừng. Sau đó `npm start` trở về database lớp. Dữ liệu thử không đồng bộ Sheet. Không sao chép dữ liệu thử vào lớp, không xóa database lớp để mở phiên lại.
 
-Nếu muốn kiểm tra ghi/màu trên **Sheet thử**, đặt `GOOGLE_SHEET_ID` bằng ID một file Sheet riêng trong lệnh thử, sau khi đã cấu hình service account. Không chạy thử trên Sheet tổng của lớp.
-
-Thử mạng trường là việc còn phải làm tại trường. Từ laptop không thể suy ra SSID của người gửi, khả năng truy cập giữa thiết bị hoặc độ ổn định của Wi-Fi khi đông người.
+Giữ database qua các tuần, xuất riêng từng ngày hoặc toàn bộ trên trang **Lịch sử & xuất dữ liệu**. Các dòng cần đối chiếu nằm ở màn **Cần xử lý**. Xem [hướng dẫn TA](TA-GUIDE.vi.md).

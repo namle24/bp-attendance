@@ -1,6 +1,6 @@
-# Validation scope · LAN attendance 0.4
+# Validation scope · LAN attendance 0.5
 
-Current runtime: direct student LAN HTTP listener plus a separate localhost-only TA listener. Three student fields, no Google login, request-key idempotency, SQLite persistence, duplicate-IP peer review and asynchronous Sheets snapshots.
+Current runtime: direct student LAN HTTP listener plus a separate localhost-only TA listener. Rotating 30-second QR/room codes, IP-bound one-use admissions (up to three minutes), three student fields, no Google login, request-key idempotency, SQLite persistence, duplicate-IP peer review and asynchronous Sheets snapshots.
 
 Commands:
 
@@ -11,7 +11,7 @@ BP_PLAYWRIGHT_MODULE=/path/to/playwright BP_CHROMIUM=/path/to/chromium node scri
 BP_BENCH_COUNTS=700 node scripts/bench-web.cjs data/reports/load-lan.json
 ```
 
-Validation run on Linux on 2026-09-09: **56 tests passed, 0 failed, 0 skipped**, plus the browser scenario and syntax check.
+Validation run on Linux on 2026-09-09: **62 tests passed, 0 failed, 0 skipped**, plus the browser scenario and syntax check.
 
 LAN-specific checks cover:
 
@@ -33,8 +33,12 @@ The load report records three successful bursts of 700 requests plus retries wit
 Not yet verified: actual USTH device-to-laptop routing, observed IPs for different student devices, Wi-Fi under classroom load, and live Sheets credentials/write/format permissions. API request tests do not replace a live Google Sheet check. HTTP transport is unencrypted. No test proves attendance identity from IP.
 
 
-Windows startup coverage is in `tests/portable-host.test.cjs`: foreground dispatch without systemd, `.env` loading before server start, paths containing spaces/backslash-n, Wi-Fi/WLAN selection with explicit-interface fallback, and two-port readiness. The foreground server is exercised against a temporary database.
+Cross-platform startup uses one foreground launcher: automatic dependency/setup preparation, native Wi-Fi discovery on Windows/macOS/Linux, a localhost network picker when ambiguous, then the TA page. `tests/launcher.test.cjs` exercises an actual fresh directory with no `.env`, selects a current adapter through HTTP and verifies the production app starts with an empty session list. Picker tests reject cross-origin, missing CSRF, stale/forged interfaces and public IPs.
 
-[Windows CI](https://github.com/namle24/bp-attendance/actions/workflows/windows.yml) runs actual `laptop:setup` and `host:install` on `windows-latest`, then portable-startup, LAN, reports and restart tests. This validates the Windows runtime; it cannot validate a teacher's Wi-Fi adapter name, firewall or USTH routing. Native Wi-Fi selection uses common adapter names, with `network:list` / `LAN_INTERFACE` for renamed or ambiguous adapters.
+`tests/lan-qr.test.cjs` verifies exact QR/code expiry, admission expiry, signature tampering, binding to socket IP/session, one admission per MSSV, persistent use tracking after restart, no current QR on the public endpoint, and no public check-in without admission. A lost-response retry can recover an already committed, identical request after expiry/closure; it cannot write a second record or change identity/seat/IP.
 
-Windows Server 2025 / Node 24.19.0 [validation on 2026-09-09](https://github.com/namle24/bp-attendance/actions/runs/34315646676): **21 tests passed, 0 failed, 0 skipped**, and three successful disk-backed 700-request bursts plus 700 idempotency retries per burst. The integration load client runs in a worker so creating hundreds of client connections does not block the server event loop in the same process. All requests still launch concurrently with no automatic error retries. The separate-process benchmark uses the same listener as production. See the load report for timing variability and the browser timeout limitation.
+The browser scenario checks actual QR rotation over 30 seconds, expired QR rejection, QR admission on mobile, manual room code on desktop, localhost network selection, and the existing recovery/review/export flows. Only synthetic data in temporary databases is used for screenshots.
+
+[Desktop CI](https://github.com/namle24/bp-attendance/actions/workflows/windows.yml) runs on `windows-latest`, `macos-latest` and `ubuntu-latest`: bootstrap from missing dependencies, optional setup compatibility, launcher/QR/LAN/reports/restart tests and three separate-process 700-scan + 700-submission + 700-idempotency-retry bursts. CI hardware is not the teacher's laptop or the USTH Wi-Fi. Native hardware discovery is checked with recorded output; real CI startup uses its available LAN and the picker/explicit interface.
+
+The older Windows 0.4 measurements remain historical in the load report. Current 0.5 scan/submission measurements and CI evidence are recorded separately there.

@@ -27,7 +27,7 @@ async function serverProcess(){
   process.on('message',async message=>{
     if(message==='start'){
       const session=store.open(today(Date.now()),5,'benchmark');
-      const qr={sessionId:session.id};
+      const qr={sessionId:session.id,code:store.currentQr().code};
       void worker.sync();
       process.send({kind:'start',qr,session:session.id});
     }else if(message==='stats'){
@@ -58,13 +58,13 @@ function receive(child,kind){
 }
 function command(child,kind){const result=receive(child,kind);child.send(kind);return result;}
 
-async function burst(port,identities,qr){
+async function burst(port,identities,qr,route='/api/check-in'){
   const agent=new http.Agent({keepAlive:true,maxSockets:identities.length});
   const start=performance.now();
   let lastDispatch=start;
   const pending=identities.map(identity=>new Promise(resolve=>{
-    const before=performance.now();lastDispatch=before;const payload=JSON.stringify({...identity,...qr});
-    const req=http.request({hostname:'127.0.0.1',port,path:'/api/check-in',method:'POST',agent,headers:{Origin:'http://127.0.0.1:'+port,'Content-Type':'application/json','Content-Length':Buffer.byteLength(payload)}},res=>{
+    const before=performance.now();lastDispatch=before;const payload=JSON.stringify(route==='/api/scan'?{code:qr.code}:{...identity,sessionId:qr.sessionId});
+    const req=http.request({hostname:'127.0.0.1',port,path:route,method:'POST',agent,headers:{Origin:'http://127.0.0.1:'+port,'Content-Type':'application/json','Content-Length':Buffer.byteLength(payload)}},res=>{
       let body='';res.setEncoding('utf8');res.on('data',chunk=>{body+=chunk;});
       res.on('end',()=>{let parsed;try{parsed=JSON.parse(body);}catch{parsed={code:'INVALID_JSON'};}resolve({ms:performance.now()-before,status:res.statusCode,body:parsed});});
       res.on('error',error=>resolve({ms:performance.now()-before,status:0,body:{code:error.code||error.message}}));
@@ -77,7 +77,7 @@ async function burst(port,identities,qr){
     const replies=await Promise.all(pending),elapsed=performance.now()-start;
     const latencies=replies.map(r=>r.ms).sort((a,b)=>a-b),round=n=>Math.round(n*10)/10;
     const errors={};for(const r of replies)if(r.status!==200){const key=r.status+':'+(r.body.code||'UNKNOWN');errors[key]=(errors[key]||0)+1;}
-    return {requests:identities.length,success:replies.filter(r=>r.status===200).length,duplicates:replies.filter(r=>r.body.receipt?.duplicate).length,errors,dispatchMs:round(lastDispatch-start),elapsedMs:round(elapsed),p50Ms:round(latencies[Math.ceil(latencies.length*.5)-1]),p95Ms:round(latencies[Math.ceil(latencies.length*.95)-1]),maxMs:round(latencies.at(-1))};
+    return {tickets:route==='/api/scan'?replies.map(r=>r.body.scanTicket):undefined,requests:identities.length,success:replies.filter(r=>r.status===200).length,duplicates:replies.filter(r=>r.body.receipt?.duplicate).length,errors,dispatchMs:round(lastDispatch-start),elapsedMs:round(elapsed),p50Ms:round(latencies[Math.ceil(latencies.length*.5)-1]),p95Ms:round(latencies[Math.ceil(latencies.length*.95)-1]),maxMs:round(latencies.at(-1))};
   }finally{agent.destroy();}
 }
 
@@ -87,11 +87,14 @@ async function measure(count,run){
   try{
     const ready=await receive(child,'ready');
     const started=await command(child,'start');
+    const {tickets,...scan}=await burst(ready.port,ready.identities,started.qr,'/api/scan');
+    assert.equal(scan.success,count,JSON.stringify(scan));
+    ready.identities.forEach((identity,i)=>{identity.scanTicket=tickets[i];});
     const first=await burst(ready.port,ready.identities,started.qr);
     const retry=await burst(ready.port,ready.identities,started.qr);
     const stats=await command(child,'stats');
     const stopped=await command(child,'stop');
-    const result={count,run,first,retry,records:stats.records,flagged:stats.flagged,persistedRecords:stopped.persistedRecords,sheetsBlocked:stats.sync.busy&&stats.sync.pending,rssMiB:Math.round(stats.rssMiB),sqlite:ready.sqlite};
+    const result={count,run,scan,first,retry,records:stats.records,flagged:stats.flagged,persistedRecords:stopped.persistedRecords,sheetsBlocked:stats.sync.busy&&stats.sync.pending,rssMiB:Math.round(stats.rssMiB),sqlite:ready.sqlite};
     console.log(JSON.stringify(result));
     assert.equal(first.success,count,'First submissions must all succeed');
     assert.equal(first.duplicates,0);assert.equal(retry.success,count);assert.equal(retry.duplicates,count);
@@ -104,7 +107,7 @@ async function measure(count,run){
 }
 
 async function main(){
-  const report={measuredAt:new Date().toISOString(),node:process.version,cpu:os.cpus()[0]?.model,availableParallelism:os.availableParallelism(),totalMemoryGiB:Math.round(os.totalmem()/1024**3),method:'Separate server/load processes, loopback HTTP, real clock, temporary disk SQLite WAL with FULL synchronous; anonymous three-field forms; actual shared loopback socket IP; all peers flagged; Sheets writer held pending. Does not measure Wi-Fi, browser assets or real Sheets API.',submission:'LAN form',results:[]};
+  const report={measuredAt:new Date().toISOString(),platform:process.platform,node:process.version,cpu:os.cpus()[0]?.model,availableParallelism:os.availableParallelism(),totalMemoryGiB:Math.round(os.totalmem()/1024**3),method:'Separate server/load processes, loopback HTTP, real clock, temporary disk SQLite WAL with FULL synchronous; 700 rotating QR admissions followed by three-field submissions and idempotent retries; actual shared loopback socket IP; all peers flagged; Sheets writer held pending. Does not measure Wi-Fi, browser assets or real Sheets API.',submission:'LAN rotating QR',results:[]};
   for(const count of (process.env.BP_BENCH_COUNTS||'100,300,700').split(',').map(Number))for(let run=1;run<=3;run++)report.results.push(await measure(count,run));
   if(process.argv[2])writeFileSync(path.resolve(process.argv[2]),JSON.stringify(report,null,2)+'\n');
   console.log('All bursts and duplicate retries passed; records persisted after reopening SQLite.');

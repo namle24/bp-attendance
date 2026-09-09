@@ -34,7 +34,7 @@ Description=BP attendance on classroom Wi-Fi
 Wants=bp-attendance-laptop.service
 After=bp-attendance-laptop.service
 `,{mode:0o600});
-console.log('Đã tạo service LAN và trang TA trên localhost. Cài bằng npm run host:install.');
+console.log('Đã tạo service Linux tùy chọn. Dùng npm start để chạy ngay; service nâng cao: npm run service:install.');
 }
 if(require.main===module)prepareService();
 module.exports={prepareService};

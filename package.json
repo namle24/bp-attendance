@@ -1,12 +1,12 @@
 {
   "name": "bp-attendance",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
-  "description": "USTH BP attendance — LAN form, seat and duplicate-IP review, SQLite and Sheets",
+  "description": "USTH BP attendance — cross-platform launcher, rotating QR, LAN/IP review, SQLite and Sheets",
   "scripts": {
     "test": "node --test tests/*.test.cjs",
     "check": "node scripts/check.cjs",
-    "start": "node --env-file-if-exists=.env web/server.cjs",
+    "start": "node scripts/start.cjs",
     "bench:web": "node scripts/bench-web.cjs",
     "lan:probe": "node scripts/lan-probe.cjs",
     "laptop:prepare": "node scripts/prepare-laptop.cjs",
@@ -19,7 +19,11 @@
     "host:stop": "node scripts/host-control.cjs stop",
     "host:status": "node scripts/host-control.cjs status",
     "campus:test": "node scripts/campus-test.cjs",
-    "network:list": "node scripts/network-list.cjs"
+    "network:list": "node scripts/network-list.cjs",
+    "service:install": "node scripts/prepare-laptop.cjs && node scripts/service-control.cjs install",
+    "service:start": "node scripts/service-control.cjs start",
+    "service:stop": "node scripts/service-control.cjs stop",
+    "service:status": "node scripts/service-control.cjs status"
   },
   "engines": {
     "node": ">=24"

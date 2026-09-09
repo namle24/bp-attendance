@@ -1,63 +1,70 @@
-# Chạy BP Attendance trên laptop
+# Chạy BP Attendance trên Windows, macOS và Linux
 
-**Windows:** dùng [hướng dẫn CMD/PowerShell](WINDOWS.vi.md). `host:start` chạy trực tiếp trong terminal, Ctrl+C để dừng; không dùng service systemd.
+## Mở app
 
-Các lệnh dịch vụ/backup dưới đây dành cho **Linux**: cần Node.js 24+, npm, Git và Python 3. Service chạy theo user hiện tại, không tự bật khi đăng nhập.
+Cài Node.js 24 trở lên một lần. Trong thư mục repo, chạy:
 
-## Cài lần đầu hoặc cập nhật từ bản Google/QR cũ
+```text
+npm start
+```
 
-Nếu đã dùng bản trước, **dừng app và backup database trước khi cập nhật**. Migration chỉ thêm bảng LAN, giữ roster, dữ liệu điểm danh cũ và định danh tab Sheet.
+Lần đầu cần Internet để app tự cài thư viện còn thiếu. App tự tạo `.env`, database và bí mật QR; giữ nguyên dữ liệu/cấu hình đã có. Các buổi sau dùng lại lệnh này. Không cần `host:install`, OAuth hoặc chứng chỉ cho luồng LAN.
 
-```bash
-cd ~/Projects/bp-attendance
-npm run host:stop
+Windows có thể nhấp đúp `Start-Windows.bat`. macOS mở `Start-macOS.command` (nếu hệ điều hành chặn mở file, dùng Terminal với `npm start`). Linux dùng `./start-linux.sh` hoặc `npm start`.
+
+Trình duyệt mở trang TA trên laptop. Nếu app chưa xác định được một card Wi-Fi, trang **Chọn mạng của lớp** xuất hiện: chọn mạng đang dùng. App nhận tên card từ hệ điều hành; không mặc định macOS luôn dùng `en0`. Không chọn VPN hoặc mạng khác với sinh viên.
+
+![Chọn mạng](web-network-picker.png)
+
+Trang TA: **http://127.0.0.1:4181**. Sinh viên dùng URL IP Wi-Fi cổng 4180 được chiếu. Bấm **Mở QR điểm danh** khi bắt đầu nhận; app không tự mở phiên ngay lúc khởi động.
+
+**Giữ terminal mở, cắm sạc và giữ laptop thức. Ctrl+C để dừng.** Luồng mặc định chạy trực tiếp, không tự chạy khi đăng nhập hoặc tự khởi động lại nếu tiến trình lỗi. Thông báo lỗi nằm trong cửa sổ đang chạy.
+
+## Mỗi buổi học
+
+1. Laptop và sinh viên kết nối USTH_CONNECT, hoàn tất captive portal.
+2. Chạy `npm start`, chọn mạng nếu được yêu cầu.
+3. Mở thử link sinh viên trên điện thoại thật. Nếu laptop mở được mà điện thoại không vào được, kiểm tra firewall/client isolation với IT. App không tự thay đổi firewall của hệ điều hành.
+4. Bấm mở QR khi lớp sẵn sàng. QR và mã 8 ký tự đổi mỗi 30 giây. Sinh viên có tối đa 3 phút nhập thông tin sau khi quét đúng mã, không vượt thời gian đóng phiên.
+5. Đối chiếu các dòng đỏ và lưu quyết định TA. Xem [hướng dẫn có ảnh](TA-GUIDE.vi.md).
+6. Kết thúc: đóng phiên, xuất/backup dữ liệu, Ctrl+C để dừng app.
+
+Đổi Wi-Fi hoặc DHCP đổi IP: Ctrl+C rồi `npm start`, chiếu QR mới. Dữ liệu và phiên đang mở giữ trong database. Mỗi ngày chỉ có một phiên offline; dùng database riêng nếu thử gửi dữ liệu trước giờ học.
+
+## Cập nhật bản đã có
+
+Dừng cửa sổ app trước khi cập nhật:
+
+```text
+git pull --ff-only
+npm start
+```
+
+Nếu bản cũ đang chạy dưới service Linux, sau khi cập nhật chạy `npm run service:stop` rồi `npm start`. Không chạy hai bản host trên cùng database. Khi cổng đã có app sử dụng, launcher báo cách dừng bản cũ.
+
+`npm run host:start` là tên lệnh tương thích, chạy cùng launcher. `host:install` chỉ chuẩn bị dữ liệu, không cài service. `host:stop` nhắc cách dừng bằng Ctrl+C; trạng thái có thể xem bằng `npm run host:status`.
+
+## Backup và Sheets
+
+Giữ `data/web-live.sqlite` qua các tuần để giữ các ngày học và quyền sở hữu tab Sheet. Nếu dùng `BP_DATABASE` khác, thay đường dẫn tương ứng. Khi server đang chạy, dùng backup SQLite thay vì chỉ copy file `.sqlite` thiếu WAL:
+
+```text
 python3 scripts/backup-db.py data/web-live.sqlite data/backups
 ```
 
-Với repo mới:
+Windows có Python Launcher thì dùng `py -3` thay `python3`. Python chỉ cần cho script backup này; app không cần Python để chạy. Database chứa thông tin sinh viên và bí mật QR, giữ riêng trên máy host; không tải lên GitHub.
 
-```bash
-git clone https://github.com/namle24/bp-attendance.git
-cd bp-attendance
-npm ci
+Chưa cấu hình Sheets vẫn lưu thật ở laptop và xuất CSV từng ngày/toàn bộ. [Cấu hình Sheets](WEB-SETUP.vi.md) là bước tùy chọn nếu cần tự đồng bộ vào Google Sheet của lớp.
+
+## Service Linux tùy chọn
+
+Dành cho máy Linux có systemd và muốn tiến trình chạy nền, tự khởi động lại khi lỗi, yêu cầu hệ điều hành giữ máy thức. Dừng cửa sổ chạy app trước, rồi:
+
+```text
 npm run laptop:setup
-npm run host:install
+npm run service:install
+npm run service:start
+npm run service:status
 ```
 
-Với repo đã có, cập nhật mã từ GitHub rồi chạy lại `npm ci`, `npm run laptop:setup`, `npm run host:install`. Setup giữ nguyên `.env` và database đã tồn tại. Các biến Google login/Caddy cũ không còn là điều kiện chạy LAN. Khi bật dịch vụ mới, Caddy cũ đang chạy sẽ được dừng để IP được lấy trực tiếp từ kết nối sinh viên.
-
-## Bật mỗi buổi
-
-Kết nối **USTH_CONNECT**, cắm sạc. Chạy:
-
-```bash
-npm run host:check
-npm run host:start
-```
-
-Mở **http://127.0.0.1:4181** trên laptop host. Sinh viên dùng IP Wi-Fi được in ra, cổng 4180; không dùng `localhost` trên điện thoại.
-
-App tự tìm một card Wi-Fi có IPv4 và chỉ nghe tại địa chỉ đó. Mạng mặc định là subnet hiện tại của card. Nếu không chọn được một card duy nhất, chạy `npm run network:list` và điền `LAN_INTERFACE` trong `.env`. Không dùng card Docker/VPN để phục vụ lớp.
-
-Nếu sinh viên ở subnet khác, cần IT xác nhận routing và dải IP trước khi điền thêm `CAMPUS_CIDRS`. Không mở `/0`, không đưa proxy/VPN Internet vào đường truy cập này. Port TA 4181 chỉ nghe localhost.
-
-`host:start` kiểm tra cả cổng sinh viên lẫn TA trả lời. Lệnh không tự mở phiên điểm danh. Nếu chuyển Wi-Fi hoặc DHCP đổi IP, chạy `host:stop` rồi `host:start`, mở lại trang TA và chiếu link mới. Phiên và bản ghi vẫn giữ trong database.
-
-Không dùng systemd thì chạy `npm start` ở foreground. Giữ terminal, laptop và Wi-Fi hoạt động; Ctrl+C để dừng. Với service, tiến trình được khởi động lại khi lỗi và yêu cầu hệ điều hành chặn sleep/idle/lid sleep. Vẫn cắm sạc và kiểm tra máy không ngủ thực tế.
-
-## Tình trạng, log, dừng và backup
-
-```bash
-npm run host:status
-journalctl --user -u bp-attendance-laptop.service -n 50 --no-pager
-python3 scripts/backup-db.py data/web-live.sqlite data/backups
-npm run host:stop
-```
-
-Nếu `BP_DATABASE` trỏ chỗ khác, thay đường dẫn backup bằng đúng file đó. Script backup SQLite đang chạy, bao gồm dữ liệu đã commit trong WAL; kiểm tra integrity trước khi xuất file. Không chỉ copy riêng `.sqlite` khi server đang chạy.
-
-Giữ database qua các tuần để tạo cột ngày mới trong cùng bảng tổng. Backup cũng giữ metadata sở hữu Sheet; dùng database khác cho một tab đã được database cũ quản lý sẽ bị từ chối, tránh ghi đè nhầm.
-
-## Chưa cấu hình Sheet
-
-App vẫn ghi thật vào SQLite, có CSV bảng tổng và CSV chi tiết. TA nhìn thấy rõ **Sheet chưa cấu hình**. Để bật tự động đồng bộ, làm theo [cấu hình Sheets](WEB-SETUP.vi.md), khởi động lại service rồi bấm đồng bộ. Không cần Google OAuth, email TA, DNS hay chứng chỉ để chạy bản LAN HTTP này.
+Dừng bằng `npm run service:stop`. Luồng service cần tự chọn được Wi-Fi hoặc `LAN_INTERFACE` đã đặt; không dùng màn chọn mạng. Log: `journalctl --user -u bp-attendance-laptop.service -n 50 --no-pager`. Đây là tùy chọn nâng cao, không phải điều kiện chạy app.

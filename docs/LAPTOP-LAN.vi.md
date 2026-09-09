@@ -23,6 +23,6 @@ Nếu nhiều MSSV cùng IP, app vẫn nhận đủ lượt và gắn cờ để
 
 ## Laptop và Wi-Fi khi đông người
 
-Cắm sạc, giữ Wi-Fi ổn định, không đóng terminal nếu chạy `npm start`. Service Linux có chặn sleep/idle/lid sleep và tự khởi động lại khi tiến trình lỗi; vẫn kiểm tra thực tế. DHCP đổi IP hoặc đổi mạng thì dừng/bật service và chiếu QR mới. Database/phiên còn nguyên.
+Cắm sạc, giữ Wi-Fi ổn định, không đóng terminal nếu chạy `npm start`. Service Linux có chặn sleep/idle/lid sleep và tự khởi động lại khi tiến trình lỗi; vẫn kiểm tra thực tế. DHCP đổi IP hoặc đổi mạng thì Ctrl+C và chạy lại `npm start`, chiếu QR mới. Database/phiên còn nguyên.
 
 Đo tải cục bộ chưa đo airtime, captive portal, số client/AP hoặc chất lượng sóng. [Số liệu server](LOAD-TEST.vi.md) không thay được thử với nhiều điện thoại tại trường. Nếu sự cố mạng, giữ bản ghi đã có và để TA đối chiếu ngoại lệ theo quy trình lớp.

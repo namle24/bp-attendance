@@ -1,4 +1,4 @@
-name: Windows startup and LAN attendance
+name: Windows, macOS and Linux attendance
 on:
   push:
     branches: [main]
@@ -7,8 +7,12 @@ on:
 permissions:
   contents: read
 jobs:
-  windows:
-    runs-on: windows-latest
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
@@ -16,9 +20,10 @@ jobs:
         with:
           node-version: '24'
           package-manager-cache: false
-      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Fresh checkout installs its own dependencies
+        run: node -e "require('./scripts/start.cjs').ensureDependencies()"
       - run: npm run check
-      - name: Prepare laptop on Windows
+      - name: Optional setup remains compatible
         run: npm run laptop:setup
       - name: Install command must work without systemd
         run: npm run host:install
@@ -26,6 +31,6 @@ jobs:
         env:
           BP_BENCH_COUNTS: '700'
         run: node scripts/bench-web.cjs
-      - name: Windows startup, persistence, attendance and exports
+      - name: Startup, QR security, persistence, attendance and exports
         if: always()
-        run: node --test tests/portable-host.test.cjs tests/lan.test.cjs tests/lan-reports.test.cjs tests/lan-restart.test.cjs
+        run: node --test tests/portable-host.test.cjs tests/launcher.test.cjs tests/lan-qr.test.cjs tests/lan.test.cjs tests/lan-reports.test.cjs tests/lan-restart.test.cjs

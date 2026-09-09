@@ -2,7 +2,7 @@
 
 # BP Attendance · USTH
 
-Điểm danh offline trên **laptop host cùng Wi-Fi với sinh viên**. TA mở QR; sinh viên quét bằng điện thoại hoặc mở link trên laptop, nhập **MSSV, họ tên, vị trí ngồi** rồi gửi. Không yêu cầu sinh viên đăng nhập Google hay nhập mã QR động.
+Điểm danh offline trên **Windows, macOS và Linux**, laptop host cùng Wi-Fi với sinh viên. Chạy `npm start`, app tự chuẩn bị dữ liệu và mở trang TA. TA bấm **Mở QR điểm danh**; QR và mã cho máy tính đổi mỗi **30 giây**. Sinh viên quét mã rồi nhập **MSSV, họ tên, vị trí ngồi**.
 
 Kết quả được lưu vào SQLite trước khi trả thông báo thành công. Google Sheets đồng bộ sau, khoảng 15 giây mỗi đợt có thay đổi. Chưa cấu hình Sheets vẫn dùng được app và tải CSV để mở bằng Excel.
 
@@ -12,24 +12,29 @@ Kết quả được lưu vào SQLite trước khi trả thông báo thành côn
 
 ## Chạy trên laptop
 
-Cần Node.js 24+ và Git; Python 3 dùng cho script backup. **Windows: xem [hướng dẫn chạy trên CMD/PowerShell](docs/WINDOWS.vi.md)**. Windows chạy trực tiếp trong terminal; dịch vụ giữ máy thức và tự khởi động lại dành cho Linux/systemd.
+Cài **Node.js 24+** một lần. Trong thư mục repo, chạy:
 
-```bash
-git clone https://github.com/namle24/bp-attendance.git
-cd bp-attendance
-npm ci
-npm run laptop:setup
-npm run host:install
-npm run host:check
-npm run host:start
+```text
+npm start
 ```
 
-- **TA:** mở `http://127.0.0.1:4181` trên laptop host, bấm **Mở QR điểm danh**.
-- **Sinh viên:** mở URL IP Wi-Fi mà lệnh in ra, dạng `http://IP_WIFI_LAPTOP:4180`, hoặc quét QR đang chiếu.
-- **Dừng:** Linux dùng `npm run host:stop`; Windows bấm **Ctrl+C trong cửa sổ đang chạy app**. **Xem trạng thái:** `npm run host:status`.
-- Có thể chạy foreground bằng `npm start`; giữ terminal mở, cắm sạc và tránh sleep.
+Lần đầu app tự cài thư viện nếu thiếu (cần Internet), tạo cấu hình và database. Các buổi sau dùng lại lệnh này. Không cần điền `.env`, cài service, Google OAuth hay chứng chỉ để điểm danh LAN.
 
-App chọn IPv4 của card Wi-Fi tại mỗi lần khởi động; mặc định chỉ cho IP thuộc subnet đó truy cập. Nếu chưa chọn đúng một card, chạy `npm run network:list` rồi điền `LAN_INTERFACE` trong `.env`. Windows nhận diện tên Wi-Fi/WLAN thông dụng; card đổi tên cần chọn thủ công. Khi đổi Wi-Fi/IP, dừng rồi bật lại app và dùng QR mới. Không tự mở phiên khi bật server.
+| Hệ điều hành | Có thể mở bằng file |
+| --- | --- |
+| Windows | Nhấp đúp `Start-Windows.bat` |
+| macOS | Mở `Start-macOS.command`, hoặc dùng `npm start` trong Terminal |
+| Linux | Chạy `./start-linux.sh`, hoặc `npm start` |
+
+App tự nhận card Wi-Fi bằng thông tin của hệ điều hành. Nếu chưa xác định được một kết nối duy nhất, trang **Chọn mạng của lớp** mở ra: bấm vào mạng đang dùng. Khi đổi mạng, app lấy IP hiện tại ở lần khởi động mới. Không phải sửa cấu hình thủ công cho luồng mặc định.
+
+![Chọn mạng trên laptop](docs/web-network-picker.png)
+
+- **TA:** trình duyệt tự mở `http://127.0.0.1:4181`; bấm **Mở QR điểm danh** khi lớp sẵn sàng. Bật app không tự tiêu tốn phiên trong ngày.
+- **Sinh viên:** quét QR đang chiếu; máy tính mở URL được chiếu và nhập mã 8 ký tự hiện tại. Quét/nhập mã hợp lệ có tối đa 3 phút điền form, không vượt giờ đóng phiên.
+- **Dừng:** Ctrl+C trong cửa sổ chạy app. Giữ cửa sổ mở, cắm sạc và giữ máy thức. Luồng chung chạy trực tiếp; dịch vụ Linux nâng cao nằm trong hướng dẫn host.
+
+Cập nhật bản đã clone: dừng cửa sổ app, chạy `git pull --ff-only`, rồi `npm start`. Nếu đang dùng dịch vụ Linux của bản cũ, dừng bằng `npm run service:stop` sau khi cập nhật. Dữ liệu và `.env` cũ được giữ nguyên.
 
 **Tại trường vẫn phải thử điện thoại thật.** Cùng Wi-Fi chưa bảo đảm thiết bị được kết nối tới laptop: client isolation, VLAN hoặc firewall có thể chặn. App không đọc được SSID hoặc tài khoản captive portal của sinh viên. Bản LAN dùng HTTP, dữ liệu truyền chưa mã hóa; cần sử dụng theo yêu cầu mạng của trường. Trang quản lý chỉ nghe trên localhost, không cung cấp qua Wi-Fi.
 

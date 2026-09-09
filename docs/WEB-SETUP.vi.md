@@ -6,11 +6,13 @@
 | --- | --- |
 | `PORT=4180` | Cổng sinh viên trên IP Wi-Fi được chọn |
 | `ADMIN_PORT=4181` | Cổng TA, chỉ nghe `127.0.0.1` |
-| `LAN_INTERFACE=` | Bỏ trống để tự chọn card Wi-Fi; đặt tên card nếu có nhiều lựa chọn |
+| `LAN_INTERFACE=` | Bỏ trống: app tự nhận Wi-Fi hoặc hiện màn chọn mạng; tên card là tùy chọn nâng cao |
 | `CAMPUS_CIDRS=` | Bỏ trống để dùng subnet hiện tại; chỉ điền dải khác khi đã xác nhận với IT |
 | `BP_DATABASE=./data/web-live.sqlite` | File SQLite lưu chung qua các buổi |
 | `GOOGLE_SHEET_ID=` | Để trống khi chưa cần đồng bộ; điền ID file Sheet khi đã chuẩn bị |
 | `GOOGLE_APPLICATION_CREDENTIALS=` | Đường dẫn JSON service account, riêng tư, không commit |
+
+Bí mật QR mới được tạo và lưu tự động trong SQLite, không cần điền khóa.
 
 Luồng LAN không đọc `PUBLIC_ORIGIN`, `BIND_HOST`, `GOOGLE_CLIENT_ID`, `GOOGLE_HOSTED_DOMAINS`, `ADMIN_EMAILS`, `TRUSTED_PROXY_CIDRS` hoặc `QR_SECRET` cũ. Không dùng Caddy trong đường gửi điểm danh mới: app lấy IP từ socket trực tiếp và bỏ qua header IP.
 
@@ -22,7 +24,7 @@ Trên Windows, dùng `/` trong đường dẫn `.env`, ví dụ `C:/Users/ha/bp-
 2. Lưu file JSON key ở `data/secrets/google-service-account.json` trên laptop, giữ riêng.
 3. Tạo một file Google Sheet cho lớp hoặc chọn file được giao. Chia sẻ quyền **Editor** của file đó cho email `client_email` trong service account.
 4. Điền `GOOGLE_SHEET_ID` (đoạn giữa `/d/` và `/edit` trong URL) và đường dẫn tuyệt đối của `GOOGLE_APPLICATION_CREDENTIALS` vào `.env`.
-5. Dừng rồi bật service lại. Bấm **Đồng bộ Sheet** trên trang TA, kiểm tra trạng thái và mở Sheet để nghiệm thu.
+5. Ctrl+C rồi chạy `npm start` lại. Bấm **Đồng bộ Sheet** trên trang TA, kiểm tra trạng thái và mở Sheet để nghiệm thu.
 
 App sử dụng scope Sheets, không yêu cầu tài khoản Google của sinh viên. Không đưa key vào README, ảnh chụp, Git hoặc chat. Các bước service account theo [tài liệu xác thực server của Google](https://developers.google.com/identity/protocols/oauth2/service-account).
 

@@ -24,6 +24,8 @@ test('production LAN server survives SIGKILL with receipts, seats, IP flags, TA 
     await start();const admin=config.adminOrigins[0],profile=await request(admin,'/api/dashboard');
     const {session}=await request(admin,'/api/sessions',{minutes:8},profile.csrf);
     const bodies=['001','002'].map((id,i)=>({sessionId:session.id,studentId:id,name:'Student '+id,seat:'B-'+(i+1),requestId:randomBytes(16).toString('hex')}));
+    const {qr}=await request(admin,'/api/qr');
+    for(const body of bodies)body.scanTicket=(await request(config.origin,'/api/scan',{token:qr.token})).scanTicket;
     const before=await request(config.origin,'/api/check-in',bodies[0]);await request(config.origin,'/api/check-in',bodies[1]);
     const {entries}=await request(admin,'/api/entries');await request(admin,'/api/entries/'+entries[0].id+'/review',{review:'CONFIRMED',note:'Đã đối chiếu thẻ và ghế B-1',peers:2},profile.csrf);
     await assert.rejects(()=>fetch('http://'+config.host+':'+config.adminPort+'/api/dashboard',{signal:AbortSignal.timeout(500)}));

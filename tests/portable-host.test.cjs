@@ -37,8 +37,8 @@ test('Windows setup/install skip Linux services; start loads env before starting
   await portableHost('install',{log,prepare:()=>calls.push('prepare')});assert.deepEqual(calls,['prepare']);
   const directory=fs.mkdtempSync(path.join(os.tmpdir(),'bp-portable-'));fs.writeFileSync(path.join(directory,'.env'),'PORT=4180\n');
   try{
-    await portableHost('start',{root:directory,log,loadEnvFile:file=>{assert.equal(file,path.join(directory,'.env'));calls.push('env');},runServer:async()=>calls.push('server')});
-    assert.deepEqual(calls,['prepare','env','server']);
+    await portableHost('start',{root:directory,log,prepare:()=>calls.push('prepare-start'),loadEnvFile:file=>{assert.equal(file,path.join(directory,'.env'));calls.push('env');},loadConfig:()=>({adminOrigins:['http://127.0.0.1:4181']}),runServer:async()=>calls.push('server'),openBrowser:()=>calls.push('browser')});
+    assert.deepEqual(calls,['prepare','prepare-start','env','server','browser']);
     await portableHost('stop',{log});assert.ok(messages.some(s=>s.includes('Ctrl+C')));assert.ok(messages.some(s=>s.includes('không dừng tiến trình')));
     await assert.rejects(()=>portableHost('invalid',{log}),/Dùng install/);
   }finally{fs.rmSync(directory,{recursive:true,force:true});}
@@ -58,7 +58,7 @@ test('portable foreground start really serves the app with dotenv config from a 
   const config=loadLanConfig(env);env.CAMPUS_CIDRS=config.host+'/32';
   fs.writeFileSync(path.join(directory,'.env'),Object.entries(env).map(([k,v])=>k+'='+JSON.stringify(v)).join('\n'));
   try{
-    child=spawn(process.execPath,['-e',"require('./scripts/portable-host.cjs').portableHost('start',{root:process.argv[1]}).catch(e=>{console.error(e);process.exitCode=1})",directory],{cwd:path.resolve(__dirname,'..'),env:{PATH:process.env.PATH,SystemRoot:process.env.SystemRoot||'',WINDIR:process.env.WINDIR||''},stdio:['ignore','pipe','pipe']});
+    child=spawn(process.execPath,['-e',"require('./scripts/portable-host.cjs').portableHost('start',{root:process.argv[1]}).catch(e=>{console.error(e);process.exitCode=1})",directory],{cwd:path.resolve(__dirname,'..'),env:{PATH:process.env.PATH,SystemRoot:process.env.SystemRoot||'',WINDIR:process.env.WINDIR||'',BP_NO_BROWSER:'1'},stdio:['ignore','pipe','pipe']});
     let errors='';child.stderr.on('data',chunk=>errors+=chunk);child.stdout.resume();
     let started=false;
     for(let i=0;i<100;i++){

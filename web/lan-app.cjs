@@ -46,13 +46,17 @@ function createStudentApp(config,store,options={}){
   app.get('/api/session',(req,res)=>{
     const session=store.activeSession(now());res.json({session:session?{id:session.id,date:session.date,endsAt:session.ends_at}:null,serverTime:now()});
   });
-  app.post('/api/check-in',(req,res)=>res.json({receipt:store.submit(req.body,req.socket.remoteAddress,now())}));
+  app.post('/api/scan',(req,res)=>res.json(store.scan(req.body,req.socket.remoteAddress,now())));
+  app.post('/api/check-in',(req,res)=>res.json({receipt:store.checkIn(req.body,req.socket.remoteAddress,now())}));
   return finish(app,'student.html');
 }
 function createAdminApp(config,store,worker,options={}){
   const now=options.clock||Date.now,app=common(config,true),csrf=random(),actor='TA tại máy host';
   app.use('/api',(req,res,next)=>{if(req.method==='POST'&&!equal(req.headers['x-csrf-token'],csrf))fail(403,'CSRF_INVALID','Tải lại trang quản lý rồi thử lại.');next();});
   app.get('/api/dashboard',(req,res)=>res.json({csrf,today:today(now()),sessions:store.sessions(),sync:worker.status(),url:config.origin,serverTime:now(),network:config.network,cidrs:config.campusCidrs}));
+  // The same 40-bit HMAC-derived room code keeps the projected QR easy to scan.
+  // It has exactly the same expiry and admission checks as manual code entry.
+  app.get('/api/qr',(req,res)=>{const qr=store.currentQr(now());res.json({qr:qr?{...qr,url:config.origin+'/#code='+qr.code}:null});});
   app.post('/api/sessions',(req,res)=>res.json({session:store.open(today(now()),Number(req.body.minutes),actor,now())}));
   app.post('/api/sessions/:id/close',(req,res)=>res.json({session:store.closeSession(req.params.id,actor,now())}));
   app.get('/api/entries',(req,res)=>res.json({entries:store.entries(typeof req.query.session==='string'?req.query.session:undefined)}));

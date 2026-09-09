@@ -1,6 +1,23 @@
 'use strict';
 const $=id=>document.getElementById(id);
 let dashboard,selected='',entries=[],reviewing,busy=false,refreshQueued=false,loadedURL='',screen='attendance';
+let currentQr,qrBusy=false,qrAt=0;
+function drawQr(){
+  const remaining=currentQr?currentQr.expiresAt-currentQr.serverTime-(performance.now()-qrAt):0;
+  if(remaining<=0){$('qr').replaceChildren();$('attendance-code').textContent='';$('qr-countdown').textContent=currentQr?'Đang đổi QR…':'';loadedURL='';return;}
+  if(loadedURL!==currentQr.url){const qr=qrcode(0,'M');qr.addData(currentQr.url);qr.make();$('qr').innerHTML=qr.createSvgTag({cellSize:8,margin:32,scalable:true});loadedURL=currentQr.url;}
+  $('attendance-code').textContent=currentQr.code.slice(0,4)+' '+currentQr.code.slice(4);
+  $('qr-countdown').textContent='QR và mã đổi sau '+Math.ceil(remaining/1000)+' giây';
+}
+async function refreshQr(){
+  if(qrBusy||!dashboard)return;qrBusy=true;
+  try{
+    const shown=dashboard.sessions.find(s=>s.id===selected);
+    if(!active(shown)){currentQr=null;drawQr();return;}
+    const result=await api('/api/qr');currentQr=result.qr;qrAt=performance.now();drawQr();
+  }catch{if(!currentQr)$('qr-countdown').textContent='Chưa lấy được QR. Kiểm tra máy host.';}
+  finally{qrBusy=false;}
+}
 function notice(text,error=false){$('notice').textContent=text;$('notice').className=error?'notice error':'notice';}
 async function api(url,data){const response=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(20000),...(data?{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':dashboard?.csrf||''},body:JSON.stringify(data)}:{})});const body=await response.json();if(!response.ok)throw Error(body.message||'Không xử lý được yêu cầu.');return body;}
 function active(s){return s&&s.mode==='OFFLINE'&&!s.closed_at&&s.ends_at>dashboard.serverTime;}
@@ -71,7 +88,7 @@ async function refresh(){
   $('session-state').textContent=active(shown)?'ĐANG NHẬN ĐIỂM DANH':shown?'PHIÊN ĐÃ ĐÓNG':'CHƯA MỞ PHIÊN';
   $('session-end').textContent=active(shown)?'Đóng lúc '+new Date(shown.ends_at).toLocaleTimeString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}):'';
   $('count').textContent=(shown?.count||0)+' sinh viên';$('student-url').textContent=dashboard.url;
-  if(active(shown)){if(loadedURL!==dashboard.url){const qr=qrcode(0,'M');qr.addData(dashboard.url);qr.make();$('qr').innerHTML=qr.createSvgTag({cellSize:8,margin:32,scalable:true});loadedURL=dashboard.url;}}else{$('qr').replaceChildren();loadedURL='';}
+  await refreshQr();
   const sync=dashboard.sync;$('sync').disabled=!sync.enabled||sync.busy;
   $('sync-state').textContent=!sync.enabled?'Lưu trên laptop · Sheet chưa cấu hình':sync.error?'Sheet chưa đồng bộ được · dữ liệu đã lưu trên laptop':sync.pending?'Đang chờ đồng bộ Sheet':'Sheet đã đồng bộ';
   $('network').textContent=dashboard.network+' · '+dashboard.cidrs.join(', ');
@@ -92,3 +109,4 @@ $('review-form').addEventListener('submit',async event=>{event.preventDefault();
 $('import-roster').addEventListener('click',()=>action(async()=>{const file=$('roster').files[0];if(!file)throw Error('Chọn file CSV danh sách lớp.');const result=await api('/api/roster',{csv:await file.text()});notice('Đã nhập '+result.count+' sinh viên.');}));
 $('import-online').addEventListener('click',()=>action(async()=>{const result=await api('/api/online',{date:$('online-date').value,list:$('online-list').value,evidence:$('online-evidence').value});notice('Đã bổ sung '+result.count+' kết quả online.');}));
 showScreen();requestRefresh();setInterval(()=>{if(!busy&&!$('review-dialog').open)requestRefresh();},10000);
+setInterval(()=>{drawQr();void refreshQr();},1000);

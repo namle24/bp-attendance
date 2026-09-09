@@ -2,6 +2,8 @@
 <body><main class="student-page"><header><img src="/assets/usth-logo.png" alt="USTH — Vietnam France University"><div><span class="eyebrow">BASIC PROGRAMMING</span><h1>Điểm danh tại lớp</h1></div></header>
 <section class="card"><div class="section-top"><span class="badge">OFFLINE</span><span id="date" class="muted"></span></div><h2>Thông tin của bạn</h2><p>Kết nối Wi-Fi của lớp và nhập đúng thông tin để TA đối chiếu.</p>
 <div id="notice" role="status" aria-live="polite">Đang kết nối máy host…</div>
+<form id="scan-form" hidden><label for="room-code">Mã đang chiếu trong phòng</label><input id="room-code" maxlength="12" autocomplete="off" autocapitalize="characters" placeholder="ABCD EFGH" required><button id="scan-submit" type="submit">Xác nhận mã</button><p class="muted">Mã đổi mỗi 30 giây. Điện thoại có thể quét QR đang chiếu để vào thẳng biểu mẫu.</p></form>
+<p id="scan-time" class="muted" aria-live="off"></p>
 <form id="attendance-form" hidden><label for="student-id">Mã số sinh viên</label><input id="student-id" name="studentId" maxlength="40" required autocomplete="off" autocapitalize="characters" placeholder="MSSV do trường cấp">
 <label for="full-name">Họ và tên</label><input id="full-name" name="name" maxlength="120" required autocomplete="name" placeholder="Nhập đầy đủ họ và tên">
 <label for="seat">Vị trí ngồi</label><input id="seat" name="seat" maxlength="32" required autocomplete="off" placeholder="Ví dụ: hàng B, ghế 12"><small>Dùng cách đánh số hàng, ghế TA hướng dẫn trong phòng.</small>

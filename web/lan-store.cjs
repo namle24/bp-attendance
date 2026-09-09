@@ -1,5 +1,6 @@
 const {Store}=require('./store.cjs');
-const {fail,hash,today}=require('./security.cjs');
+const {fail,hash,today,random,issueQr}=require('./security.cjs');
+const {scan,verifyScan}=require('./lan-qr.cjs');
 const ipaddr=require('ipaddr.js');
 const BP=require('./core.cjs');
 
@@ -38,10 +39,20 @@ class LanStore extends Store {
       review TEXT NOT NULL DEFAULT '', reviewed_peers INTEGER NOT NULL DEFAULT 0,
       review_note TEXT NOT NULL DEFAULT '', reviewed_by TEXT NOT NULL DEFAULT '', reviewed_at INTEGER,
       UNIQUE(session_id,student_id));
-      CREATE INDEX IF NOT EXISTS lan_session_ip ON lan_attendance(session_id,ip);`);
+      CREATE INDEX IF NOT EXISTS lan_session_ip ON lan_attendance(session_id,ip);
+      CREATE TABLE IF NOT EXISTS lan_scan_uses (grant_id TEXT PRIMARY KEY,attendance_id INTEGER NOT NULL UNIQUE REFERENCES lan_attendance(id));`);
     if(!this.meta('lanSchema')){this.setMeta('lanSchema','1');this.dirty();}
+    if(!this.meta('lanQrSecret'))this.setMeta('lanQrSecret',random());
   }
   open(date,minutes,actor,now=Date.now()){return super.open(date,minutes,actor,now,false);}
+  currentQr(now=Date.now()){
+    const session=this.activeSession(now);
+    return session?issueQr(session,this.meta('lanQrSecret'),now):null;
+  }
+  scan(input,address,now=Date.now()){return scan(input,this.activeSession(now),this.meta('lanQrSecret'),address,now);}
+  checkIn(body,address,now=Date.now()){
+    return this.submit(body,address,now,()=>verifyScan(body.scanTicket,this.meta('lanQrSecret'),address,body.sessionId,now));
+  }
   sessions(){return super.sessions().map(s=>({...s,count:s.count+this.db.prepare('SELECT COUNT(*) AS n FROM lan_attendance WHERE session_id=?').get(s.id).n}));}
   entries(sid,date){
     const where=[],params=[];
@@ -88,7 +99,9 @@ class LanStore extends Store {
     const peers=this.db.prepare('SELECT COUNT(*) AS n FROM lan_attendance WHERE session_id=? AND ip=?').get(row.session_id,row.ip).n;
     return {studentId:row.student_id,name:row.name,seat:row.seat,date:this.session(row.session_id).date,at:row.at,duplicate,status:state({...row,peers})};
   }
-  submit(body,address,now=Date.now()){
+  // Trusted local imports/tests may call submit directly. Public HTTP must use
+  // checkIn, which verifies a current scan inside the same write transaction.
+  submit(body,address,now=Date.now(),authorize){
     const sid=clean(body.sessionId,64,'Phiên'),studentId=clean(body.studentId,40,'MSSV').toUpperCase();
     if(!/^[A-Z0-9][A-Z0-9._-]{0,39}$/.test(studentId))fail(400,'ID_INVALID','MSSV chỉ gồm chữ, số, dấu chấm, gạch ngang hoặc gạch dưới.');
     const name=clean(body.name,120,'Họ tên'),seat=clean(body.seat,32,'Vị trí ngồi');
@@ -102,8 +115,11 @@ class LanStore extends Store {
       }
       const session=this.session(sid);
       if(!session||session.mode!=='OFFLINE'||session.date!==today(now)||session.closed_at||now<session.opened_at||now>=session.ends_at)fail(409,'SESSION_CLOSED','Chưa mở điểm danh hoặc phiên đã hết giờ. Liên hệ TA.');
+      const grant=authorize?.();
+      if(grant&&this.db.prepare('SELECT 1 FROM lan_scan_uses WHERE grant_id=?').get(grant))fail(409,'SCAN_USED','Lượt quét này đã dùng cho một MSSV. Nhờ TA kiểm tra.');
       if(this.db.prepare('SELECT 1 FROM lan_attendance WHERE session_id=? AND student_id=?').get(sid,studentId)||this.db.prepare('SELECT 1 FROM attendance WHERE session_id=? AND student_id=?').get(sid,studentId))fail(409,'ALREADY_RECORDED','MSSV này đã được ghi nhận trong buổi học. Nhờ TA kiểm tra nếu bạn chưa gửi.');
       this.db.prepare('INSERT INTO lan_attendance(session_id,student_id,name,seat,ip,at,request_hash) VALUES (?,?,?,?,?,?,?)').run(sid,studentId,name,seat,ip,now,requestHash);
+      if(grant)this.db.prepare('INSERT INTO lan_scan_uses(grant_id,attendance_id) SELECT ?,id FROM lan_attendance WHERE request_hash=?').run(grant,requestHash);
       this.dirty();
       return this.receipt(this.db.prepare('SELECT * FROM lan_attendance WHERE request_hash=?').get(requestHash),false);
     });

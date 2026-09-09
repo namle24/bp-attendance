@@ -8,14 +8,24 @@ const {chromium}=require(process.env.BP_PLAYWRIGHT_MODULE||'playwright');
   const fixture=await startFixture();let browser;
   try{
     browser=await chromium.launch({headless:true,executablePath:process.env.BP_CHROMIUM});
+    const picker=await require('./network-picker.cjs').networkPicker({list:()=>[{name:'Wi-Fi',address:'192.168.2.20',cidr:'192.168.2.20/24',wifi:true}]});
+    try{
+      const page=await browser.newPage({viewport:{width:1000,height:850}});await page.goto(picker.origin);await page.locator('.network-option').waitFor();await page.screenshot({path:'docs/web-network-picker.png',fullPage:true});
+      await page.locator('.network-option').click();assert.equal((await picker.selection).name,'Wi-Fi');picker.finish(fixture.adminOrigin+'/');await page.waitForURL(fixture.adminOrigin+'/');await page.close();
+    }finally{await picker.close();}
     const errors=[],requests=[];
     const admin=await browser.newPage({viewport:{width:1280,height:960}});admin.on('pageerror',e=>errors.push(e.message));admin.on('request',r=>requests.push(r.url()));
     await admin.goto(fixture.adminOrigin);await admin.locator('#open').waitFor();await admin.locator('#open').click();
     await admin.locator('#exit-project').waitFor();await admin.locator('#qr svg').waitFor();
     assert.equal(fixture.store.sessions().length,1);await admin.screenshot({path:'docs/web-projector.png',fullPage:true});
+    const firstQr=fixture.store.currentQr(),firstCode=await admin.locator('#attendance-code').textContent();
+    await admin.waitForFunction(code=>document.getElementById('attendance-code').textContent&&document.getElementById('attendance-code').textContent!==code,firstCode,{timeout:35000});
+    const expired=await fetch(fixture.origin+'/api/scan',{method:'POST',headers:{Origin:fixture.origin,'Content-Type':'application/json'},body:JSON.stringify({token:firstQr.token})});assert.equal(expired.status,410);
     const mobile=await browser.newPage({viewport:{width:390,height:844}});mobile.on('pageerror',e=>errors.push(e.message));mobile.on('request',r=>requests.push(r.url()));
-    await mobile.goto(fixture.origin);await mobile.locator('#attendance-form').waitFor();
-    assert.equal(await mobile.locator('input').count(),3);assert.ok(await mobile.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+    const qrLink=()=>fixture.origin+'/#code='+fixture.store.currentQr().code;
+    await mobile.goto(qrLink());await mobile.locator('#attendance-form').waitFor();
+    assert.equal(await mobile.locator('#attendance-form input').count(),3);assert.ok(await mobile.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+    assert.equal(await mobile.locator('#scan-form').isVisible(),false);assert.equal(new URL(mobile.url()).hash,'');
     await mobile.screenshot({path:'docs/web-student-ready.png',fullPage:true});
     await mobile.locator('#student-id').fill('001');await mobile.locator('#full-name').fill('Nguyễn An');await mobile.locator('#seat').fill('B-12');
     let attempted=0;await mobile.route('**/api/check-in',async route=>{if(++attempted===1)return route.abort('failed');await route.fetch();await route.abort('failed');});
@@ -27,6 +37,9 @@ const {chromium}=require(process.env.BP_PLAYWRIGHT_MODULE||'playwright');
     assert.match(await mobile.locator('#receipt').textContent(),/001/);assert.match(await mobile.locator('#notice').textContent(),/trước đó/);
     await mobile.screenshot({path:'docs/web-student.png',fullPage:true});
     const desktop=await browser.newPage({viewport:{width:1200,height:900}});desktop.on('pageerror',e=>errors.push(e.message));await desktop.goto(fixture.origin);
+    await desktop.locator('#scan-form').waitFor();assert.equal(await desktop.locator('#attendance-form').isVisible(),false);
+    await desktop.screenshot({path:'docs/web-student-code.png',fullPage:true});
+    await desktop.locator('#room-code').fill(fixture.store.currentQr().code);await desktop.locator('#scan-submit').click();await desktop.locator('#attendance-form').waitFor();
     await desktop.locator('#student-id').fill('002');await desktop.locator('#full-name').fill('Trần Bình');await desktop.locator('#seat').fill('B-13');
     await desktop.screenshot({path:'docs/web-student-desktop.png',fullPage:true});await desktop.locator('#submit').click();await desktop.locator('#receipt').waitFor();
     await admin.locator('#exit-project').click();await admin.waitForFunction(()=>document.querySelectorAll('#entries tr.flagged').length===2,{},{timeout:15000});
@@ -62,6 +75,6 @@ const {chromium}=require(process.env.BP_PLAYWRIGHT_MODULE||'playwright');
     assert.equal(await closed.locator('#attendance-form').isVisible(),false);
     assert.deepEqual(errors,[]);assert.ok(requests.every(url=>url.startsWith(fixture.origin)||url.startsWith(fixture.adminOrigin)));
     assert.doesNotMatch(await admin.locator('body').innerText(),/demo|minh họa|dữ liệu giả/i);
-    console.log('LAN UI passed: three-field mobile/desktop form, QR projection, network loss before/after commit, reload recovery, both IP peers red, TA review, multi-day history, daily/all CSV downloads, case status/date filters, case review, closed window, local assets and screenshots.');
+    console.log('LAN UI passed: rotating QR admission, desktop room code, three-field form, network loss before/after commit, reload recovery, both IP peers red, TA review, multi-day history, daily/all CSV downloads, case filters/review, closed window, local assets and screenshots.');
   }finally{if(browser)await browser.close();await fixture.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

@@ -3,7 +3,12 @@
 const {parentPort,workerData}=require('node:worker_threads');
 const assert=require('node:assert/strict');
 async function main(){
-  const {origin,bodies}=workerData;
+  const {origin,bodies,token}=workerData;
+  const scans=await Promise.allSettled(bodies.map(async body=>{
+    const response=await fetch(origin+'/api/scan',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({token}),signal:AbortSignal.timeout(30000)});
+    assert.equal(response.status,200);body.scanTicket=(await response.json()).scanTicket;
+  }));
+  assert.equal(scans.filter(r=>r.status==='rejected').length,0,'All 700 scans must succeed');
   for(const duplicate of [false,true]){
     const results=await Promise.allSettled(bodies.map(async body=>{
       const response=await fetch(origin+'/api/check-in',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(30000)});
