@@ -7,6 +7,8 @@ const {loadLanConfig}=require('../web/lan-config.cjs');
 const {SheetsWriter,SyncWorker}=require('../web/sheets.cjs');
 const {ranges}=require('../web/security.cjs');
 const {listen}=require('../web/listener.cjs');
+const {Worker}=require('node:worker_threads');
+const path=require('node:path');
 const now=Date.parse('2026-09-09T06:00:00Z');
 const payload=(sid,id='001')=>({sessionId:sid,studentId:id,name:'Nguyễn An',seat:'B-12',requestId:randomBytes(16).toString('hex')});
 function setup(){const store=new LanStore(':memory:');const session=store.open('2026-09-09',8,'TA',now);return {store,session};}
@@ -92,10 +94,11 @@ test('HTTP ignores forwarded and submitted IP, separates TA API, enforces origin
 test('700 same-IP HTTP submissions and retries succeed without Sheets and mark all 700 for review',async()=>{
   const f=await fixture();try{
     const bodies=Array.from({length:700},(_,i)=>payload(f.session.id,'S'+String(i).padStart(4,'0')));
-    for(const duplicate of [false,true]){
-      const replies=await Promise.all(bodies.map(async body=>{const res=await fetch(f.config.origin+'/api/check-in',post(f.config.origin,body));assert.equal(res.status,200);return res.json();}));
-      assert.ok(replies.every(r=>r.receipt.duplicate===duplicate));
-    }
+    const client=new Worker(path.join(__dirname,'helpers/lan-burst-client.cjs'),{workerData:{origin:f.config.origin,bodies}});
+    try{await new Promise((resolve,reject)=>{
+      client.once('message',message=>{assert.equal(message,'complete');resolve();});
+      client.once('error',reject);client.once('exit',code=>reject(Error('Load client exited before completion: '+code)));
+    });}finally{await client.terminate();}
     assert.equal(f.store.entries().length,700);assert.equal(f.store.snapshot().detailRed.length,700);assert.ok(f.store.entries().every(e=>e.peers===700));
   }finally{await f.close();}
 });
