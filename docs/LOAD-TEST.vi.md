@@ -1,5 +1,21 @@
 # Đo tải luồng LAN
 
+## Laptop thực tế · 14/09/2026
+
+Đo lại bản `0.5.0` tại commit `801abd5` trên laptop Linux, Intel Core i5-9300H, RAM 8 GiB, Node 24.19.0. Mỗi đợt phát đồng thời **700 lượt xác nhận QR → 700 lượt gửi điểm danh → 700 lượt gửi lại**. Server và bộ phát tải chạy trong hai tiến trình riêng, dùng database SQLite tạm trên đĩa với WAL/FULL; writer Sheets được giữ chờ.
+
+| Lần chạy | Quét QR, cả đợt | Gửi điểm danh, cả đợt | p95 lượt gửi | Gửi lại, cả đợt | Bản ghi sau mở lại DB |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 0,830 s | 4,326 s | 4,082 s | 0,509 s | 700/700 |
+| 2 | 0,734 s | 4,238 s | 3,993 s | 0,489 s | 700/700 |
+| 3 | 0,773 s | 4,399 s | 4,107 s | 0,520 s | 700/700 |
+
+Tổng **6.300/6.300 request thành công**, không timeout hoặc lỗi HTTP. Mỗi database có đúng 700 bản ghi, các lượt gửi lại đều khôi phục biên nhận cũ. Cả 700 bản ghi được gắn cờ trùng IP vì bộ phát tải dùng chung IP loopback. RAM RSS của tiến trình server cuối mỗi đợt: **152 / 158 / 163 MiB**; đây không phải số đo RAM đỉnh. [Báo cáo JSON đầy đủ](load-2026-09-14-laptop.json).
+
+Cùng ngày, một điện thoại thật trên **USTH_CONNECT** đã tải trang, quét QR và gửi điểm danh thành công tới laptop; người thử đã xác nhận kết quả. Phiên thử dùng database riêng, không đồng bộ Sheets. Lỗi quét sau khi phiên thử đầu tiên hết giờ được xử lý bằng một phiên ở database thử mới; không thay đổi firewall hay nới kiểm tra IP/QR để thực hiện lượt gửi thành công này.
+
+**Phạm vi:** kết quả 700 sinh viên là tải API qua loopback trên laptop, không đi qua Wi-Fi trường và chưa gồm 700 trình duyệt tải trang/ảnh. Lượt thử điện thoại xác nhận kết nối tại thời điểm thử, chưa đo Wi-Fi với lớp đông người, nhiều thiết bị hoặc API Google Sheets thật. Database lớp và bản ghi thử trên điện thoại giữ nguyên sau benchmark.
+
 ## Bản hiện tại 0.5 · QR động trên ba hệ điều hành
 
 [Lần CI ngày 09/09/2026](https://github.com/namle24/bp-attendance/actions/runs/34318361647) đã đạt trên Windows, macOS và Linux. Mỗi hệ điều hành chạy 3 đợt; mỗi đợt gồm **700 lượt xác nhận QR/mã đang chiếu → 700 lượt gửi điểm danh → 700 lượt gửi lại**. Mỗi nhóm phát đồng thời, không giãn lượt gửi hoặc tự bỏ qua/thử lại lỗi mạng.

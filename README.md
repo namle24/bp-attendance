@@ -95,6 +95,8 @@ Online tiếp tục dùng Google Form riêng. Có thể tổng hợp thủ công
 
 ## Kiểm tra mã nguồn
 
+Ngày **14/09/2026**, đã thử thành công điểm danh từ một điện thoại thật trên USTH_CONNECT. Trên laptop i5-9300H/RAM 8 GiB, ba đợt tải 700 sinh viên đạt **6.300/6.300 request** gồm quét QR, gửi và gửi lại; mỗi đợt ghi điểm danh hoàn tất trong **4,24–4,40 giây**, không mất hoặc nhân đôi bản ghi. Phép đo tải dùng HTTP loopback, chưa đo Wi-Fi với 700 thiết bị. Xem [báo cáo và giới hạn phép đo](docs/LOAD-TEST.vi.md).
+
 ```bash
 npm test
 npm run check
