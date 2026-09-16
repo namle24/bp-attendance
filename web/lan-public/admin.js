@@ -2,6 +2,7 @@
 const $=id=>document.getElementById(id);
 let dashboard,selected='',entries=[],reviewing,busy=false,refreshQueued=false,loadedURL='',screen='attendance';
 let currentQr,qrBusy=false,qrAt=0;
+let projectorWindow;
 function drawQr(){
   const remaining=currentQr?currentQr.expiresAt-currentQr.serverTime-(performance.now()-qrAt):0;
   if(remaining<=0){$('qr').replaceChildren();$('attendance-code').textContent='';$('qr-countdown').textContent=currentQr?'Đang đổi QR…':'';loadedURL='';return;}
@@ -25,9 +26,15 @@ function showScreen(){
   const next=location.hash.slice(1);screen=['attendance','history','issues'].includes(next)?next:'attendance';
   for(const panel of document.querySelectorAll('[data-screen]'))panel.hidden=panel.dataset.screen!==screen;
   for(const link of document.querySelectorAll('.screen-nav a')){if(link.hash==='#'+screen)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');}
-  if(screen!=='attendance'){document.body.classList.remove('projecting');$('exit-project').hidden=true;}
 }
-function project(){location.hash='attendance';showScreen();document.body.classList.add('projecting');$('exit-project').hidden=false;window.scrollTo(0,0);}
+function project(){
+  if(projectorWindow&&!projectorWindow.closed){projectorWindow.focus();return true;}
+  projectorWindow=window.open('/projector/','bp-attendance-projector');
+  if(projectorWindow){projectorWindow.focus();return true;}
+  notice('Trình duyệt đang chặn tab mới.');
+  const link=document.createElement('a');link.href='/projector/';link.target='_blank';link.rel='noopener';link.textContent='Mở tab chiếu QR';$('notice').append(' ',link);
+  return false;
+}
 function openReview(entry){
   reviewing=entry;$('review-title').textContent=entry.student_id+' · '+entry.name;
   $('review-detail').textContent=entry.date+' · Ghế: '+entry.seat+' · IP: '+entry.ip+' · '+entry.peers+' MSSV';
@@ -97,9 +104,14 @@ async function refresh(){
 }
 async function action(fn){if(busy)return;busy=true;try{await fn();await refresh();}catch(error){notice(error.message,true);}finally{busy=false;if(refreshQueued){refreshQueued=false;requestRefresh();}}}
 function requestRefresh(){markLoading();if(busy){refreshQueued=true;return;}void action(async()=>{});}
-$('open').addEventListener('click',()=>action(async()=>{const result=await api('/api/sessions',{minutes:Number($('minutes').value)});selected=result.session.id;await refresh();notice('Đã mở điểm danh.');project();}));
+$('open').addEventListener('click',()=>{
+  if(busy)return;
+  // Open during the click gesture, before any await, so browsers allow the tab.
+  const opened=project();
+  void action(async()=>{const result=await api('/api/sessions',{minutes:Number($('minutes').value)});selected=result.session.id;if(opened)notice('Đã mở điểm danh. Tab chiếu QR cập nhật tự động.');});
+});
 $('close').addEventListener('click',()=>action(async()=>{await api('/api/sessions/'+selected+'/close',{});notice('Đã đóng phiên điểm danh.');}));
-$('project').addEventListener('click',project);$('exit-project').addEventListener('click',()=>{document.body.classList.remove('projecting');$('exit-project').hidden=true;});
+$('project').addEventListener('click',project);
 $('session').addEventListener('change',()=>{selected=$('session').value;requestRefresh();});$('only-pending').addEventListener('change',renderEntries);
 for(const id of ['history-date','issues-date','issues-status'])$(id).addEventListener('change',requestRefresh);
 window.addEventListener('hashchange',()=>{showScreen();requestRefresh();});

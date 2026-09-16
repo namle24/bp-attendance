@@ -18,6 +18,8 @@ Trình duyệt mở trang TA trên laptop. Nếu app chưa xác định được
 
 Trang TA: **http://127.0.0.1:4181**. Sinh viên dùng URL IP Wi-Fi cổng 4180 được chiếu. Bấm **Mở QR điểm danh** khi bắt đầu nhận; app không tự mở phiên ngay lúc khởi động.
 
+QR mở trong tab chiếu riêng. Bấm **Toàn màn hình** trên tab đó; Esc để thoát. Tab bảng TA vẫn giữ danh sách sinh viên để theo dõi và đối chiếu. Bấm **Chiếu QR** để mở lại tab chiếu; có thể kéo tab sang màn hình máy chiếu. Giữ Terminal chạy app mở trong suốt buổi.
+
 **Giữ terminal mở, cắm sạc và giữ laptop thức. Ctrl+C để dừng.** Luồng mặc định chạy trực tiếp, không tự chạy khi đăng nhập hoặc tự khởi động lại nếu tiến trình lỗi. Thông báo lỗi nằm trong cửa sổ đang chạy.
 
 ## Mỗi buổi học

@@ -40,10 +40,18 @@ test('public HTTP cannot obtain the current QR or bypass scanning; actual socket
     const session=f.store.open(require('../web/security.cjs').today(),8,'TA'),input=body(session.id);
     assert.equal((await post('/api/check-in',input)).status,403);
     assert.equal((await fetch(f.origin+'/api/qr')).status,404);
+    for(const route of ['/api/projector','/projector/','/projector/projector.js'])assert.equal((await fetch(f.origin+route)).status,404);
+    assert.equal((await fetch(f.adminOrigin+'/projector/')).status,200);
+    const projection=await (await fetch(f.adminOrigin+'/api/projector')).json();
+    assert.equal(projection.session.open,true);assert.equal(projection.session.count,0);
+    assert.match(projection.qr.url,/#code=/);assert.equal(projection.csrf,undefined);assert.equal(projection.entries,undefined);
     const info=await (await fetch(f.origin+'/api/session')).json();assert.equal(info.qr,undefined);assert.equal(info.token,undefined);
     const {qr}=await (await fetch(f.adminOrigin+'/api/qr')).json();assert.match(qr.url,/#code=/);
     const scan=await post('/api/scan',{token:qr.token,ip:'10.1.1.1'});assert.equal(scan.status,200);
     input.scanTicket=scan.body.scanTicket;assert.equal((await post('/api/check-in',input)).status,200);assert.equal(f.store.entries()[0].ip,'127.0.0.1');
     assert.equal((await post('/api/check-in',body(session.id,scan.body.scanTicket,'002'))).status,409);
+    assert.equal((await (await fetch(f.adminOrigin+'/api/projector')).json()).session.count,1);
+    f.store.closeSession(session.id,'TA');
+    const closed=await (await fetch(f.adminOrigin+'/api/projector')).json();assert.equal(closed.qr,null);assert.equal(closed.session.open,false);assert.equal(closed.session.count,1);
   }finally{await f.close();}
 });

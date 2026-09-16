@@ -13,6 +13,8 @@ BP_BENCH_COUNTS=700 node scripts/bench-web.cjs data/reports/load-lan.json
 
 Validation run on Linux on 2026-09-09: **62 tests passed, 0 failed, 0 skipped**, plus the browser scenario and syntax check.
 
+Revalidated on Linux on 2026-09-16 for the independent QR projection tab: **62/62 tests passed**, syntax check and the Chromium browser scenario passed. Opening attendance creates a separate projection tab while the original TA controls remain visible; the projection fits 1280×720, enters/exits native fullscreen and continues rotating codes after the TA tab closes. Browser checks also cover reusing the projection tab, live attendance counts, hiding QR/code on connection failure, automatic recovery and hiding the code after session closure. The projector page/assets and its read-only API are served only by the localhost TA listener; student-listener access is tested to return 404. Projection responses contain the current code and aggregate count, without student records or a CSRF token. The updated projection screenshot uses an isolated fixture database.
+
 LAN-specific checks cover:
 
 - Exact per-session MSSV deduplication, normalized socket IPs, both first and subsequent IP peers flagged, separation between weeks.

@@ -57,6 +57,13 @@ function createAdminApp(config,store,worker,options={}){
   // The same 40-bit HMAC-derived room code keeps the projected QR easy to scan.
   // It has exactly the same expiry and admission checks as manual code entry.
   app.get('/api/qr',(req,res)=>{const qr=store.currentQr(now());res.json({qr:qr?{...qr,url:config.origin+'/#code='+qr.code}:null});});
+  app.get('/api/projector',(req,res)=>{
+    const at=now(),session=store.sessions().find(s=>s.mode==='OFFLINE'&&s.date===today(at)),qr=store.currentQr(at);
+    res.json({serverTime:at,url:config.origin,
+      session:session?{date:session.date,endsAt:session.ends_at,open:!session.closed_at&&session.ends_at>at,count:session.count}:null,
+      qr:qr?{code:qr.code,expiresAt:qr.expiresAt,url:config.origin+'/#code='+qr.code}:null});
+  });
+  app.use('/projector',express.static(path.join(__dirname,'projector'),{dotfiles:'deny'}));
   app.post('/api/sessions',(req,res)=>res.json({session:store.open(today(now()),Number(req.body.minutes),actor,now())}));
   app.post('/api/sessions/:id/close',(req,res)=>res.json({session:store.closeSession(req.params.id,actor,now())}));
   app.get('/api/entries',(req,res)=>res.json({entries:store.entries(typeof req.query.session==='string'?req.query.session:undefined)}));

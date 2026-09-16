@@ -31,6 +31,7 @@ App tự nhận card Wi-Fi bằng thông tin của hệ điều hành. Nếu ch�
 ![Chọn mạng trên laptop](docs/web-network-picker.png)
 
 - **TA:** trình duyệt tự mở `http://127.0.0.1:4181`; bấm **Mở QR điểm danh** khi lớp sẵn sàng. Bật app không tự tiêu tốn phiên trong ngày.
+- **Trình chiếu:** QR mở trong tab riêng, có nút **Toàn màn hình**; Esc để thoát. Bảng TA vẫn dùng được để theo dõi và đối chiếu. Nút **Chiếu QR** đưa bạn về tab chiếu hoặc mở lại nếu đã đóng. Có thể kéo tab này sang màn hình máy chiếu.
 - **Sinh viên:** quét QR đang chiếu; máy tính mở URL được chiếu và nhập mã 8 ký tự hiện tại. Quét/nhập mã hợp lệ có tối đa 3 phút điền form, không vượt giờ đóng phiên.
 - **Dừng:** Ctrl+C trong cửa sổ chạy app. Giữ cửa sổ mở, cắm sạc và giữ máy thức. Luồng chung chạy trực tiếp; dịch vụ Linux nâng cao nằm trong hướng dẫn host.
 

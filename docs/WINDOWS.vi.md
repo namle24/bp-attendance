@@ -17,6 +17,8 @@ Nếu có nhiều kết nối hoặc tên card chưa nhận diện được, ch�
 
 Mở **http://127.0.0.1:4181** trên laptop nếu trình duyệt chưa tự bật. Bấm **Mở QR điểm danh** khi lớp sẵn sàng. QR và mã cho sinh viên dùng máy tính đổi mỗi 30 giây.
 
+Màn chiếu mở trong **tab riêng**, bảng TA vẫn dùng được để theo dõi sinh viên. Trên tab chiếu, bấm **Toàn màn hình**; nhấn Esc để thoát. Có thể kéo tab sang màn hình máy chiếu hoặc bấm **Chiếu QR** trên bảng TA để mở lại. Nếu trình duyệt chặn tab mới, bấm liên kết **Mở tab chiếu QR**.
+
 **Giữ CMD mở, cắm sạc, giữ máy thức. Ctrl+C để dừng.** App chạy trực tiếp, không cài Windows service hoặc tự chặn sleep.
 
 ## Điện thoại không mở được link

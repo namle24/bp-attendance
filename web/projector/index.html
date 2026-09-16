@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Chiếu QR · Basic Programming · USTH</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/projector/style.css">
+  <script src="/qr.js" defer></script>
+  <script src="/projector/projector.js" defer></script>
+</head>
+<body class="projection-page">
+  <main>
+    <header>
+      <img src="/assets/usth-logo.png" alt="USTH — Vietnam France University">
+      <div><span class="eyebrow">BASIC PROGRAMMING</span><h1>Điểm danh tại lớp</h1></div>
+      <div class="projection-actions"><a href="/" target="_blank" rel="noopener">Bảng TA</a><button id="fullscreen" class="secondary" type="button">Toàn màn hình</button></div>
+    </header>
+    <section class="projection-card" aria-label="QR điểm danh">
+      <div class="projection-heading"><span id="session-state" class="badge">ĐANG KẾT NỐI</span><span id="session-date" class="muted"></span></div>
+      <div class="projection-content">
+        <div class="qr-column"><div class="qr-stage"><div id="qr"></div><p id="qr-placeholder" role="status">Đang kết nối máy host…</p></div><p id="qr-countdown" aria-live="off"></p></div>
+        <div class="projection-instructions">
+          <span class="eyebrow">DÀNH CHO SINH VIÊN TẠI LỚP</span><h2>Quét QR để điểm danh</h2>
+          <p class="scan-instructions">Kết nối Wi-Fi của lớp, quét mã rồi nhập <strong>MSSV, họ tên và vị trí ngồi</strong>.</p>
+          <div class="manual-entry"><p>Dùng máy tính? Mở địa chỉ</p><strong id="student-url" class="student-url"></strong><p>Nhập mã đang chiếu</p><strong id="attendance-code" class="attendance-code"></strong></div>
+          <div class="session-meta"><span id="session-end"></span><strong id="count"></strong></div>
+        </div>
+      </div>
+    </section>
+    <footer><span>USTH · Basic Programming</span><span id="fullscreen-hint" role="status">Có thể kéo tab này sang màn hình máy chiếu.</span></footer>
+  </main>
+</body>
+</html>

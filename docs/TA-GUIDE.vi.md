@@ -4,11 +4,13 @@
 
 Người host chạy `npm start` trên Windows, macOS hoặc Linux. App tự chuẩn bị dữ liệu và mở trình duyệt. Nếu hiện trang chọn mạng, bấm Wi-Fi đang dùng trong phòng. Trang TA tại **http://127.0.0.1:4181** chỉ mở trên laptop host. Giữ cửa sổ chạy app mở trong giờ học.
 
-Kiểm tra đúng ngày, thống nhất cách ghi ghế (ví dụ hàng B, ghế 12), chọn thời gian rồi bấm **Mở QR điểm danh**. Mặc định 8 phút. App chuyển sang màn chiếu, có QR và URL cho sinh viên dùng máy tính.
+Kiểm tra đúng ngày, thống nhất cách ghi ghế (ví dụ hàng B, ghế 12), chọn thời gian rồi bấm **Mở QR điểm danh**. Mặc định 8 phút. App mở **tab chiếu QR riêng**, giữ nguyên bảng TA để theo dõi và đối chiếu sinh viên. Nếu đã mở phiên, bấm **Chiếu QR** để quay lại tab chiếu hoặc mở lại tab đã đóng.
+
+Trên tab chiếu, bấm **Toàn màn hình** ở góc trên bên phải; nhấn **Esc** hoặc **Thoát toàn màn hình** để thoát. Có thể kéo tab sang màn hình máy chiếu nếu laptop dùng chế độ mở rộng màn hình. Nếu trình duyệt chặn tab mới, bấm liên kết **Mở tab chiếu QR** trên bảng TA. Nếu trình duyệt không cho bật toàn màn hình bằng nút, dùng menu trình duyệt hoặc F11 trên Windows/Linux.
 
 ![Màn chiếu](web-projector.png)
 
-**QR và mã 8 ký tự đổi mỗi 30 giây**, có đồng hồ đếm ngược. Mã cũ hết hiệu lực ngay khi đổi. Chỉ màn TA trên laptop lấy được mã hiện tại; trang sinh viên không tự lấy mã mới. Giữ màn chiếu mở trong thời gian điểm danh. Nếu máy host đổi IP, dừng app bằng Ctrl+C rồi chạy lại và chiếu QR mới.
+**QR và mã 8 ký tự đổi mỗi 30 giây**, có đồng hồ đếm ngược. Mã cũ hết hiệu lực ngay khi đổi. Tab chiếu tự cập nhật, kể cả khi chuyển sang hoặc đóng tab bảng TA; cửa sổ Terminal chạy app vẫn phải mở. Khi phiên đóng/hết giờ hoặc tab chiếu không kết nối được máy host, mã được ẩn. Trang chiếu chỉ có QR, URL, thời gian và tổng số lượt gửi; không hiển thị MSSV, họ tên hoặc IP sinh viên. Chỉ các trang trên cổng TA của laptop lấy được mã hiện tại; trang sinh viên không tự lấy mã mới. Nếu máy host đổi IP, dừng app bằng Ctrl+C rồi chạy lại và chiếu QR mới.
 
 ## 2. Sinh viên gửi thông tin
 
@@ -31,7 +33,7 @@ Sai họ tên/ghế/MSSV sau khi đã gửi: báo TA để đối chiếu và gh
 
 ## 3. Đối chiếu các dòng đỏ
 
-Bấm **Về bảng điều khiển**. Bảng tự cập nhật mỗi 10 giây. Bật **Chỉ hiện cần xác nhận** nếu muốn lọc.
+Chuyển về **tab bảng TA** đang mở. Nếu đã đóng tab đó, bấm **Bảng TA** trên tab chiếu để mở lại. Bảng tự cập nhật mỗi 10 giây. Bật **Chỉ hiện cần xác nhận** nếu muốn lọc. Việc xem và đối chiếu trên bảng TA không đổi nội dung tab chiếu.
 
 ![Cả hai sinh viên cùng IP được tô đỏ](web-admin.png)
 
