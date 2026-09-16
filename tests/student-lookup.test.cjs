@@ -1,5 +1,6 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+const {Worker}=require('node:worker_threads');
 const {LanStore}=require('../web/lan-store.cjs');
 const {StudentLookup,parseResults,sourceInput}=require('../web/student-lookup.cjs');
 const {startFixture}=require('./helpers/lan-browser-fixture.cjs');
@@ -67,7 +68,10 @@ test('lookup API exposes one exact ID, preserves LAN gates and keeps configurati
     assert.equal((await fetch(f.origin+'/api/student-history',{method:'POST',headers:{Origin:'https://outside.invalid','Content-Type':'application/json'},body:'{"studentId":"001"}'})).status,403);
     assert.equal((await fetch(f.origin+'/api/lookup-source')).status,404);
     assert.equal((await fetch(f.origin+'/history')).status,200);
-    const requests=await Promise.all(Array.from({length:700},()=>post(f.origin,'/api/student-history',{studentId:'001'})));
-    assert.ok(requests.every(r=>r.status===200));
+    const client=new Worker(path.join(__dirname,'helpers/lookup-burst-client.cjs'),{workerData:{origin:f.origin,count:700,expected:result}});
+    try{await new Promise((resolve,reject)=>{
+      client.once('message',message=>{assert.equal(message.completed,700);resolve();});
+      client.once('error',reject);client.once('exit',code=>reject(Error('Lookup load client exited before completion: '+code)));
+    });}finally{await client.terminate();}
   }finally{await f.close();}
 });
