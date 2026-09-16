@@ -6,6 +6,8 @@
 
 Kết quả được lưu vào SQLite trước khi trả thông báo thành công. Google Sheets đồng bộ sau, khoảng 15 giây mỗi đợt có thay đổi. Chưa cấu hình Sheets vẫn dùng được app và tải CSV để mở bằng Excel.
 
+**Tra cứu cho sinh viên:** mở **Tra cứu MSSV** để xem kết quả từ tab Google Sheet do TA sửa trực tiếp. TA dán link đúng tab tại **Lịch sử & xuất dữ liệu**; app đọc mỗi phút, hiển thị thời điểm đọc và cảnh báo nếu dữ liệu chưa cập nhật. Xem [hướng dẫn kết nối và sử dụng](docs/STUDENT-LOOKUP.vi.md).
+
 **Nhiều MSSV cùng IP trong một đợt:** tất cả bản ghi liên quan được tô đỏ trên bảng TA, tab chi tiết và ô ngày tương ứng của bảng tổng. TA kiểm tra người/thẻ tại ghế ngồi rồi lưu xác nhận trên app. Cùng IP chỉ là cờ đối chiếu; các thiết bị chung NAT có thể cùng IP và một người có thể dùng nhiều IP.
 
 ![Bảng TA: cả hai MSSV cùng IP đều cần đối chiếu](docs/web-admin.png)
@@ -50,6 +52,7 @@ Cập nhật bản đã clone: dừng cửa sổ app, chạy `git pull --ff-only
 | Máy Windows của giảng viên/TA | [Windows: cài đặt, cập nhật, chạy và chiếu QR](docs/WINDOWS.vi.md) |
 | Cài đặt, chạy, dừng, backup | [Hướng dẫn máy host](docs/HOST-QUICKSTART.vi.md) |
 | Bật Google Sheets và hiểu các cột | [Cấu hình Sheets](docs/WEB-SETUP.vi.md) |
+| Sinh viên tra cứu kết quả TA sửa trên Sheet | [Tra cứu bằng MSSV](docs/STUDENT-LOOKUP.vi.md) |
 | Xử lý mạng trường | [Wi-Fi / LAN](docs/LAPTOP-LAN.vi.md) |
 | Căn cứ ghi nhận và giới hạn IP | [Đối chiếu điểm danh](docs/ANTI-PROXY.vi.md) |
 | Khả năng chịu tải | [Kết quả đo](docs/LOAD-TEST.vi.md) · [Phạm vi kiểm thử](docs/WEB-VALIDATION.md) |

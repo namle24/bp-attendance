@@ -20,7 +20,7 @@ async function refreshQr(){
   finally{qrBusy=false;}
 }
 function notice(text,error=false){$('notice').textContent=text;$('notice').className=error?'notice error':'notice';}
-async function api(url,data){const response=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(20000),...(data?{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':dashboard?.csrf||''},body:JSON.stringify(data)}:{})});const body=await response.json();if(!response.ok)throw Error(body.message||'Không xử lý được yêu cầu.');return body;}
+function api(url,data){return BPClient.request(url,data,{timeout:20000,headers:{'X-CSRF-Token':dashboard?.csrf||''}});}
 function active(s){return s&&s.mode==='OFFLINE'&&!s.closed_at&&s.ends_at>dashboard.serverTime;}
 function roundTitle(s){return 'Đợt '+s.number+(s.label?' · '+s.label:'');}
 function showScreen(){
@@ -78,6 +78,11 @@ async function refreshReports(){
     renderTable('history-entries',data.entries,true);
     $('history-summary').textContent=(date||'Tất cả các ngày')+' · '+data.entries.length+' lượt gửi offline · '+new Set(data.entries.map(e=>e.student_id)).size+' MSSV';
     downloadLink('history-summary-export','/api/export.csv?'+query);downloadLink('history-detail-export','/api/detail.csv?'+query);
+    const lookup=await api('/api/lookup-source');
+    if(!$('lookup-sheet').dataset.loaded){$('lookup-sheet').value=lookup.source?'https://docs.google.com/spreadsheets/d/'+lookup.source.spreadsheetId+'/edit'+(lookup.source.gid!==undefined?'#gid='+lookup.source.gid:''):'';$('lookup-tab').value=lookup.source?.tab||'';$('lookup-sheet').dataset.loaded='1';}
+    $('lookup-link').href=dashboard.url+'/history';
+    $('lookup-status').textContent=!lookup.configured?'Chưa chọn Google Sheet kết quả.':lookup.error?lookup.error:lookup.refreshing?'Đang đọc Google Sheet…':lookup.updatedAt?'Đã đọc Sheet lúc '+BPClient.time(lookup.updatedAt)+(lookup.stale?' · Chưa lấy được bản mới.':''):'Đang chờ lần đọc Sheet đầu tiên.';
+    $('lookup-status').className=lookup.error||lookup.stale?'notice error':'muted';$('lookup-refresh').disabled=!lookup.configured||lookup.refreshing;
   }else if(screen==='issues'){
     const date=$('issues-date').value,status=$('issues-status').value,query=new URLSearchParams({date,status}).toString(),data=await api('/api/issues?'+query);
     if(screen!=='issues'||date!==$('issues-date').value||status!==$('issues-status').value)return;
@@ -124,6 +129,8 @@ $('session').addEventListener('change',()=>{selected=$('session').value;requestR
 for(const id of ['history-date','issues-date','issues-status'])$(id).addEventListener('change',requestRefresh);
 window.addEventListener('hashchange',()=>{showScreen();requestRefresh();});
 $('sync').addEventListener('click',()=>action(async()=>{await api('/api/sync',{});notice('Đã yêu cầu đồng bộ Sheet.');}));
+$('lookup-save').addEventListener('click',()=>action(async()=>{await api('/api/lookup-source',{spreadsheetId:$('lookup-sheet').value,tab:$('lookup-tab').value});notice('Đã lưu nguồn tra cứu. Đang lấy kết quả từ Google Sheet.');}));
+$('lookup-refresh').addEventListener('click',()=>action(async()=>{await api('/api/lookup-refresh',{});notice('Đã yêu cầu lấy bản kết quả mới từ Google Sheet.');}));
 $('cancel-review').addEventListener('click',()=>$('review-dialog').close());
 $('review-form').addEventListener('submit',async event=>{event.preventDefault();$('save-review').disabled=true;try{await api('/api/entries/'+reviewing.id+'/review',{review:$('review-result').value,note:$('review-note').value,peers:reviewing.peers});$('review-dialog').close();await refresh();notice('Đã lưu kết quả đối chiếu của TA.');}catch(error){$('review-error').textContent=error.message;}finally{$('save-review').disabled=false;}});
 $('import-roster').addEventListener('click',()=>action(async()=>{const file=$('roster').files[0];if(!file)throw Error('Chọn file CSV danh sách lớp.');const result=await api('/api/roster',{csv:await file.text()});notice('Đã nhập '+result.count+' sinh viên.');}));

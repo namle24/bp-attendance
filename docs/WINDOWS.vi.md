@@ -1,6 +1,6 @@
 # Hướng dẫn chạy trên laptop Windows · Giảng viên và TA
 
-Laptop host và sinh viên cùng kết nối Wi-Fi của lớp. App lưu điểm danh trên laptop, chiếu QR động và xuất CSV để mở bằng Excel. Bản 0.6 hỗ trợ nhiều đợt trong một ngày, mở lại đợt và chiếu QR trong tab riêng. Không cần cấu hình Google Sheets để bắt đầu.
+Laptop host và sinh viên cùng kết nối Wi-Fi của lớp. App lưu điểm danh trên laptop, chiếu QR động và xuất CSV để mở bằng Excel. Bản 0.7 hỗ trợ nhiều đợt trong một ngày, mở lại đợt, chiếu QR trong tab riêng và tra cứu kết quả từ Google Sheet. Không cần cấu hình Google Sheets để bắt đầu điểm danh.
 
 ## 1. Máy đã có thư mục bp-attendance
 
@@ -81,6 +81,8 @@ CSV mở được bằng Excel, gồm các cột trạng thái và ghi chú; CSV
 
 ## 6. Xử lý nhanh khi không mở được
 
+Bản mới gửi yêu cầu tương thích với trình duyệt thiếu `AbortSignal.timeout()` và xác nhận QR ngay khi mở link. Nếu quét lần đầu chưa vào nhưng quét lại được, mở link trực tiếp trong Chrome/Safari, giữ nguyên Wi-Fi và thử mã đang chiếu. Nút thử lại giữ lượt gửi để tránh tạo bản ghi trùng. Lỗi trước khi tải được trang vẫn cần kiểm tra kết nối mạng trên thiết bị thực tế.
+
 | Hiện tượng | Cách xử lý |
 | --- | --- |
 | `node` không được nhận diện hoặc yêu cầu Node 24 | Cài Node.js 24 LTS, đóng và mở lại CMD hoặc `Start-Windows.bat` |
@@ -114,3 +116,7 @@ Lệnh dùng database thử và tắt đồng bộ Sheets. Mở QR, gửi một 
 Thử xong **Ctrl+C và đóng cửa sổ thử**. Nhấp đúp `Start-Windows.bat` để chạy với database lớp. Dữ liệu thử vẫn được giữ ở file riêng.
 
 Kiểm thử tự động trên [Windows, macOS và Linux](https://github.com/namle24/bp-attendance/actions/workflows/windows.yml) bao gồm khởi động, QR, lưu dữ liệu và tải 700 sinh viên qua hai đợt. Cần thử thêm điện thoại trên chính laptop Windows và Wi-Fi phòng học; kết quả CI không đo đường truyền của phòng. Xem [kết quả tại trường và phép đo tải](LOAD-TEST.vi.md), [backup dữ liệu](HOST-QUICKSTART.vi.md) và [Sheets tùy chọn](WEB-SETUP.vi.md).
+
+## 8. Bật tra cứu kết quả cho sinh viên
+
+Trong **Lịch sử & xuất dữ liệu**, dán link Google Sheet của tab TA sửa, giữ phần `gid`, nhập tên tab rồi **Lưu nguồn tra cứu**. Với link đã có quyền xem, app đọc được ngay. Sinh viên mở **Tra cứu MSSV** trên trang điểm danh; kết quả lấy từ Sheet, có thời gian cập nhật. Xem [hướng dẫn tra cứu](STUDENT-LOOKUP.vi.md). Mỗi laptop host lưu cấu hình nguồn riêng.

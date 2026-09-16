@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lịch sử điểm danh · USTH</title><link rel="stylesheet" href="/style.css"><script src="/client.js" defer></script><script src="/history.js" defer></script></head>
+<body><main class="student-page history-page">
+<header><img src="/assets/usth-logo.png" alt="USTH — Vietnam France University"><div><span class="eyebrow">BASIC PROGRAMMING</span><h1>Lịch sử điểm danh</h1></div></header>
+<nav class="screen-nav" aria-label="Dành cho sinh viên"><a href="/">Điểm danh tại lớp</a><a href="/history" aria-current="page">Tra cứu MSSV</a></nav>
+<section class="card"><span class="badge">KẾT QUẢ TỪ GOOGLE SHEET</span><h2>Tra cứu kết quả của bạn</h2><p>Nhập đầy đủ MSSV để xem kết quả trên bảng do TA cập nhật.</p>
+<form id="lookup-form"><label for="lookup-id">Mã số sinh viên</label><input id="lookup-id" name="studentId" maxlength="40" required autocomplete="off" autocapitalize="characters" placeholder="MSSV do trường cấp"><button id="lookup-submit" type="submit">Tra cứu lịch sử</button></form>
+<p id="lookup-notice" role="status" aria-live="polite"></p><noscript><p class="notice error">Mở trang bằng Chrome/Safari và bật JavaScript để tra cứu.</p></noscript>
+<div id="lookup-result" hidden><div class="section-top"><h2 id="lookup-title"></h2><span id="lookup-count" class="badge"></span></div><p id="lookup-updated" class="muted"></p><div class="table-wrap"><table><thead><tr><th>Ngày học</th><th>Kết quả TA cập nhật</th></tr></thead><tbody id="lookup-rows"></tbody></table></div><p class="muted">Ô trống nghĩa là chưa có kết quả trên Sheet. Số đợt như 2/3 không tự quyết định kết quả cuối buổi. Báo TA nếu cần đối chiếu.</p></div>
+</section><p class="muted">Google Sheet được kiểm tra cập nhật mỗi phút khi máy host đang chạy. Trang này dùng trên Wi-Fi của lớp; chỉ hiển thị ngày và kết quả theo MSSV bạn nhập.</p><footer>USTH · Basic Programming · Hỗ trợ: trợ giảng tại lớp</footer></main></body></html>

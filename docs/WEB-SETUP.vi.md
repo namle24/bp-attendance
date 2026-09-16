@@ -1,5 +1,7 @@
 # Cấu hình LAN và Google Sheets
 
+Nếu TA sửa kết quả trực tiếp trên một tab như **Offline** và muốn sinh viên tự tra cứu, dùng [nguồn tra cứu chỉ đọc](STUDENT-LOOKUP.vi.md). Dán link tại trang TA; với link đã có quyền xem, không cần bật đồng bộ ghi bên dưới.
+
 ## `.env`
 
 | Biến | Dùng để làm gì |

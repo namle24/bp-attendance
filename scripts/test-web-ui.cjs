@@ -122,8 +122,42 @@ const screenshot=(page,name)=>page.screenshot({path:require('node:path').join(sc
     fixture.store.closeSession(roundTwo.id,'TA');const roundOne=fixture.store.sessions().find(s=>s.date===currentDate&&s.number===1);fixture.store.reopen(roundOne.id,8,'TA');
     await mobile.goto(qrLink());await mobile.locator('#receipt').waitFor();assert.match(await mobile.locator('#receipt-fields').textContent(),/Đợt 1/);
     assert.equal(fixture.store.entries(roundOne.id).length,2);assert.equal(fixture.store.entries(roundTwo.id).length,1);
+    // Older embedded browsers: no new timeout/fetch/DOM APIs, and storage denied.
+    const older=await browser.newContext({viewport:{width:390,height:844}});
+    await older.addInitScript(()=>{
+      window.fetch=undefined;window.AbortSignal=undefined;window.AbortController=undefined;window.URLSearchParams=undefined;
+      Element.prototype.replaceChildren=undefined;
+      Storage.prototype.getItem=function(){throw Error('Storage unavailable');};Storage.prototype.setItem=function(){throw Error('Storage unavailable');};
+    });
+    const compatible=await older.newPage();watch(compatible);
+    await compatible.route('**/api/session',route=>route.abort('failed'));
+    await compatible.goto(qrLink());await compatible.locator('#attendance-form').waitFor();
+    await compatible.locator('#student-id').fill('COMPAT01');await compatible.locator('#full-name').fill('Kiểm tra trình duyệt');await compatible.locator('#seat').fill('C-01');
+    await compatible.route('**/api/check-in',async route=>{await route.fetch();await route.abort('failed');});
+    await compatible.locator('#submit').click();await compatible.waitForFunction(()=>document.getElementById('notice').textContent.includes('Chưa xác nhận được'));
+    const beforeRetry=fixture.store.entries().length;await compatible.unroute('**/api/check-in');await compatible.unroute('**/api/session');
+    await compatible.locator('#reload').click();await compatible.waitForFunction(()=>!document.getElementById('reload').disabled);
+    await compatible.locator('#submit').click();await compatible.locator('#receipt').waitFor();
+    assert.equal(fixture.store.entries().length,beforeRetry);assert.match(await compatible.locator('#receipt').textContent(),/COMPAT01/);
+    const retryScan=await browser.newPage();watch(retryScan);await retryScan.route('**/api/scan',route=>route.abort('failed'));
+    await retryScan.goto(qrLink());await retryScan.waitForFunction(()=>document.getElementById('notice').classList.contains('error'));
+    assert.ok(new URL(retryScan.url()).hash.startsWith('#code='),'transport failures retain the QR for retry');
+    await retryScan.unroute('**/api/scan');await retryScan.locator('#reload').click();await retryScan.locator('#attendance-form').waitFor();assert.equal(new URL(retryScan.url()).hash,'');
+    // The lookup reads only TA Sheet results, including a change after initial publication.
+    fixture.lookup.fetchValues=async()=>[['MSSV','Họ tên','Email trường','2026-09-09','2026-09-16'],['001','Not for public lookup','private@example.invalid','OFF','Đã gửi 2/3 đợt']];
+    await navigate('history');await admin.locator('#lookup-sheet').fill('https://docs.google.com/spreadsheets/d/abcdefghijklmnop12345/edit#gid=0');await admin.locator('#lookup-tab').fill('Offline');
+    await admin.locator('#lookup-save').click();await admin.waitForFunction(()=>!busy);while(fixture.lookup.busy)await fixture.lookup.busy;
+    const historyPage=await older.newPage();watch(historyPage);await historyPage.goto(fixture.origin+'/history');await historyPage.locator('#lookup-id').fill('001');await historyPage.locator('#lookup-submit').click();await historyPage.locator('#lookup-result').waitFor();
+    assert.match(await historyPage.locator('#lookup-rows').textContent(),/Đã gửi 2\/3 đợt/);assert.doesNotMatch(await historyPage.locator('body').innerText(),/Not for public lookup|private@example|C-01/);
+    assert.ok(await historyPage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await screenshot(historyPage,'web-student-history.png');
+    fixture.lookup.fetchValues=async()=>[['MSSV','2026-09-16'],['001','TA đã xác nhận']];
+    const refreshed=admin.waitForResponse(r=>r.url().endsWith('/api/lookup-refresh'));await admin.locator('#lookup-refresh').click();await refreshed;while(fixture.lookup.busy)await fixture.lookup.busy;
+    await historyPage.locator('#lookup-submit').click();await historyPage.waitForFunction(()=>document.getElementById('lookup-rows').textContent.includes('TA đã xác nhận'));
+    fixture.lookup.fetchValues=async()=>{throw Error('network unavailable');};await fixture.lookup.sync();
+    await historyPage.locator('#lookup-submit').click();await historyPage.waitForFunction(()=>document.getElementById('lookup-notice').textContent.includes('Chưa lấy được bản cập nhật'));
+    assert.match(await historyPage.locator('#lookup-rows').textContent(),/TA đã xác nhận/);
     assert.deepEqual(errors,[]);assert.ok(requests.every(url=>url.startsWith(fixture.origin)||url.startsWith(fixture.adminOrigin)));
     assert.doesNotMatch(await admin.locator('body').innerText(),/demo|minh họa|dữ liệu giả/i);
-    console.log('LAN UI passed: same-day new/reopened rounds, per-round mobile receipts and CSV, independent projection tab, 720p layout, native fullscreen, QR rotation after closing TA, projection disconnect/recovery/closure, rotating QR admission, desktop room code, three-field form, network loss before/after commit, reload recovery, both IP peers red, TA review, multi-day history, daily/all CSV downloads, case filters/review, closed window, local assets and screenshots.');
+    console.log('LAN UI passed: legacy browser APIs/storage, immediate QR admission, lost scan retry, read-only Sheet history with refreshed/stale results, same-day new/reopened rounds, per-round receipts, independent fullscreen projection, QR rotation/expiry, network loss before/after commit, peer review, CSV reports and screenshots.');
   }finally{if(browser)await browser.close();await fixture.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

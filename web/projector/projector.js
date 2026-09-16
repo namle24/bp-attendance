@@ -24,9 +24,7 @@ async function refresh(){
   if(busy)return;busy=true;
   const started=performance.now();
   try{
-    const response=await fetch('/api/projector',{cache:'no-store',signal:AbortSignal.timeout(4000)});
-    if(!response.ok)throw Error('PROJECTOR_UNAVAILABLE');
-    state=await response.json();requestedAt=started;unavailable=false;
+    state=await BPClient.request('/api/projector',undefined,{timeout:4000});requestedAt=started;unavailable=false;
   }catch{unavailable=true;}
   finally{busy=false;draw();}
 }

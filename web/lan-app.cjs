@@ -43,6 +43,11 @@ function finish(app,page){
 }
 function createStudentApp(config,store,options={}){
   const now=options.clock||Date.now,app=common(config,false);
+  app.get('/history',(req,res)=>res.sendFile(path.join(publicDirectory,'history.html')));
+  app.post('/api/student-history',(req,res)=>{
+    if(!options.lookup)fail(503,'LOOKUP_NOT_CONFIGURED','TA chưa cấu hình Google Sheet kết quả. Vui lòng báo TA.');
+    res.json(options.lookup.search(req.body.studentId));
+  });
   app.get('/api/session',(req,res)=>{
     const session=store.activeSession(now());res.json({session:session?{id:session.id,date:session.date,endsAt:session.ends_at,number:session.number,label:session.label,generation:session.generation}:null,serverTime:now()});
   });
@@ -72,6 +77,15 @@ function createAdminApp(config,store,worker,options={}){
   app.get('/api/issues',(req,res)=>res.json(store.issues(req.query.date,req.query.status)));
   app.post('/api/entries/:id/review',(req,res)=>{store.reviewEntry(Number(req.params.id),req.body.review,req.body.note,req.body.peers,actor,now());res.json({ok:true});});
   app.post('/api/sync',(req,res)=>{void worker.sync(true);res.json(worker.status());});
+  app.get('/api/lookup-source',(req,res)=>res.json({source:options.lookup?.source()||null,...(options.lookup?.status()||{configured:false,updatedAt:null,refreshing:false,stale:false,error:''})}));
+  app.post('/api/lookup-source',(req,res)=>{
+    if(!options.lookup)fail(503,'LOOKUP_UNAVAILABLE','Khởi động lại app để bật cấu hình tra cứu.');
+    const source=options.lookup.configure(req.body,actor);void options.lookup.sync();res.json({source,...options.lookup.status()});
+  });
+  app.post('/api/lookup-refresh',(req,res)=>{
+    if(!options.lookup)fail(503,'LOOKUP_UNAVAILABLE','Khởi động lại app để bật cấu hình tra cứu.');
+    void options.lookup.sync();res.json(options.lookup.status());
+  });
   app.post('/api/roster',(req,res)=>res.json({count:store.importRoster(req.body.csv,actor)}));
   app.post('/api/online',(req,res)=>res.json({count:store.importOnline(req.body.date,req.body.list,req.body.evidence,actor,now())}));
   for(const [route,kind] of [['export','summary'],['detail','detail'],['issues','issues']])app.get('/api/'+route+'.csv',(req,res)=>{
