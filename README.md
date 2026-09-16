@@ -12,6 +12,8 @@ Kết quả được lưu vào SQLite trước khi trả thông báo thành côn
 
 ## Chạy trên laptop
 
+**Giảng viên/TA dùng Windows:** xem [hướng dẫn từng bước](docs/WINDOWS.vi.md) để cập nhật bản cũ hoặc cài lần đầu, mở app, chiếu QR qua HDMI và xuất Excel. Nếu đã có repo, dừng app rồi chạy `git pull --ff-only` và `npm start`; các buổi sau có thể nhấp đúp **Start-Windows.bat**.
+
 Cài **Node.js 24+** một lần. Trong thư mục repo, chạy:
 
 ```text
@@ -45,7 +47,7 @@ Cập nhật bản đã clone: dừng cửa sổ app, chạy `git pull --ff-only
 | --- | --- |
 | Chuẩn bị ở nhà và thử tại trường | [Chuẩn bị trước buổi học](docs/PREPARE-BEFORE-CLASS.vi.md) |
 | Mở QR, xem bản ghi đỏ, xác nhận | [Hướng dẫn TA có ảnh](docs/TA-GUIDE.vi.md) |
-| Máy Windows của giảng viên/TA | [Windows: sửa lỗi service và chạy app](docs/WINDOWS.vi.md) |
+| Máy Windows của giảng viên/TA | [Windows: cài đặt, cập nhật, chạy và chiếu QR](docs/WINDOWS.vi.md) |
 | Cài đặt, chạy, dừng, backup | [Hướng dẫn máy host](docs/HOST-QUICKSTART.vi.md) |
 | Bật Google Sheets và hiểu các cột | [Cấu hình Sheets](docs/WEB-SETUP.vi.md) |
 | Xử lý mạng trường | [Wi-Fi / LAN](docs/LAPTOP-LAN.vi.md) |
@@ -106,7 +108,7 @@ Online tiếp tục dùng Google Form riêng. Có thể tổng hợp thủ công
 
 ## Kiểm tra mã nguồn
 
-Ngày **14/09/2026**, đã thử thành công điểm danh từ một điện thoại thật trên USTH_CONNECT. Trên laptop i5-9300H/RAM 8 GiB, ba đợt tải 700 sinh viên đạt **6.300/6.300 request** gồm quét QR, gửi và gửi lại; mỗi đợt ghi điểm danh hoàn tất trong **4,24–4,40 giây**, không mất hoặc nhân đôi bản ghi. Phép đo tải dùng HTTP loopback, chưa đo Wi-Fi với 700 thiết bị. Xem [báo cáo và giới hạn phép đo](docs/LOAD-TEST.vi.md).
+Ngày **16/09/2026**, đã thử thành công điểm danh từ một điện thoại thật trên USTH_CONNECT và đối chiếu bản ghi trong database thử. Trên laptop i5-9300H/RAM 8 GiB, ba lần chạy tải 700 sinh viên qua **hai đợt cùng ngày** đạt **12.600/12.600 request** gồm quét QR, gửi và gửi lại; mỗi đợt ghi điểm danh hoàn tất trong **3,05–4,14 giây**, không mất hoặc nhân đôi bản ghi. Phép đo tải dùng HTTP loopback, chưa đo Wi-Fi với 700 thiết bị. Xem [báo cáo và giới hạn phép đo](docs/LOAD-TEST.vi.md).
 
 ```bash
 npm test

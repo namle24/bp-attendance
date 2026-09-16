@@ -1,5 +1,21 @@
 # Đo tải luồng LAN
 
+## Tại trường · Bản 0.6 · 16/09/2026
+
+Laptop kết nối USTH_CONNECT; một điện thoại thật đã quét QR và gửi điểm danh thành công. Đã đối chiếu bản ghi trong database thử và số lượt trên trang TA. Dữ liệu thử được tách khỏi database lớp và không đồng bộ Google Sheets.
+
+Chạy lại phép đo API trên laptop Linux i5-9300H/RAM 8 GiB, Node 24.19.0, mã nguồn `c90c42a`: 700 sinh viên mỗi đợt, hai đợt cùng ngày, lặp lại ba lần. Mỗi đợt gồm xác nhận QR, gửi điểm danh và gửi lại cùng yêu cầu.
+
+| Lần chạy | Gửi 700 ở đợt 1 | Gửi 700 ở đợt 2 | Bản ghi sau mở lại database |
+| --- | --- | --- | --- |
+| 1 | 4,136 s | 3,373 s | 1.400/1.400 |
+| 2 | 3,967 s | 3,865 s | 1.400/1.400 |
+| 3 | 3,224 s | 3,050 s | 1.400/1.400 |
+
+**12.600/12.600 request thành công**, không timeout hoặc lỗi HTTP; 4.200 lượt gửi lại không tạo bản ghi thêm. P95 của bước gửi điểm danh: 2,750–3,900 giây. RAM RSS cuối mỗi lần chạy: 192 / 224 / 233 MiB, không phải RAM đỉnh. SQLite trên đĩa dùng WAL/FULL; writer Sheets giữ chờ. [Số liệu đầy đủ](load-2026-09-16-campus.json).
+
+**Phạm vi:** lượt điện thoại đi qua mạng trường; tải 700 sinh viên được phát từ chính laptop qua loopback. Phép đo chưa kiểm chứng Wi-Fi với 700 thiết bị thật, tải trang/ảnh trình duyệt hoặc Google Sheets thật. Kết quả trên laptop Linux không cam kết cùng tốc độ trên laptop Windows của giảng viên.
+
 ## Bản 0.6 · Hai đợt trong cùng ngày · 16/09/2026
 
 700 sinh viên giả lập cùng gửi ở **hai đợt điểm danh liên tiếp trong cùng ngày**, lặp lại toàn bộ phép đo ba lần. Mỗi đợt gồm 700 lượt xác nhận QR → 700 lượt gửi → 700 lượt gửi lại. Cùng MSSV được ghi nhận một lần ở mỗi đợt; retry không tạo bản ghi thêm.
@@ -36,7 +52,7 @@ Cùng ngày, một điện thoại thật trên **USTH_CONNECT** đã tải tran
 
 **Phạm vi:** kết quả 700 sinh viên là tải API qua loopback trên laptop, không đi qua Wi-Fi trường và chưa gồm 700 trình duyệt tải trang/ảnh. Lượt thử điện thoại xác nhận kết nối tại thời điểm thử, chưa đo Wi-Fi với lớp đông người, nhiều thiết bị hoặc API Google Sheets thật. Database lớp và bản ghi thử trên điện thoại giữ nguyên sau benchmark.
 
-## Bản hiện tại 0.5 · QR động trên ba hệ điều hành
+## Lịch sử 0.5 · QR động trên ba hệ điều hành
 
 [Lần CI ngày 09/09/2026](https://github.com/namle24/bp-attendance/actions/runs/34318361647) đã đạt trên Windows, macOS và Linux. Mỗi hệ điều hành chạy 3 đợt; mỗi đợt gồm **700 lượt xác nhận QR/mã đang chiếu → 700 lượt gửi điểm danh → 700 lượt gửi lại**. Mỗi nhóm phát đồng thời, không giãn lượt gửi hoặc tự bỏ qua/thử lại lỗi mạng.
 

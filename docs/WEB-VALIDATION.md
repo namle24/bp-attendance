@@ -8,6 +8,8 @@ The browser scenario reopens a closed round, starts a new named round and submit
 
 Load validation for 0.6: three runs of **two same-day rounds**, each round with 700 concurrent admissions + 700 submissions + 700 retries, all against a fresh temporary disk database per run. **12,600/12,600 requests passed**, with exactly 1,400 persisted attendance records per run after reopening SQLite. Submission bursts took **2.776–3.586 seconds** on this laptop. This uses loopback, not school Wi-Fi or real Sheets; see [raw metrics](load-2026-09-16-rounds.json).
 
+Campus recheck on 2026-09-16: one real phone on USTH_CONNECT submitted to the laptop successfully; both the isolated database and the TA view showed the stored record. A separate repeat of the same two-round, three-run benchmark passed **12,600/12,600 requests**, with 1,400 records per database after reopening and submission bursts of **3.050–4.136 seconds**. This benchmark still uses loopback despite the laptop being connected to campus Wi-Fi; only the individual phone check traverses the school network. No class database or real Sheet received benchmark data. See [raw metrics](load-2026-09-16-campus.json).
+
 Commands:
 
 ```bash
@@ -51,6 +53,6 @@ The browser scenario checks actual QR rotation over 30 seconds, expired QR rejec
 
 [Desktop CI](https://github.com/namle24/bp-attendance/actions/workflows/windows.yml) runs on `windows-latest`, `macos-latest` and `ubuntu-latest`: bootstrap from missing dependencies, optional setup compatibility, launcher/QR/LAN/rounds/migration/reports/restart tests and three separate-process runs of two same-day rounds, each with 700 scans + 700 submissions + 700 idempotent retries. CI hardware is not the teacher's laptop or the USTH Wi-Fi. Native hardware discovery is checked with recorded output; real CI startup uses its available LAN and the picker/explicit interface.
 
-The older Windows 0.4 measurements remain historical in the load report. Current 0.5 scan/submission measurements and CI evidence are recorded separately there.
+The older Windows 0.4 and 0.5 measurements remain historical in the load report. Version 0.6 was also verified by [desktop CI on 2026-09-16](https://github.com/namle24/bp-attendance/actions/runs/35060878615): Windows, macOS and Linux passed bootstrap, checks and all three runs of two same-day 700-student rounds.
 
 Verified [desktop run on 2026-09-09](https://github.com/namle24/bp-attendance/actions/runs/34318361647): Windows, macOS and Linux each passed **27/27 tests, no skips**, dependency bootstrap and all three scan/submission/retry bursts. Total benchmark requests: **18,900/18,900**. QR projection also fits a 1280×720 browser viewport without scrolling, verified by the browser scenario.
