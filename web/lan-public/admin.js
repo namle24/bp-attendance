@@ -22,6 +22,7 @@ async function refreshQr(){
 function notice(text,error=false){$('notice').textContent=text;$('notice').className=error?'notice error':'notice';}
 async function api(url,data){const response=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(20000),...(data?{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':dashboard?.csrf||''},body:JSON.stringify(data)}:{})});const body=await response.json();if(!response.ok)throw Error(body.message||'Không xử lý được yêu cầu.');return body;}
 function active(s){return s&&s.mode==='OFFLINE'&&!s.closed_at&&s.ends_at>dashboard.serverTime;}
+function roundTitle(s){return 'Đợt '+s.number+(s.label?' · '+s.label:'');}
 function showScreen(){
   const next=location.hash.slice(1);screen=['attendance','history','issues'].includes(next)?next:'attendance';
   for(const panel of document.querySelectorAll('[data-screen]'))panel.hidden=panel.dataset.screen!==screen;
@@ -37,7 +38,7 @@ function project(){
 }
 function openReview(entry){
   reviewing=entry;$('review-title').textContent=entry.student_id+' · '+entry.name;
-  $('review-detail').textContent=entry.date+' · Ghế: '+entry.seat+' · IP: '+entry.ip+' · '+entry.peers+' MSSV';
+  $('review-detail').textContent=entry.date+' · Đợt '+entry.round_number+(entry.round_label?' · '+entry.round_label:'')+' · Ghế: '+entry.seat+' · IP: '+entry.ip+' · '+entry.peers+' MSSV';
   $('review-note').value=entry.review_note;$('review-result').value=entry.status==='REJECTED'?'REJECTED':'CONFIRMED';$('review-error').textContent='';$('review-dialog').showModal();
 }
 function renderTable(id,rows,dated=false){
@@ -46,7 +47,7 @@ function renderTable(id,rows,dated=false){
     const tr=document.createElement('tr');tr.dataset.entryId=entry.id;
     if(entry.status==='PENDING')tr.className='flagged';else if(entry.status==='REJECTED')tr.className='rejected';
     const values=[entry.student_id+'\n'+entry.name,entry.seat,entry.ip+'\n'+entry.peers+' MSSV',entry.statusLabel];
-    if(dated){values.unshift(entry.date);values.push(entry.reason?(entry.reason+(entry.review_note&&entry.review_note!==entry.reason?'\nGhi chú trước: '+entry.review_note:'')):(entry.review_note||'—'));}
+    if(dated){values.unshift(entry.date+'\nĐợt '+entry.round_number+(entry.round_label?' · '+entry.round_label:''));values.push(entry.reason?(entry.reason+(entry.review_note&&entry.review_note!==entry.reason?'\nGhi chú trước: '+entry.review_note:'')):(entry.review_note||'—'));}
     for(const value of values){const td=document.createElement('td');td.textContent=value;tr.append(td);}
     const td=document.createElement('td'),button=document.createElement('button');button.className='secondary';button.textContent='Đối chiếu';button.addEventListener('click',()=>openReview(entry));td.append(button);tr.append(td);table.append(tr);
   }
@@ -88,11 +89,14 @@ async function refreshReports(){
 }
 async function refresh(){
   dashboard=await api('/api/dashboard');$('today').textContent=dashboard.today;$('online-date').value||=dashboard.today;
-  const offline=dashboard.sessions.filter(s=>s.mode==='OFFLINE');if(!selected)selected=offline[0]?.id||'';
-  $('session').replaceChildren(...offline.map(s=>{const option=document.createElement('option');option.value=s.id;option.textContent=s.date;return option;}));$('session').value=selected;
+  const offline=dashboard.sessions.filter(s=>s.mode==='OFFLINE'),live=offline.find(active);if(!selected)selected=live?.id||offline[0]?.id||'';
+  $('session').replaceChildren(...offline.map(s=>{const option=document.createElement('option');option.value=s.id;option.textContent=s.date+' · '+roundTitle(s)+(active(s)?' · đang mở':'');return option;}));$('session').value=selected;
   const current=offline.find(s=>s.date===dashboard.today),shown=offline.find(s=>s.id===selected);
-  $('open').disabled=!!current;$('open').textContent=current?'Hôm nay đã mở phiên':'Mở QR điểm danh';$('close').disabled=!active(shown);$('project').hidden=!active(shown);
-  $('session-state').textContent=active(shown)?'ĐANG NHẬN ĐIỂM DANH':shown?'PHIÊN ĐÃ ĐÓNG':'CHƯA MỞ PHIÊN';
+  $('open').disabled=!!live;$('open').textContent=current?'Mở đợt mới':'Mở QR điểm danh';$('close').disabled=!active(shown);$('project').hidden=!live;
+  $('reopen').disabled=!!live||!shown||shown.date!==dashboard.today;$('reopen').hidden=!shown||shown.date!==dashboard.today;
+  $('round-help').textContent=live?'Đóng đợt đang nhận trước khi mở đợt mới hoặc mở lại.':current?'Đợt mới: mọi sinh viên điểm danh lại. Mở lại: giữ danh sách của đợt đang xem.':'Mỗi ngày là một buổi học; có thể mở nhiều đợt điểm danh trong buổi.';
+  $('round-title').textContent=shown?roundTitle(shown):'';
+  $('session-state').textContent=active(shown)?'ĐANG NHẬN ĐIỂM DANH':shown?'ĐỢT ĐÃ ĐÓNG':'CHƯA MỞ ĐỢT';
   $('session-end').textContent=active(shown)?'Đóng lúc '+new Date(shown.ends_at).toLocaleTimeString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}):'';
   $('count').textContent=(shown?.count||0)+' sinh viên';$('student-url').textContent=dashboard.url;
   await refreshQr();
@@ -108,9 +112,13 @@ $('open').addEventListener('click',()=>{
   if(busy)return;
   // Open during the click gesture, before any await, so browsers allow the tab.
   const opened=project();
-  void action(async()=>{const result=await api('/api/sessions',{minutes:Number($('minutes').value)});selected=result.session.id;if(opened)notice('Đã mở điểm danh. Tab chiếu QR cập nhật tự động.');});
+  void action(async()=>{const result=await api('/api/sessions',{minutes:Number($('minutes').value),label:$('round-label').value.trim()});selected=result.session.id;$('round-label').value='';if(opened)notice('Đã mở '+roundTitle(result.session)+'. Sinh viên quét QR mới để điểm danh.');});
 });
-$('close').addEventListener('click',()=>action(async()=>{await api('/api/sessions/'+selected+'/close',{});notice('Đã đóng phiên điểm danh.');}));
+$('reopen').addEventListener('click',()=>{
+  if(busy)return;const id=selected,opened=project();
+  void action(async()=>{const result=await api('/api/sessions/'+id+'/reopen',{minutes:Number($('minutes').value)});selected=result.session.id;if(opened)notice('Đã mở lại '+roundTitle(result.session)+'. Giữ nguyên các lượt đã điểm danh; dùng QR mới cho lượt bổ sung.');});
+});
+$('close').addEventListener('click',()=>action(async()=>{await api('/api/sessions/'+selected+'/close',{});notice('Đã đóng đợt điểm danh.');}));
 $('project').addEventListener('click',project);
 $('session').addEventListener('change',()=>{selected=$('session').value;requestRefresh();});$('only-pending').addEventListener('change',renderEntries);
 for(const id of ['history-date','issues-date','issues-status'])$(id).addEventListener('change',requestRefresh);

@@ -31,7 +31,7 @@ QR mở trong tab chiếu riêng. Bấm **Toàn màn hình** trên tab đó; Esc
 5. Đối chiếu các dòng đỏ và lưu quyết định TA. Xem [hướng dẫn có ảnh](TA-GUIDE.vi.md).
 6. Kết thúc: đóng phiên, xuất/backup dữ liệu, Ctrl+C để dừng app.
 
-Đổi Wi-Fi hoặc DHCP đổi IP: Ctrl+C rồi `npm start`, chiếu QR mới. Dữ liệu và phiên đang mở giữ trong database. Mỗi ngày chỉ có một phiên offline; dùng database riêng nếu thử gửi dữ liệu trước giờ học.
+Đổi Wi-Fi hoặc DHCP đổi IP: Ctrl+C rồi `npm start`, chiếu QR mới. Dữ liệu và đợt đang mở giữ trong database. Một ngày có thể có nhiều đợt: **Mở đợt mới** yêu cầu sinh viên gửi lại; **Mở lại đợt đang xem** giữ các lượt đã gửi và chỉ nhận bổ sung. Đóng đợt đang nhận trước khi dùng hai nút này. Vẫn dùng database riêng nếu thử dữ liệu trước giờ học để không lẫn dữ liệu thử vào lớp.
 
 ## Cập nhật bản đã có
 

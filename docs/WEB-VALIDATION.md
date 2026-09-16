@@ -1,6 +1,12 @@
-# Validation scope · LAN attendance 0.5
+# Validation scope · LAN attendance 0.6
 
-Current runtime: direct student LAN HTTP listener plus a separate localhost-only TA listener. Rotating 30-second QR/room codes, IP-bound one-use admissions (up to three minutes), three student fields, no Google login, request-key idempotency, SQLite persistence, duplicate-IP peer review and asynchronous Sheets snapshots.
+Current runtime: direct student LAN HTTP listener plus a separate localhost-only TA listener. One lesson per date with multiple attendance rounds, reopening within the same day, rotating 30-second QR/room codes, IP-bound one-use admissions (up to three minutes), three student fields, no Google login, request-key idempotency, SQLite persistence, per-round duplicate-IP peer review and asynchronous Sheets snapshots.
+
+Version 0.6 validation on 2026-09-16: **68/68 tests passed**, plus the full Chromium scenario. New checks cover multiple rounds sharing one date, repeated MSSV across rounds, reopening without duplicating previous receipts, rejection of stale QR/admissions even when reopened in the same millisecond, recovery of committed requests, one active round at a time, expired/past-date rules, online results plus daily round counts, read-only projection following a reopened older round, and TA-only CSRF-protected controls. A legacy disk database fixture is migrated and reopened with receipt IDs, reviews, signatures, used/unused scan grants and Sheet ownership preserved. The pre-migration backup is inspected independently; an injected failure after schema replacement proves transactional rollback restores the old schema and records.
+
+The browser scenario reopens a closed round, starts a new named round and submits again from the same phone browser that holds an older receipt. It checks the new receipt's round, recall of the older receipt when that round is reopened, per-round exports and one daily summary column. Projection remains in its own fullscreen-capable tab. Screenshots use only isolated fixture data.
+
+Load validation for 0.6: three runs of **two same-day rounds**, each round with 700 concurrent admissions + 700 submissions + 700 retries, all against a fresh temporary disk database per run. **12,600/12,600 requests passed**, with exactly 1,400 persisted attendance records per run after reopening SQLite. Submission bursts took **2.776–3.586 seconds** on this laptop. This uses loopback, not school Wi-Fi or real Sheets; see [raw metrics](load-2026-09-16-rounds.json).
 
 Commands:
 
@@ -43,7 +49,7 @@ Cross-platform startup uses one foreground launcher: automatic dependency/setup 
 
 The browser scenario checks actual QR rotation over 30 seconds, expired QR rejection, QR admission on mobile, manual room code on desktop, localhost network selection, and the existing recovery/review/export flows. Only synthetic data in temporary databases is used for screenshots.
 
-[Desktop CI](https://github.com/namle24/bp-attendance/actions/workflows/windows.yml) runs on `windows-latest`, `macos-latest` and `ubuntu-latest`: bootstrap from missing dependencies, optional setup compatibility, launcher/QR/LAN/reports/restart tests and three separate-process 700-scan + 700-submission + 700-idempotency-retry bursts. CI hardware is not the teacher's laptop or the USTH Wi-Fi. Native hardware discovery is checked with recorded output; real CI startup uses its available LAN and the picker/explicit interface.
+[Desktop CI](https://github.com/namle24/bp-attendance/actions/workflows/windows.yml) runs on `windows-latest`, `macos-latest` and `ubuntu-latest`: bootstrap from missing dependencies, optional setup compatibility, launcher/QR/LAN/rounds/migration/reports/restart tests and three separate-process runs of two same-day rounds, each with 700 scans + 700 submissions + 700 idempotent retries. CI hardware is not the teacher's laptop or the USTH Wi-Fi. Native hardware discovery is checked with recorded output; real CI startup uses its available LAN and the picker/explicit interface.
 
 The older Windows 0.4 measurements remain historical in the load report. Current 0.5 scan/submission measurements and CI evidence are recorded separately there.
 

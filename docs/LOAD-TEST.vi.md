@@ -1,5 +1,25 @@
 # Đo tải luồng LAN
 
+## Bản 0.6 · Hai đợt trong cùng ngày · 16/09/2026
+
+700 sinh viên giả lập cùng gửi ở **hai đợt điểm danh liên tiếp trong cùng ngày**, lặp lại toàn bộ phép đo ba lần. Mỗi đợt gồm 700 lượt xác nhận QR → 700 lượt gửi → 700 lượt gửi lại. Cùng MSSV được ghi nhận một lần ở mỗi đợt; retry không tạo bản ghi thêm.
+
+| Lần chạy | Gửi 700 ở đợt 1 | Gửi 700 ở đợt 2 | Bản ghi sau mở lại database |
+| --- | --- | --- | --- |
+| 1 | 2,776 s | 3,260 s | 1.400/1.400 |
+| 2 | 2,978 s | 3,553 s | 1.400/1.400 |
+| 3 | 3,586 s | 3,237 s | 1.400/1.400 |
+
+Tổng **12.600/12.600 request thành công**; không timeout hoặc lỗi HTTP. Tất cả 1.400 bản ghi mỗi lần chạy được gắn cờ cùng IP trong đợt tương ứng. SQLite trên đĩa WAL/FULL, client/server khác tiến trình, writer Sheets giữ chờ. RAM RSS cuối lần chạy: 185 / 196 / 230 MiB, không phải RAM đỉnh. [Số liệu đầy đủ](load-2026-09-16-rounds.json).
+
+Đây là tải API qua loopback trên laptop Linux i5-9300H/RAM 8 GiB, không đo Wi-Fi đông người, tải trang/ảnh trình duyệt hoặc Google Sheets thật. Lệnh chạy lại trên macOS/Linux:
+
+```bash
+BP_BENCH_COUNTS=700 BP_BENCH_ROUNDS=2 node scripts/bench-web.cjs data/reports/load-rounds.json
+```
+
+Script giữ giới hạn IP thật của app: tổng request mỗi server thử phải không vượt 6.000/phút. Mỗi lần chạy dùng database tạm; không thay đổi dữ liệu lớp.
+
 ## Laptop thực tế · 14/09/2026
 
 Đo lại bản `0.5.0` tại commit `801abd5` trên laptop Linux, Intel Core i5-9300H, RAM 8 GiB, Node 24.19.0. Mỗi đợt phát đồng thời **700 lượt xác nhận QR → 700 lượt gửi điểm danh → 700 lượt gửi lại**. Server và bộ phát tải chạy trong hai tiến trình riêng, dùng database SQLite tạm trên đĩa với WAL/FULL; writer Sheets được giữ chờ.

@@ -6,13 +6,13 @@ const os=require('node:os');
 const path=require('node:path');
 const {performance}=require('node:perf_hooks');
 const assert=require('node:assert/strict');
+const {randomBytes}=require('node:crypto');
 
 async function serverProcess(){
   const {LanStore:Store}=require('../web/lan-store.cjs');
   const {createStudentApp}=require('../web/lan-app.cjs');
   const {SyncWorker}=require('../web/sheets.cjs');
   const {ranges,today}=require('../web/security.cjs');
-  const {randomBytes}=require('node:crypto');
   const config={origin:'',campus:ranges(['127.0.0.1/32'])};
   const filename=process.argv[3],count=Number(process.argv[4]);
   const store=new Store(filename);
@@ -26,6 +26,7 @@ async function serverProcess(){
   config.origin='http://127.0.0.1:'+server.address().port;
   process.on('message',async message=>{
     if(message==='start'){
+      const previous=store.activeSession();if(previous)store.closeSession(previous.id,'benchmark');
       const session=store.open(today(Date.now()),5,'benchmark');
       const qr={sessionId:session.id,code:store.currentQr().code};
       void worker.sync();
@@ -81,24 +82,31 @@ async function burst(port,identities,qr,route='/api/check-in'){
   }finally{agent.destroy();}
 }
 
-async function measure(count,run){
+async function measure(count,run,roundCount=1){
   const dir=mkdtempSync(path.join(os.tmpdir(),'bp-attendance-bench-'));
   const child=fork(__filename,['--server',path.join(dir,'bench.sqlite'),String(count)],{stdio:['ignore','ignore','inherit','ipc']});
   try{
     const ready=await receive(child,'ready');
-    const started=await command(child,'start');
-    const {tickets,...scan}=await burst(ready.port,ready.identities,started.qr,'/api/scan');
-    assert.equal(scan.success,count,JSON.stringify(scan));
-    ready.identities.forEach((identity,i)=>{identity.scanTicket=tickets[i];});
-    const first=await burst(ready.port,ready.identities,started.qr);
-    const retry=await burst(ready.port,ready.identities,started.qr);
-    const stats=await command(child,'stats');
+    const rounds=[];let stats;
+    for(let round=1;round<=roundCount;round++){
+      const started=await command(child,'start');
+      const identities=ready.identities.map(identity=>({...identity,requestId:randomBytes(16).toString('hex')}));
+      const {tickets,...scan}=await burst(ready.port,identities,started.qr,'/api/scan');
+      assert.equal(scan.success,count,JSON.stringify(scan));
+      identities.forEach((identity,i)=>{identity.scanTicket=tickets[i];});
+      const first=await burst(ready.port,identities,started.qr);
+      const retry=await burst(ready.port,identities,started.qr);
+      stats=await command(child,'stats');
+      assert.equal(first.success,count,JSON.stringify(first));assert.equal(first.duplicates,0);
+      assert.equal(retry.success,count,JSON.stringify(retry));assert.equal(retry.duplicates,count);
+      assert.equal(stats.records,count*round);assert.equal(stats.flagged,count*round);
+      rounds.push({round,scan,first,retry,records:stats.records});
+    }
     const stopped=await command(child,'stop');
-    const result={count,run,scan,first,retry,records:stats.records,flagged:stats.flagged,persistedRecords:stopped.persistedRecords,sheetsBlocked:stats.sync.busy&&stats.sync.pending,rssMiB:Math.round(stats.rssMiB),sqlite:ready.sqlite};
+    const {scan,first,retry}=rounds[0];
+    const result={count,run,...(roundCount===1?{scan,first,retry}:{rounds}),records:stats.records,flagged:stats.flagged,persistedRecords:stopped.persistedRecords,sheetsBlocked:stats.sync.busy&&stats.sync.pending,rssMiB:Math.round(stats.rssMiB),sqlite:ready.sqlite};
     console.log(JSON.stringify(result));
-    assert.equal(first.success,count,'First submissions must all succeed');
-    assert.equal(first.duplicates,0);assert.equal(retry.success,count);assert.equal(retry.duplicates,count);
-    assert.equal(stats.records,count);assert.equal(stats.flagged,count);assert.equal(stopped.persistedRecords,count);assert.equal(result.sheetsBlocked,true);
+    assert.equal(stopped.persistedRecords,count*roundCount);assert.equal(result.sheetsBlocked,true);
     return result;
   }finally{
     if(child.exitCode===null){const exited=new Promise(resolve=>child.once('exit',resolve));child.kill();await exited;}
@@ -107,8 +115,11 @@ async function measure(count,run){
 }
 
 async function main(){
-  const report={measuredAt:new Date().toISOString(),platform:process.platform,node:process.version,cpu:os.cpus()[0]?.model,availableParallelism:os.availableParallelism(),totalMemoryGiB:Math.round(os.totalmem()/1024**3),method:'Separate server/load processes, loopback HTTP, real clock, temporary disk SQLite WAL with FULL synchronous; 700 rotating QR admissions followed by three-field submissions and idempotent retries; actual shared loopback socket IP; all peers flagged; Sheets writer held pending. Does not measure Wi-Fi, browser assets or real Sheets API.',submission:'LAN rotating QR',results:[]};
-  for(const count of (process.env.BP_BENCH_COUNTS||'100,300,700').split(',').map(Number))for(let run=1;run<=3;run++)report.results.push(await measure(count,run));
+  const roundCount=Number(process.env.BP_BENCH_ROUNDS||1),counts=(process.env.BP_BENCH_COUNTS||'100,300,700').split(',').map(Number);
+  assert.ok(Number.isInteger(roundCount)&&roundCount>=1);
+  for(const count of counts)assert.ok(Number.isInteger(count)&&count>0&&count*roundCount*3<=6000,'Keep the test within the real 6,000-request shared-IP per-minute limit');
+  const report={measuredAt:new Date().toISOString(),platform:process.platform,node:process.version,cpu:os.cpus()[0]?.model,availableParallelism:os.availableParallelism(),totalMemoryGiB:Math.round(os.totalmem()/1024**3),roundsPerDay:roundCount,method:'Separate server/load processes, loopback HTTP, real clock, temporary disk SQLite WAL with FULL synchronous; concurrent rotating QR admissions followed by three-field submissions and idempotent retries in each round; same students across rounds in one date; actual shared loopback socket IP; all peers flagged; Sheets writer held pending. Does not measure Wi-Fi, browser assets or real Sheets API.',submission:'LAN rotating QR',results:[]};
+  for(const count of counts)for(let run=1;run<=3;run++)report.results.push(await measure(count,run,roundCount));
   if(process.argv[2])writeFileSync(path.resolve(process.argv[2]),JSON.stringify(report,null,2)+'\n');
   console.log('All bursts and duplicate retries passed; records persisted after reopening SQLite.');
 }

@@ -9,6 +9,7 @@
 .projection-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:clamp(20px,3vh,38px) clamp(20px,3vw,44px);box-shadow:0 14px 40px #17213d06}
 .projection-heading{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:12px}
 .projection-heading .badge{font-size:11px;padding:7px 12px}
+.projection-heading #session-date{min-width:0;text-align:right;overflow-wrap:anywhere}
 .projection-content{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:clamp(24px,5vw,80px)}
 .qr-column{text-align:center;min-width:0}
 .qr-stage{width:min(100%,49vh,500px);aspect-ratio:1;margin:auto;display:grid;align-items:center;justify-items:center;background:white}

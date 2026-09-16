@@ -1,6 +1,6 @@
 # Chạy trên Windows
 
-Bản 0.5 dùng cùng launcher với macOS/Linux. Lỗi “Không liên kết được service” của bản cũ đã được xử lý; không cần cài systemd trên Windows. Cần Node.js 24 trở lên.
+Bản 0.6 dùng cùng launcher với macOS/Linux. Lỗi “Không liên kết được service” của bản cũ đã được xử lý; không cần cài systemd trên Windows. Cần Node.js 24 trở lên.
 
 ## Cập nhật và mở
 
@@ -20,6 +20,8 @@ Mở **http://127.0.0.1:4181** trên laptop nếu trình duyệt chưa tự bậ
 Màn chiếu mở trong **tab riêng**, bảng TA vẫn dùng được để theo dõi sinh viên. Trên tab chiếu, bấm **Toàn màn hình**; nhấn Esc để thoát. Có thể kéo tab sang màn hình máy chiếu hoặc bấm **Chiếu QR** trên bảng TA để mở lại. Nếu trình duyệt chặn tab mới, bấm liên kết **Mở tab chiếu QR**.
 
 **Giữ CMD mở, cắm sạc, giữ máy thức. Ctrl+C để dừng.** App chạy trực tiếp, không cài Windows service hoặc tự chặn sleep.
+
+Một ngày có thể có nhiều đợt điểm danh. Đóng đợt đang nhận, rồi chọn **Mở đợt mới** để mọi sinh viên gửi lại, hoặc chọn đợt và bấm **Mở lại đợt đang xem** để nhận bổ sung, giữ nguyên dữ liệu. Bảng tổng vẫn một cột/ngày, ghi số đợt đã gửi để TA quyết định kết quả cuối buổi.
 
 ## Điện thoại không mở được link
 

@@ -6,7 +6,7 @@
 
 Kết quả được lưu vào SQLite trước khi trả thông báo thành công. Google Sheets đồng bộ sau, khoảng 15 giây mỗi đợt có thay đổi. Chưa cấu hình Sheets vẫn dùng được app và tải CSV để mở bằng Excel.
 
-**Nhiều MSSV cùng IP trong một buổi:** tất cả bản ghi liên quan được tô đỏ trên bảng TA, tab chi tiết và ô ngày tương ứng của bảng tổng. TA kiểm tra người/thẻ tại ghế ngồi rồi lưu xác nhận trên app. Cùng IP chỉ là cờ đối chiếu; các thiết bị chung NAT có thể cùng IP và một người có thể dùng nhiều IP.
+**Nhiều MSSV cùng IP trong một đợt:** tất cả bản ghi liên quan được tô đỏ trên bảng TA, tab chi tiết và ô ngày tương ứng của bảng tổng. TA kiểm tra người/thẻ tại ghế ngồi rồi lưu xác nhận trên app. Cùng IP chỉ là cờ đối chiếu; các thiết bị chung NAT có thể cùng IP và một người có thể dùng nhiều IP.
 
 ![Bảng TA: cả hai MSSV cùng IP đều cần đối chiếu](docs/web-admin.png)
 
@@ -64,6 +64,12 @@ Cập nhật bản đã clone: dừng cửa sổ app, chạy `git pull --ff-only
 
 Trang TA có ba màn: **Điểm danh tại lớp**, **Lịch sử & xuất dữ liệu**, **Cần xử lý**.
 
+**Một ngày học có thể có nhiều đợt điểm danh:** đầu giờ, giữa giờ, cuối giờ. Đóng đợt đang nhận, nhập tên nếu muốn, rồi bấm **Mở đợt mới** để tất cả sinh viên quét QR và gửi lại. Chọn một đợt của hôm nay trong **Xem đợt điểm danh** rồi bấm **Mở lại đợt đang xem** để nhận bổ sung mà giữ nguyên các lượt đã gửi. Mỗi thời điểm chỉ có một đợt đang nhận.
+
+Bảng tổng vẫn có **một cột mỗi ngày**. Khi có nhiều đợt, ô ghi **Đã gửi 2/3 đợt**, kèm số lượt cần xác nhận/không xác nhận nếu có; TA quyết định kết quả cuối buổi. Đây là số đợt đã gửi, không tự kết luận có mặt cả buổi hoặc vắng. CSV chi tiết và tab `BP_Offline_Check` có thêm số đợt, tên đợt và mã đợt.
+
+![Điểm danh nhiều đợt trong cùng ngày](docs/web-rounds.png)
+
 - **Lịch sử & xuất dữ liệu:** chọn một ngày hoặc **Tất cả các ngày**, xem các lượt gửi offline và tải bảng tổng/chi tiết CSV. Bảng tổng theo ngày chỉ có một cột ngày và các MSSV có kết quả ngày đó; bản toàn bộ giữ đủ cột của các buổi. Tên file chứa ngày hoặc `all`.
 - **Cần xử lý:** danh sách các bản ghi chờ đối chiếu hoặc TA không xác nhận. Lọc theo ngày và trạng thái, xem ghế/IP/lý do, lưu đối chiếu trực tiếp hoặc tải danh sách CSV theo đúng bộ lọc.
 - Dữ liệu các ngày cùng lưu trong SQLite trên laptop, giữ nguyên khi khởi động lại. Xem/xuất không sửa dữ liệu gốc hoặc phạm vi đồng bộ Sheet. Bản ghi đã được xác nhận có mặt rời danh sách cần xử lý và vẫn có trong lịch sử.
@@ -79,16 +85,20 @@ CSV mở được bằng Excel nhưng không giữ màu; cột trạng thái, l�
 | Kết quả tại một ngày học | Ý nghĩa |
 | --- | --- |
 | `OFF` | Đã ghi nhận offline; thông tin tự khai hoặc TA đã đối chiếu, xem tab chi tiết |
-| `OFF cần xác nhận` + nền đỏ | Trùng IP trong cùng phiên, đang chờ TA đối chiếu |
+| `OFF cần xác nhận` + nền đỏ | Trùng IP trong cùng đợt, đang chờ TA đối chiếu |
 | `OFF không được xác nhận` | TA đã kiểm tra và không xác nhận, có ghi chú |
 | `ON` | Online đã được TA bổ sung sau đối chiếu |
 | `BOTH` | Có offline và online cùng ngày, cần đối chiếu cách tính |
 | `ON · OFF cần xác nhận` + nền đỏ | Online đã bổ sung; offline còn chờ TA |
 | Ô trống | Chưa ghi nhận, chưa kết luận vắng |
+| `Đã gửi 2/3 đợt` | Ngày có nhiều đợt: đã gửi ở hai đợt; TA quyết định kết quả cuối cùng |
+| `Đã gửi 2/3 đợt · 1 cần xác nhận` + nền đỏ | Có lượt trùng IP chưa được TA đối chiếu; không tự coi là hợp lệ |
 
 `BP_Web_Attendance`: bảng tổng, mỗi ngày học một cột. `BP_Offline_Check`: họ tên đã nhập, ghế, IP, số MSSV cùng IP, trạng thái và ghi chú TA. Bấm **Đối chiếu** trên app để cập nhật; không sửa trực tiếp hai tab do app quản lý vì lần đồng bộ sau sẽ ghi lại dữ liệu. Sheet tổng do lớp tự quản lý có thể đặt ở tab khác.
 
-Mỗi ngày mở một phiên offline, mặc định 8 phút, tùy chọn 5–30 phút; đóng sớm hoặc hết giờ thì không nhận thêm. Gửi lại cùng lượt được trả biên nhận cũ, kể cả sau khi đóng phiên. Cùng MSSV gửi từ lượt khác sẽ báo TA kiểm tra, không tiết lộ biên nhận của người khác. IP được lấy từ kết nối trực tiếp, bỏ qua IP tự khai và các header chuyển tiếp.
+Mỗi đợt mặc định 8 phút, tùy chọn 5–30 phút. Đợt đóng/hết giờ có thể được mở lại trong cùng ngày với thời lượng mới. QR và quyền gửi chưa dùng từ trước khi mở lại đều bị vô hiệu hóa; sinh viên phải quét mã mới. Người đã gửi trong đợt đó vẫn chỉ có một bản ghi. **Đợt mới** cho phép cùng MSSV gửi lại bằng một lượt quét mới. Retry của lượt cũ chỉ trả biên nhận đợt cũ, không điểm danh thay cho đợt mới. IP được lấy từ kết nối trực tiếp, bỏ qua IP tự khai và các header chuyển tiếp.
+
+Khi nâng cấp từ bản một phiên/ngày, dữ liệu cũ được giữ làm **đợt 1**. Nếu database đã có buổi học, app tự tạo bản sao SQLite `*.before-rounds-*.sqlite` bên cạnh file gốc trước khi chuyển đổi. Không cần xóa database hoặc nhập lại dữ liệu.
 
 Nếu có người thứ ba dùng IP đã được đối chiếu, những bản ghi đã xác nhận trong nhóm sẽ trở lại trạng thái cần đối chiếu. Kết quả TA đã từ chối vẫn được giữ. Ghi chú và lịch sử xác nhận lưu trong database.
 

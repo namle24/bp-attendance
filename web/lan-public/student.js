@@ -1,7 +1,11 @@
 'use strict';
 const $=id=>document.getElementById(id);let session,pending,busy=false,scanGrant,scanAt=0;
 const notice=(message,error=false)=>{$('notice').textContent=message;$('notice').className=error?'notice error':'notice';};
-function loadPending(){try{return JSON.parse(sessionStorage.getItem('bp-lan-pending')||'null');}catch{return null;}}
+function loadPending(sid){try{
+  const current=JSON.parse(sessionStorage.getItem('bp-lan-pending')||'null');
+  if(current)sessionStorage.setItem('bp-lan-pending:'+current.sessionId,JSON.stringify(current));
+  return !sid||current?.sessionId===sid?current:JSON.parse(sessionStorage.getItem('bp-lan-pending:'+sid)||'null');
+}catch{return null;}}
 function loadGrant(){try{return JSON.parse(sessionStorage.getItem('bp-lan-scan')||'null');}catch{return null;}}
 function saveGrant(){try{sessionStorage.setItem('bp-lan-scan',JSON.stringify(scanGrant));}catch{}}
 function remaining(){return scanGrant?scanGrant.expiresAt-scanGrant.serverTime-(performance.now()-scanAt):0;}
@@ -12,12 +16,18 @@ function scanClock(){
 }
 async function admit(input){
   scanGrant=await request('/api/scan',input);scanAt=performance.now();saveGrant();
+  if(session?.id!==scanGrant.sessionId){
+    if(pending)savePending();session=scanGrant.session;pending=loadPending(session.id);lockFields();
+    $('receipt').hidden=true;$('reload').hidden=false;showRound();
+  }
   if(pending&&pending.sessionId===scanGrant.sessionId){pending.scanTicket=scanGrant.scanTicket;savePending();}
+  if(pending?.receipt){receipt(pending.receipt);return;}
   $('scan-form').hidden=true;$('attendance-form').hidden=false;
   notice('Đã xác nhận mã trong phòng. Nhập MSSV, họ tên và vị trí ngồi rồi gửi.');scanClock();
 }
 function lockFields(){for(const id of ['student-id','full-name','seat'])$(id).readOnly=!!pending;}
-function savePending(){lockFields();try{sessionStorage.setItem('bp-lan-pending',JSON.stringify(pending));}catch{}}
+function savePending(){lockFields();try{sessionStorage.setItem('bp-lan-pending',JSON.stringify(pending));if(pending)sessionStorage.setItem('bp-lan-pending:'+pending.sessionId,JSON.stringify(pending));}catch{}}
+function showRound(){$('date').textContent=session?session.date+' · Đợt '+session.number+(session.label?' · '+session.label:''):'';}
 function randomId(){return Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join('');}
 async function request(url,data){
   const response=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(data?45000:20000),...(data?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}:{})});
@@ -25,17 +35,20 @@ async function request(url,data){
 }
 function receipt(row){
   $('receipt-fields').replaceChildren();
-  for(const [key,value] of [['MSSV',row.studentId],['Họ tên',row.name],['Vị trí ngồi',row.seat],['Thời gian',new Date(row.at).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'})]]){
+  for(const [key,value] of [['Đợt','Đợt '+(row.roundNumber||1)+(row.roundLabel?' · '+row.roundLabel:'')],['MSSV',row.studentId],['Họ tên',row.name],['Vị trí ngồi',row.seat],['Thời gian',new Date(row.at).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'})]]){
     const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=key;dd.textContent=value;$('receipt-fields').append(dt,dd);
   }
-  $('attendance-form').hidden=true;$('scan-form').hidden=true;$('scan-time').textContent='';$('receipt').hidden=false;$('reload').hidden=true;
+  $('attendance-form').hidden=true;$('scan-form').hidden=true;$('scan-time').textContent='';$('receipt').hidden=false;$('reload').hidden=false;$('reload').textContent='Kiểm tra đợt điểm danh tiếp theo';
   notice(row.duplicate?'Lượt gửi này đã được lưu trước đó.':row.status==='PENDING'?'Đã lưu. TA sẽ đối chiếu thông tin tại ghế ngồi.':'Điểm danh đã được lưu.');
 }
 async function boot(){
   $('reload').disabled=true;
   try{
-    const data=await request('/api/session');session=data.session;pending=loadPending();
-    scanGrant=loadGrant();if(scanGrant){scanGrant.serverTime=data.serverTime;scanAt=performance.now();if(scanGrant.sessionId!==session?.id)scanGrant=null;}
+    const data=await request('/api/session'),previous=pending||loadPending();session=data.session;pending=loadPending(session?.id);
+    $('receipt').hidden=true;$('reload').hidden=false;$('reload').textContent='Kiểm tra đợt điểm danh';
+    if(!pending&&previous){$('student-id').value=previous.studentId;$('full-name').value=previous.name;$('seat').value=previous.seat;}
+    lockFields();
+    scanGrant=loadGrant();if(scanGrant){scanGrant.serverTime=data.serverTime;scanAt=performance.now();if(scanGrant.sessionId!==session?.id||(scanGrant.session?.generation||0)!==(session.generation||0))scanGrant=null;}
     if(pending&&(!session||pending.sessionId===session.id)){
       // Retain the exact body and request key after an uncertain response, even
       // after the window closes. The server can safely recover only this receipt.
@@ -44,9 +57,10 @@ async function boot(){
       if(pending.receipt)receipt(pending.receipt);
     }else if(session){pending=null;savePending();$('attendance-form').hidden=remaining()<=0;$('scan-form').hidden=remaining()>0;notice(remaining()>0?'Nhập thông tin và gửi trước khi hết thời gian.':'Quét QR hoặc nhập mã đang chiếu trong phòng để điểm danh.');}
     else{$('attendance-form').hidden=true;$('scan-form').hidden=true;notice('Chưa mở điểm danh hoặc đã hết giờ. Chờ hướng dẫn của TA.');}
-    $('date').textContent=session?session.date:'';
+    showRound();
     const fragment=new URLSearchParams(location.hash.slice(1)),token=fragment.get('qr'),code=fragment.get('code');
-    if((token||code)&&!pending?.receipt){history.replaceState(null,'',location.pathname);try{await admit(token?{token}:{code});}catch(error){$('scan-form').hidden=!session;notice(error.message||'Chưa xác nhận được QR. Quét lại mã đang chiếu.',true);}}
+    if(token||code)history.replaceState(null,'',location.pathname);
+    if((token||code)&&!pending?.receipt){try{await admit(token?{token}:{code});}catch(error){$('scan-form').hidden=!session;notice(error.message||'Chưa xác nhận được QR. Quét lại mã đang chiếu.',true);}}
     scanClock();
   }catch{notice('Chưa kết nối được máy host. Kiểm tra Wi-Fi và thử lại.',true);}
   finally{$('reload').disabled=false;}

@@ -30,7 +30,7 @@ App sử dụng scope Sheets, không yêu cầu tài khoản Google của sinh v
 
 ## Hai tab do app quản lý
 
-**`BP_Web_Attendance`**: MSSV, họ tên, email trường nếu có roster, rồi một cột cho mỗi ngày học. MSSV được giữ dạng chuỗi, gồm số 0 đầu. Không có email vẫn ghi offline bình thường. Cột ngày được tạo khi TA mở buổi học, giữ các ngày trước.
+**`BP_Web_Attendance`**: MSSV, họ tên, email trường nếu có roster, rồi một cột cho mỗi ngày học. MSSV được giữ dạng chuỗi, gồm số 0 đầu. Không có email vẫn ghi offline bình thường. Cột ngày được tạo khi TA mở buổi học, giữ các ngày trước. Nếu trong ngày có nhiều đợt, ô ghi số đợt đã gửi (ví dụ `Đã gửi 2/3 đợt`), kèm số lượt cần xác nhận/không xác nhận. TA quyết định kết quả cuối buổi. Tab chi tiết có thêm số đợt, tên đợt và mã đợt; một MSSV có thể có nhiều dòng trong cùng ngày.
 
 **`BP_Offline_Check`**: ngày, MSSV, họ tên tự nhập, ghế, IP, số MSSV cùng IP, trạng thái, ghi chú TA, người xác nhận, giờ gửi và giờ xác nhận theo Việt Nam. Đây là nguồn chi tiết để giải thích ô đỏ trong bảng tổng.
 

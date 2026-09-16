@@ -5,8 +5,8 @@ function draw(){
   const at=state?state.serverTime+performance.now()-requestedAt:0;
   const session=state?.session,open=session?.open&&session.endsAt>at;
   const qr=state?.qr,valid=!unavailable&&open&&qr&&qr.expiresAt>at;
-  $('session-state').textContent=unavailable?'MẤT KẾT NỐI':!state?'ĐANG KẾT NỐI':open?'ĐANG NHẬN ĐIỂM DANH':session?'PHIÊN ĐÃ ĐÓNG':'CHƯA MỞ PHIÊN';
-  $('session-date').textContent=session?session.date.split('-').reverse().join('/') : '';
+  $('session-state').textContent=unavailable?'MẤT KẾT NỐI':!state?'ĐANG KẾT NỐI':open?'ĐANG NHẬN ĐIỂM DANH':session?'ĐỢT ĐÃ ĐÓNG':'CHƯA MỞ ĐỢT';
+  $('session-date').textContent=session?session.date.split('-').reverse().join('/')+' · Đợt '+session.number+(session.label?' · '+session.label:'') : '';
   $('student-url').textContent=state?.url||'';
   $('count').textContent=session?session.count+' sinh viên đã gửi':'';
   $('session-end').textContent=open?'Còn '+Math.ceil((session.endsAt-at)/60000)+' phút · đóng lúc '+new Date(session.endsAt).toLocaleTimeString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',hour:'2-digit',minute:'2-digit'}):'';

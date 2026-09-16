@@ -34,6 +34,7 @@ function issueQr(session,secret,now=Date.now()) {
   if(session.mode!=='OFFLINE'||session.closed_at||now<session.opened_at||now>=session.ends_at) fail(409,'SESSION_CLOSED','Phiên điểm danh đã đóng hoặc hết giờ.');
   const start=session.opened_at+Math.floor((now-session.opened_at)/30000)*30000;
   const payload={v:1,sid:session.id,iat:start,exp:Math.min(start+30000,session.ends_at)};
+  if(session.generation)payload.g=session.generation;
   const encoded=Buffer.from(JSON.stringify(payload)).toString('base64url');
   const sig=crypto.createHmac('sha256',secret).update(encoded).digest('base64url');
   const token=encoded+'.'+sig;

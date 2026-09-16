@@ -12,7 +12,7 @@ Cùng mạng, tên họ và ghế đủ để tạo **bản ghi điểm danh**, 
 | Dùng một quyền gửi cho MSSV thứ hai | Từ chối, kể cả sau khởi động lại | Chỉ cấp quyền mới khi có QR/mã đang chiếu |
 | Đổi IP trước lượt gửi đầu | Yêu cầu quét lại | Có thể do đổi mạng, không tự kết luận gian lận |
 | 1 MSSV gửi lại cùng lượt | Trả biên nhận cũ, không thêm dòng | Có thể do mất phản hồi mạng |
-| Nhiều MSSV cùng IP, cùng phiên | Đỏ tất cả các bản ghi liên quan | Có thể là dùng chung thiết bị, NAT hoặc điểm danh hộ |
+| Nhiều MSSV cùng IP, cùng đợt | Đỏ tất cả các bản ghi liên quan | Có thể là dùng chung thiết bị, NAT hoặc điểm danh hộ |
 | Cùng MSSV gửi từ lượt khác | Chặn ghi đè, yêu cầu TA kiểm tra | Không tiết lộ biên nhận chỉ bằng cách nhập MSSV |
 | Cùng IP vào tuần sau | Tính nhóm riêng cho buổi mới | Không gom các tuần thành một lỗi |
 | Sinh viên đổi IP / dùng nhiều thiết bị | Có thể không trùng IP với người khác | Khác IP không chứng minh khác người |

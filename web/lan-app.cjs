@@ -44,7 +44,7 @@ function finish(app,page){
 function createStudentApp(config,store,options={}){
   const now=options.clock||Date.now,app=common(config,false);
   app.get('/api/session',(req,res)=>{
-    const session=store.activeSession(now());res.json({session:session?{id:session.id,date:session.date,endsAt:session.ends_at}:null,serverTime:now()});
+    const session=store.activeSession(now());res.json({session:session?{id:session.id,date:session.date,endsAt:session.ends_at,number:session.number,label:session.label,generation:session.generation}:null,serverTime:now()});
   });
   app.post('/api/scan',(req,res)=>res.json(store.scan(req.body,req.socket.remoteAddress,now())));
   app.post('/api/check-in',(req,res)=>res.json({receipt:store.checkIn(req.body,req.socket.remoteAddress,now())}));
@@ -58,13 +58,14 @@ function createAdminApp(config,store,worker,options={}){
   // It has exactly the same expiry and admission checks as manual code entry.
   app.get('/api/qr',(req,res)=>{const qr=store.currentQr(now());res.json({qr:qr?{...qr,url:config.origin+'/#code='+qr.code}:null});});
   app.get('/api/projector',(req,res)=>{
-    const at=now(),session=store.sessions().find(s=>s.mode==='OFFLINE'&&s.date===today(at)),qr=store.currentQr(at);
+    const at=now(),active=store.activeSession(at),sessions=store.sessions(),session=sessions.find(s=>s.id===active?.id)||sessions.find(s=>s.mode==='OFFLINE'&&s.date===today(at)),qr=store.currentQr(at);
     res.json({serverTime:at,url:config.origin,
-      session:session?{date:session.date,endsAt:session.ends_at,open:!session.closed_at&&session.ends_at>at,count:session.count}:null,
+      session:session?{id:session.id,date:session.date,endsAt:session.ends_at,open:!session.closed_at&&session.ends_at>at,count:session.count,number:session.number,label:session.label}:null,
       qr:qr?{code:qr.code,expiresAt:qr.expiresAt,url:config.origin+'/#code='+qr.code}:null});
   });
   app.use('/projector',express.static(path.join(__dirname,'projector'),{dotfiles:'deny'}));
-  app.post('/api/sessions',(req,res)=>res.json({session:store.open(today(now()),Number(req.body.minutes),actor,now())}));
+  app.post('/api/sessions',(req,res)=>res.json({session:store.open(today(now()),Number(req.body.minutes),actor,now(),req.body.label??'')}));
+  app.post('/api/sessions/:id/reopen',(req,res)=>res.json({session:store.reopen(req.params.id,Number(req.body.minutes),actor,now())}));
   app.post('/api/sessions/:id/close',(req,res)=>res.json({session:store.closeSession(req.params.id,actor,now())}));
   app.get('/api/entries',(req,res)=>res.json({entries:store.entries(typeof req.query.session==='string'?req.query.session:undefined)}));
   app.get('/api/history',(req,res)=>res.json({entries:store.history(req.query.date)}));

@@ -95,12 +95,35 @@ const screenshot=(page,name)=>page.screenshot({path:require('node:path').join(sc
     await admin.locator('#history-date').selectOption(previousDate);await admin.waitForFunction(()=>!busy);assert.match(await admin.locator('#history-entries').textContent(),/099/);assert.doesNotMatch(await admin.locator('#history-entries').textContent(),/002/);
     await admin.reload();await admin.waitForFunction(()=>!busy);assert.equal(await admin.locator('#screen-history').isVisible(),true);assert.equal(await admin.locator('#screen-attendance').isVisible(),false);
     await navigate('attendance');await admin.locator('#close').click();await admin.waitForFunction(()=>!document.querySelector('#qr svg'));
-    await projector.waitForFunction(()=>document.getElementById('session-state').textContent==='PHIÊN ĐÃ ĐÓNG');
+    await projector.waitForFunction(()=>document.getElementById('session-state').textContent==='ĐỢT ĐÃ ĐÓNG');
     assert.equal(await projector.locator('#qr svg').count(),0);assert.equal(await projector.locator('#attendance-code').textContent(),'');
     const closed=await browser.newPage();await closed.goto(fixture.origin);await closed.waitForFunction(()=>document.getElementById('notice').textContent.includes('Chưa mở điểm danh'));
     assert.equal(await closed.locator('#attendance-form').isVisible(),false);
+    // Reopen the same round: existing receipts stay valid and no new record is created.
+    await admin.locator('#reopen').click();await admin.waitForFunction(()=>!busy);
+    await mobile.locator('#reload').click();await mobile.locator('#receipt').waitFor();
+    assert.match(await mobile.locator('#receipt-fields').textContent(),/Đợt 1/);
+    assert.equal(fixture.store.entries().length,4);
+    await admin.locator('#close').click();await admin.waitForFunction(()=>!busy);
+    // A new round is a new check-in, even on the same phone with an old receipt.
+    await admin.locator('#round-label').fill('Giữa giờ');await admin.locator('#open').click();await admin.waitForFunction(()=>!busy);
+    const roundTwo=fixture.store.activeSession();assert.equal(roundTwo.number,2);assert.equal(roundTwo.label,'Giữa giờ');
+    await mobile.goto(qrLink());await mobile.locator('#attendance-form').waitFor();
+    assert.equal(await mobile.locator('#receipt').isVisible(),false);assert.match(await mobile.locator('#date').textContent(),/Đợt 2 · Giữa giờ/);
+    assert.equal(await mobile.locator('#student-id').inputValue(),'001');await mobile.locator('#submit').click();await mobile.locator('#receipt').waitFor();
+    assert.match(await mobile.locator('#receipt-fields').textContent(),/Đợt 2 · Giữa giờ/);assert.equal(fixture.store.entries(roundTwo.id).length,1);
+    await admin.reload();await admin.waitForFunction(()=>!busy);await admin.locator('#session').selectOption(roundTwo.id);await admin.waitForFunction(()=>!busy);
+    assert.match(await admin.locator('#round-title').textContent(),/Đợt 2 · Giữa giờ/);
+    await screenshot(admin,'web-rounds.png');await screenshot(mobile,'web-student-round.png');
+    const dayMatrix=fixture.store.report('summary',currentDate).csv;assert.match(dayMatrix,/Đã gửi 2\/2 đợt/);assert.match(dayMatrix,/Đã gửi 1\/2 đợt/);
+    await navigate('history');await admin.locator('#history-date').selectOption(currentDate);await admin.waitForFunction(()=>!busy);
+    const multiRound=await download('history-detail-export');assert.equal(multiRound.rows.length,4);assert.equal(multiRound.rows.at(-1)[11],'2');assert.equal(multiRound.rows.at(-1)[12],'Giữa giờ');
+    // Reopening an older round must recall its own receipt, not the newer round's.
+    fixture.store.closeSession(roundTwo.id,'TA');const roundOne=fixture.store.sessions().find(s=>s.date===currentDate&&s.number===1);fixture.store.reopen(roundOne.id,8,'TA');
+    await mobile.goto(qrLink());await mobile.locator('#receipt').waitFor();assert.match(await mobile.locator('#receipt-fields').textContent(),/Đợt 1/);
+    assert.equal(fixture.store.entries(roundOne.id).length,2);assert.equal(fixture.store.entries(roundTwo.id).length,1);
     assert.deepEqual(errors,[]);assert.ok(requests.every(url=>url.startsWith(fixture.origin)||url.startsWith(fixture.adminOrigin)));
     assert.doesNotMatch(await admin.locator('body').innerText(),/demo|minh họa|dữ liệu giả/i);
-    console.log('LAN UI passed: independent projection tab, 720p layout, native fullscreen, QR rotation after closing TA, projection disconnect/recovery/closure, rotating QR admission, desktop room code, three-field form, network loss before/after commit, reload recovery, both IP peers red, TA review, multi-day history, daily/all CSV downloads, case filters/review, closed window, local assets and screenshots.');
+    console.log('LAN UI passed: same-day new/reopened rounds, per-round mobile receipts and CSV, independent projection tab, 720p layout, native fullscreen, QR rotation after closing TA, projection disconnect/recovery/closure, rotating QR admission, desktop room code, three-field form, network loss before/after commit, reload recovery, both IP peers red, TA review, multi-day history, daily/all CSV downloads, case filters/review, closed window, local assets and screenshots.');
   }finally{if(browser)await browser.close();await fixture.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

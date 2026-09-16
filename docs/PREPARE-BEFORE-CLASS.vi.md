@@ -30,4 +30,6 @@ BP_DATABASE=./data/campus-check.sqlite GOOGLE_SHEET_ID= npm start
 
 Dùng Ctrl+C để dừng. Sau đó `npm start` trở về database lớp. Dữ liệu thử không đồng bộ Sheet. Không sao chép dữ liệu thử vào lớp, không xóa database lớp để mở phiên lại.
 
+Trong cùng database thử, có thể **Mở lại đợt đang xem** sau khi hết giờ/đóng, hoặc **Mở đợt mới** để thử điểm danh giữa/cuối giờ. Người đã gửi chỉ cần gửi lại ở đợt mới. Không phải đổi tên database để thử lại trong cùng ngày.
+
 Giữ database qua các tuần, xuất riêng từng ngày hoặc toàn bộ trên trang **Lịch sử & xuất dữ liệu**. Các dòng cần đối chiếu nằm ở màn **Cần xử lý**. Xem [hướng dẫn TA](TA-GUIDE.vi.md).

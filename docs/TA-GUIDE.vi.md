@@ -10,6 +10,17 @@ Trên tab chiếu, bấm **Toàn màn hình** ở góc trên bên phải; nhấn
 
 ![Màn chiếu](web-projector.png)
 
+### Điểm danh đầu giờ, giữa giờ và cuối giờ
+
+- **Đợt mới:** đóng đợt đang nhận bằng **Đóng đợt**. Chọn thời lượng, nhập tên đợt nếu muốn (ví dụ `Giữa giờ`), rồi bấm **Mở đợt mới**. Tất cả sinh viên cần quét QR và gửi lại; lượt gửi trước không tự được tính cho đợt mới.
+- **Mở lại đợt:** trong **Xem đợt điểm danh**, chọn đợt của hôm nay, chọn thời lượng rồi bấm **Mở lại đợt đang xem**. Dữ liệu và các quyết định TA của đợt đó giữ nguyên; người đã gửi không phải gửi lại. Sinh viên chưa gửi quét QR mới để bổ sung.
+- Chỉ một đợt được nhận điểm danh tại một thời điểm. Có thể mở lại đợt cũ của hôm nay sau khi đóng đợt mới hơn. Không mở lại đợt của ngày đã qua.
+- Bảng tổng vẫn một cột/ngày, ghi **Đã gửi 2/3 đợt** nếu có nhiều đợt. Số này bao gồm các lượt đã gửi đang chờ đối chiếu hoặc đã bị TA từ chối; trạng thái đi kèm ghi rõ các trường hợp đó. **TA quyết định kết quả cuối buổi**, app không tự kết luận có mặt/vắng dựa vào tỷ lệ.
+
+![Chọn và mở các đợt trong buổi học](web-rounds.png)
+
+QR và quyền gửi chưa dùng của lần mở trước bị vô hiệu khi mở lại. Biên nhận đã lưu vẫn xem/gửi lại được, nhưng chỉ thuộc đợt ghi trên biên nhận.
+
 **QR và mã 8 ký tự đổi mỗi 30 giây**, có đồng hồ đếm ngược. Mã cũ hết hiệu lực ngay khi đổi. Tab chiếu tự cập nhật, kể cả khi chuyển sang hoặc đóng tab bảng TA; cửa sổ Terminal chạy app vẫn phải mở. Khi phiên đóng/hết giờ hoặc tab chiếu không kết nối được máy host, mã được ẩn. Trang chiếu chỉ có QR, URL, thời gian và tổng số lượt gửi; không hiển thị MSSV, họ tên hoặc IP sinh viên. Chỉ các trang trên cổng TA của laptop lấy được mã hiện tại; trang sinh viên không tự lấy mã mới. Nếu máy host đổi IP, dừng app bằng Ctrl+C rồi chạy lại và chiếu QR mới.
 
 ## 2. Sinh viên gửi thông tin
@@ -37,7 +48,7 @@ Chuyển về **tab bảng TA** đang mở. Nếu đã đóng tab đó, bấm **
 
 ![Cả hai sinh viên cùng IP được tô đỏ](web-admin.png)
 
-- Cờ trùng IP tính trong **cùng phiên**, theo số **MSSV khác nhau**. Tất cả thành viên nhóm đều được đánh dấu, gồm người gửi đầu tiên.
+- Cờ trùng IP tính trong **cùng đợt**, theo số **MSSV khác nhau**. Tất cả thành viên nhóm đều được đánh dấu, gồm người gửi đầu tiên. Việc một IP xuất hiện ở các đợt khác nhau không tự tạo cờ mới.
 - Bấm gửi lại, reload hoặc mở buổi học tuần sau không tự tạo lỗi trùng IP cho một MSSV.
 - Nếu nhiều người cùng bị đỏ, kiểm tra trước xem mạng có gom thiết bị qua NAT/proxy. Không mặc định kết luận điểm danh hộ.
 - TA đến vị trí khai báo, đối chiếu người và thẻ/MSSV theo quy trình giảng viên thống nhất.
@@ -57,7 +68,7 @@ Chọn **Cần xử lý** trên thanh điều hướng. Mặc định hiển th�
 - **Chờ TA đối chiếu:** trùng IP, chưa kết luận điểm danh không hợp lệ.
 - **TA xác nhận không hợp lệ:** TA đã đối chiếu và chọn không xác nhận, có ghi chú lý do.
 
-Chọn **Ngày học** để xem riêng một buổi hoặc **Tất cả các ngày**. Chọn **Trạng thái** để lọc một nhóm hoặc cả hai. Mỗi dòng là một lượt điểm danh của một MSSV trong một buổi; một sinh viên có thể xuất hiện ở nhiều ngày. Bộ đếm hiển thị cả số bản ghi và số MSSV khác nhau.
+Chọn **Ngày học** để xem riêng một buổi hoặc **Tất cả các ngày**. Chọn **Trạng thái** để lọc một nhóm hoặc cả hai. Mỗi dòng là một lượt điểm danh của một MSSV trong một đợt; một sinh viên có thể xuất hiện ở nhiều đợt cùng ngày. Cột **Ngày / Đợt** phân biệt từng lượt. Bộ đếm hiển thị cả số bản ghi và số MSSV khác nhau.
 
 ![Danh sách cần xử lý theo ngày và trạng thái](web-cases.png)
 
@@ -86,7 +97,7 @@ CSV là dữ liệu tại thời điểm tải. TA đối chiếu bổ sung sau 
 
 ## 6. Kết thúc buổi học
 
-Phiên tự hết hạn hoặc TA bấm **Đóng phiên**. Mỗi ngày chỉ mở một phiên, vì vậy kiểm tra thời gian trước khi mở/đóng. Không xóa database để mở lại phiên.
+Đợt tự hết hạn hoặc TA bấm **Đóng đợt**. Muốn kiểm tra giữa/cuối giờ, dùng **Mở đợt mới**. Muốn nhận bổ sung cho đợt đã đóng, chọn đợt và dùng **Mở lại đợt đang xem**. Tất cả vẫn thuộc cùng buổi học theo ngày; không xóa hoặc đổi database để mở thêm đợt.
 
 Xem trạng thái đồng bộ. Nếu Sheet chưa cấu hình/lỗi mạng, bản ghi vẫn ở laptop; vào **Lịch sử & xuất dữ liệu** để tải bảng tổng và chi tiết theo phạm vi cần dùng. CSV không giữ màu, nhưng vẫn có trạng thái và số MSSV cùng IP. Muốn Excel có màu, xuất `.xlsx` từ Google Sheets sau khi đồng bộ.
 
