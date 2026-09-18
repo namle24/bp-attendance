@@ -5,13 +5,14 @@ const {createStudentApp,createAdminApp}=require('../../web/lan-app.cjs');
 const {SyncWorker}=require('../../web/sheets.cjs');
 const {StudentLookup}=require('../../web/student-lookup.cjs');
 const {ranges}=require('../../web/security.cjs');
-async function startFixture(){
+async function startFixture(options={}){
   const directory=fs.mkdtempSync(path.join(os.tmpdir(),'bp-lan-browser-')),store=new LanStore(path.join(directory,'test.sqlite'));
-  const config={origin:'',adminOrigins:[],campus:ranges(['127.0.0.1/32']),campusCidrs:['127.0.0.1/32'],network:'Wi-Fi'},worker=new SyncWorker(store,null);
+  const studentHost=options.studentHost||'127.0.0.1';
+  const config={origin:'',adminOrigins:[],campus:ranges([studentHost+'/32']),campusCidrs:[studentHost+'/32'],network:'Wi-Fi'},worker=new SyncWorker(store,null);
   const lookup=new StudentLookup(store,{fetchValues:async()=>[['MSSV','2026-09-16']]});
-  const start=app=>new Promise(resolve=>{const server=require('../../web/listener.cjs').listen(app,0,'127.0.0.1',()=>resolve(server));});
-  const student=await start(createStudentApp(config,store,{lookup})),admin=await start(createAdminApp(config,store,worker,{lookup}));
-  config.origin='http://127.0.0.1:'+student.address().port;config.adminOrigins=['http://127.0.0.1:'+admin.address().port];
+  const start=(app,host='127.0.0.1')=>new Promise(resolve=>{const server=require('../../web/listener.cjs').listen(app,0,host,()=>resolve(server));});
+  const student=await start(createStudentApp(config,store,{lookup}),studentHost),admin=await start(createAdminApp(config,store,worker,{lookup}));
+  config.origin='http://'+studentHost+':'+student.address().port;config.adminOrigins=['http://127.0.0.1:'+admin.address().port];
   return {origin:config.origin,adminOrigin:config.adminOrigins[0],store,lookup,async close(){while(lookup.busy)await lookup.busy;await Promise.all([student,admin].map(s=>new Promise(r=>s.close(r))));store.close();fs.rmSync(directory,{recursive:true,force:true});}};
 }
 module.exports={startFixture};

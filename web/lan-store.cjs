@@ -4,6 +4,7 @@ const {scan,verifyScan}=require('./lan-qr.cjs');
 const ipaddr=require('ipaddr.js');
 const BP=require('./core.cjs');
 const {randomUUID}=require('node:crypto');
+const location=require('./location.cjs');
 
 function clean(value,max,label){
   if(typeof value!=='string'||/[\p{Cc}\p{Cf}]/u.test(value))fail(400,'INPUT_INVALID',label+' không hợp lệ.');
@@ -14,19 +15,20 @@ function clean(value,max,label){
 function canonicalIP(value){try{return ipaddr.process(value).toString();}catch{fail(400,'IP_INVALID','Không xác định được IP kết nối.');}}
 function state(row){
   if(row.review==='REJECTED')return 'REJECTED';
+  if(row.location_status&&!['OFF','INSIDE'].includes(row.location_status)&&row.review!=='CONFIRMED')return 'PENDING';
   if(row.peers>1&&(row.review!=='CONFIRMED'||row.reviewed_peers<row.peers))return 'PENDING';
   return row.review==='CONFIRMED'?'CONFIRMED':'RECORDED';
 }
 const labels={RECORDED:'Đã ghi nhận',PENDING:'Cần TA xác nhận',CONFIRMED:'TA đã xác nhận',REJECTED:'TA không xác nhận'};
 function issueReason(row){
   if(row.status==='REJECTED')return row.review_note;
-  if(row.status==='PENDING')return 'Trùng IP giữa '+row.peers+' MSSV trong cùng đợt điểm danh.'+(row.review==='CONFIRMED'?' Có thêm MSSV sau lần đối chiếu trước.':'');
+  if(row.status==='PENDING')return [row.peers>1?'Trùng IP giữa '+row.peers+' MSSV trong cùng đợt điểm danh.'+(row.review==='CONFIRMED'?' Có thêm MSSV sau lần đối chiếu trước.':''):'',row.review==='CONFIRMED'?'':row.location_reason||''].filter(Boolean).join(' ');
   return '';
 }
 function detailTable(entries){
   const time=at=>at?new Date(at+7*3600000).toISOString().replace('T',' ').slice(0,19):'';
-  return [['Ngày','MSSV','Họ tên đã nhập','Vị trí ngồi','IP kết nối','Số MSSV cùng IP','Trạng thái','Ghi chú TA','Người xác nhận','Giờ gửi (VN)','Giờ xác nhận (VN)','Đợt','Tên đợt','Mã đợt'],
-    ...entries.map(row=>[row.date,row.student_id,row.name,row.seat,row.ip,row.peers,row.statusLabel,row.review_note,row.reviewed_by,time(row.at),time(row.reviewed_at),row.round_number,row.round_label,row.round_id])];
+  return [['Ngày','MSSV','Họ tên đã nhập','Vị trí ngồi','IP kết nối','Số MSSV cùng IP','Trạng thái','Ghi chú TA','Người xác nhận','Giờ gửi (VN)','Giờ xác nhận (VN)','Đợt','Tên đợt','Mã đợt','Kiểm tra vị trí','Khoảng cách (m)','Sai số thiết bị (m)','Bán kính (m)','Lý do vị trí'],
+    ...entries.map(row=>[row.date,row.student_id,row.name,row.seat,row.ip,row.peers,row.statusLabel,row.review_note,row.reviewed_by,time(row.at),time(row.reviewed_at),row.round_number,row.round_label,row.round_id,location.label(row.location_status),row.location_distance??'',row.location_accuracy??'',row.location_radius??'',row.location_reason||''])];
 }
 function toCSV(rows){return '\uFEFF'+rows.map(row=>row.map(v=>'"'+BP.safeCell(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');}
 class LanStore extends Store {
@@ -45,7 +47,16 @@ class LanStore extends Store {
     if(!this.meta('lanSchema')){this.setMeta('lanSchema','1');this.dirty();}
     if(!this.meta('lanQrSecret'))this.setMeta('lanQrSecret',random());
     try{require('./lan-rounds.cjs').migrateRounds(this,filename);}catch(error){this.close();throw error;}
+    this.db.exec(`CREATE TABLE IF NOT EXISTS lan_round_locations (round_id TEXT PRIMARY KEY REFERENCES lan_rounds(id),policy TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS lan_attendance_locations (attendance_id INTEGER PRIMARY KEY REFERENCES lan_attendance(id),status TEXT NOT NULL,distance REAL,accuracy REAL,radius REAL,reason TEXT NOT NULL);`);
   }
+  locationSettings(){try{return JSON.parse(this.meta('locationPolicy'))||{enabled:false};}catch{return {enabled:false};}}
+  configureLocation(input,actor,now=Date.now()){
+    if(this.activeSession(now))fail(409,'ROUND_ACTIVE','Đóng đợt đang nhận trước khi thay đổi vị trí lớp.');
+    const settings={...location.policy(input),date:today(now)};
+    this.tx(()=>{this.setMeta('locationPolicy',JSON.stringify(settings));this.audit(actor,'LOCATION_CONFIG',settings);});return settings;
+  }
+  roundLocation(id){const row=this.db.prepare('SELECT policy FROM lan_round_locations WHERE round_id=?').get(id);return row?JSON.parse(row.policy):{enabled:false};}
   validateWindow(date,minutes,now){
     try{BP.date(date);}catch(e){fail(400,'DATE_INVALID',e.message);}
     if(date!==today(now))fail(400,'DATE_NOT_TODAY','Chỉ mở đợt cho ngày hôm nay, theo giờ Việt Nam.');
@@ -55,11 +66,14 @@ class LanStore extends Store {
     this.validateWindow(date,minutes,now);label=label===''?'':clean(label,60,'Tên đợt');
     return this.tx(()=>{
       if(this.activeSession(now))fail(409,'ROUND_ACTIVE','Đóng đợt đang nhận điểm danh trước khi mở đợt khác.');
+      const position=this.locationSettings();
+      if(position.enabled&&position.date!==date)fail(409,'LOCATION_SETUP_REQUIRED','Xác nhận lại vị trí lớp cho ngày hôm nay trước khi mở đợt.');
       let lesson=this.db.prepare("SELECT * FROM sessions WHERE date=? AND mode='OFFLINE'").get(date);
       if(!lesson){const id=randomUUID();this.db.prepare('INSERT INTO sessions VALUES (?,?,?,?,?,?,?)').run(id,date,'OFFLINE',now,now+minutes*60000,null,actor);lesson=super.session(id);}
       const number=this.db.prepare('SELECT COALESCE(MAX(number),0)+1 AS n FROM lan_rounds WHERE session_id=?').get(lesson.id).n;
       const id=number===1?lesson.id:randomUUID();
       this.db.prepare('INSERT INTO lan_rounds VALUES (?,?,?,?,?,?,?,?,?)').run(id,lesson.id,number,label,now,now+minutes*60000,null,actor,1);
+      this.db.prepare('INSERT INTO lan_round_locations VALUES (?,?)').run(id,JSON.stringify(position));
       this.dirty();this.audit(actor,'ROUND_OPEN',{id,lessonId:lesson.id,date,number,label,minutes});return this.session(id);
     });
   }
@@ -88,7 +102,7 @@ class LanStore extends Store {
   }
   scan(input,address,now=Date.now()){
     const session=this.activeSession(now),result=scan(input,session,this.meta('lanQrSecret'),address,now);
-    return {...result,session:{id:session.id,date:session.date,endsAt:session.ends_at,number:session.number,label:session.label,generation:session.generation}};
+    return {...result,session:{id:session.id,date:session.date,endsAt:session.ends_at,number:session.number,label:session.label,generation:session.generation,location:location.publicPolicy(this.roundLocation(session.id))}};
   }
   checkIn(body,address,now=Date.now()){
     return this.submit(body,address,now,session=>verifyScan(body.scanTicket,this.meta('lanQrSecret'),address,session.id,now,session.generation));
@@ -102,9 +116,9 @@ class LanStore extends Store {
     if(sid){where.push('a.round_id=?');params.push(sid);}
     if(date){where.push('s.date=?');params.push(date);}
     const rows=this.db.prepare(`WITH peers AS (SELECT round_id,ip,COUNT(*) AS peers FROM lan_attendance GROUP BY round_id,ip)
-      SELECT a.*,s.date,r.number AS round_number,r.label AS round_label,p.peers FROM lan_attendance a JOIN sessions s ON s.id=a.session_id
-      JOIN lan_rounds r ON r.id=a.round_id JOIN peers p ON p.round_id=a.round_id AND p.ip=a.ip ${where.length?'WHERE '+where.join(' AND '):''} ORDER BY a.id`).all(...params);
-    return rows.map(({request_hash,...r})=>({...r,status:state(r),statusLabel:labels[state(r)]}));
+      SELECT a.*,s.date,r.number AS round_number,r.label AS round_label,p.peers,l.status AS location_status,l.distance AS location_distance,l.accuracy AS location_accuracy,l.radius AS location_radius,l.reason AS location_reason FROM lan_attendance a JOIN sessions s ON s.id=a.session_id
+      JOIN lan_rounds r ON r.id=a.round_id JOIN peers p ON p.round_id=a.round_id AND p.ip=a.ip LEFT JOIN lan_attendance_locations l ON l.attendance_id=a.id ${where.length?'WHERE '+where.join(' AND '):''} ORDER BY a.id`).all(...params);
+    return rows.map(({request_hash,...r})=>{const entry={...r,status:state(r),statusLabel:labels[state(r)],location_label:location.label(r.location_status)};return {...entry,reason:issueReason(entry)};});
   }
   reportDate(value){
     if(value===undefined||value==='')return '';
@@ -141,7 +155,8 @@ class LanStore extends Store {
   receipt(row,duplicate){
     const peers=this.db.prepare('SELECT COUNT(*) AS n FROM lan_attendance WHERE round_id=? AND ip=?').get(row.round_id,row.ip).n;
     const round=this.session(row.round_id);
-    return {studentId:row.student_id,name:row.name,seat:row.seat,date:round.date,sessionId:round.id,roundNumber:round.number,roundLabel:round.label,at:row.at,duplicate,status:state({...row,peers})};
+    const position=this.db.prepare('SELECT status,distance,accuracy,radius,reason FROM lan_attendance_locations WHERE attendance_id=?').get(row.id);
+    return {studentId:row.student_id,name:row.name,seat:row.seat,date:round.date,sessionId:round.id,roundNumber:round.number,roundLabel:round.label,at:row.at,duplicate,status:state({...row,peers,location_status:position?.status}),...(position?{location:position}:{})};
   }
   // Trusted local imports/tests may call submit directly. Public HTTP must use
   // checkIn, which verifies a current scan inside the same write transaction.
@@ -163,6 +178,8 @@ class LanStore extends Store {
       if(grant&&this.db.prepare('SELECT 1 FROM lan_scan_uses WHERE grant_id=?').get(grant))fail(409,'SCAN_USED','Lượt quét này đã dùng cho một MSSV. Nhờ TA kiểm tra.');
       if(this.db.prepare('SELECT 1 FROM lan_attendance WHERE round_id=? AND student_id=?').get(sid,studentId)||(session.number===1&&this.db.prepare('SELECT 1 FROM attendance WHERE session_id=? AND student_id=?').get(session.lesson_id,studentId)))fail(409,'ALREADY_RECORDED','MSSV này đã được ghi nhận trong đợt này. Nhờ TA kiểm tra nếu bạn chưa gửi.');
       this.db.prepare('INSERT INTO lan_attendance(session_id,round_id,student_id,name,seat,ip,at,request_hash) VALUES (?,?,?,?,?,?,?,?)').run(session.lesson_id,sid,studentId,name,seat,ip,now,requestHash);
+      const position=location.evaluate(this.roundLocation(sid),body.location);
+      if(position.status!=='OFF')this.db.prepare('INSERT INTO lan_attendance_locations SELECT id,?,?,?,?,? FROM lan_attendance WHERE request_hash=?').run(position.status,position.distance,position.accuracy,position.radius,position.reason,requestHash);
       if(grant)this.db.prepare('INSERT INTO lan_scan_uses(grant_id,attendance_id) SELECT ?,id FROM lan_attendance WHERE request_hash=?').run(grant,requestHash);
       this.dirty();
       return this.receipt(this.db.prepare('SELECT * FROM lan_attendance WHERE request_hash=?').get(requestHash),false);

@@ -38,7 +38,7 @@ function project(){
 }
 function openReview(entry){
   reviewing=entry;$('review-title').textContent=entry.student_id+' · '+entry.name;
-  $('review-detail').textContent=entry.date+' · Đợt '+entry.round_number+(entry.round_label?' · '+entry.round_label:'')+' · Ghế: '+entry.seat+' · IP: '+entry.ip+' · '+entry.peers+' MSSV';
+  $('review-detail').textContent=entry.date+' · Đợt '+entry.round_number+(entry.round_label?' · '+entry.round_label:'')+' · Ghế: '+entry.seat+' · IP: '+entry.ip+' · '+entry.peers+' MSSV'+(entry.location_status?' · Vị trí: '+entry.location_label+(entry.location_distance!==null?' · '+entry.location_distance+' m, sai số '+entry.location_accuracy+' m':''):'')+(entry.reason?' · '+entry.reason:'');
   $('review-note').value=entry.review_note;$('review-result').value=entry.status==='REJECTED'?'REJECTED':'CONFIRMED';$('review-error').textContent='';$('review-dialog').showModal();
 }
 function renderTable(id,rows,dated=false){
@@ -46,7 +46,7 @@ function renderTable(id,rows,dated=false){
   for(const entry of rows){
     const tr=document.createElement('tr');tr.dataset.entryId=entry.id;
     if(entry.status==='PENDING')tr.className='flagged';else if(entry.status==='REJECTED')tr.className='rejected';
-    const values=[entry.student_id+'\n'+entry.name,entry.seat,entry.ip+'\n'+entry.peers+' MSSV',entry.statusLabel];
+    const values=[entry.student_id+'\n'+entry.name,entry.seat,entry.ip+'\n'+entry.peers+' MSSV',entry.statusLabel+(entry.location_status?'\nVị trí: '+entry.location_label+(entry.location_distance!==null?' · '+entry.location_distance+' m':''):'')];
     if(dated){values.unshift(entry.date+'\nĐợt '+entry.round_number+(entry.round_label?' · '+entry.round_label:''));values.push(entry.reason?(entry.reason+(entry.review_note&&entry.review_note!==entry.reason?'\nGhi chú trước: '+entry.review_note:'')):(entry.review_note||'—'));}
     for(const value of values){const td=document.createElement('td');td.textContent=value;tr.append(td);}
     const td=document.createElement('td'),button=document.createElement('button');button.className='secondary';button.textContent='Đối chiếu';button.addEventListener('click',()=>openReview(entry));td.append(button);tr.append(td);table.append(tr);
@@ -108,6 +108,11 @@ async function refresh(){
   const sync=dashboard.sync;$('sync').disabled=!sync.enabled||sync.busy;
   $('sync-state').textContent=!sync.enabled?'Lưu trên laptop · Sheet chưa cấu hình':sync.error?'Sheet chưa đồng bộ được · dữ liệu đã lưu trên laptop':sync.pending?'Đang chờ đồng bộ Sheet':'Sheet đã đồng bộ';
   $('network').textContent=dashboard.network+' · '+dashboard.cidrs.join(', ');
+  const position=await api('/api/location-config');
+  if(!$('location-enabled').dataset.loaded){$('location-enabled').checked=position.settings.enabled;for(const key of ['latitude','longitude','accuracy','radius'])if(position.settings[key]!==undefined)$('location-'+key).value=position.settings[key];$('location-enabled').dataset.loaded='1';}
+  $('location-helper-link').href=position.helperUrl;
+  $('location-config-status').textContent=!position.settings.enabled?'Đang tắt kiểm tra vị trí.':position.settings.date!==dashboard.today?'Cần xác nhận lại vị trí lớp cho ngày hôm nay.':'Vị trí lớp cho đợt mới đã lưu · Bán kính '+position.settings.radius+' m.';
+  for(const key of ['enabled','latitude','longitude','accuracy','radius','host','save'])$('location-'+key).disabled=!!live;
   if(screen==='attendance'){entries=selected?(await api('/api/entries?session='+encodeURIComponent(selected))).entries:[];renderEntries();}
   await refreshReports();
 }
@@ -129,6 +134,15 @@ $('session').addEventListener('change',()=>{selected=$('session').value;requestR
 for(const id of ['history-date','issues-date','issues-status'])$(id).addEventListener('change',requestRefresh);
 window.addEventListener('hashchange',()=>{showScreen();requestRefresh();});
 $('sync').addEventListener('click',()=>action(async()=>{await api('/api/sync',{});notice('Đã yêu cầu đồng bộ Sheet.');}));
+$('location-host').addEventListener('click',()=>{
+  $('location-config-status').textContent='Đang lấy vị trí laptop; cho phép trình duyệt dùng vị trí.';
+  BPGeo.request('',sample=>{if(sample.status==='OK'){for(const key of ['latitude','longitude','accuracy'])$('location-'+key).value=sample[key];notice('Đã lấy vị trí laptop. Kiểm tra tọa độ và sai số rồi bấm lưu.');}else notice(BPGeo.failure(sample.status)+'. Có thể nhập tọa độ lớp đã xác nhận.',true);});
+});
+$('location-save').addEventListener('click',()=>action(async()=>{
+  const enabled=$('location-enabled').checked,input={enabled};
+  if(enabled)for(const key of ['latitude','longitude','accuracy','radius']){if($('location-'+key).value==='')throw Error('Điền đủ tọa độ, sai số tâm và bán kính.');input[key]=Number($('location-'+key).value);}
+  await api('/api/location-config',input);notice('Đã lưu thiết lập vị trí cho các đợt mới hôm nay.');
+}));
 $('lookup-save').addEventListener('click',()=>action(async()=>{await api('/api/lookup-source',{spreadsheetId:$('lookup-sheet').value,tab:$('lookup-tab').value});notice('Đã lưu nguồn tra cứu. Đang lấy kết quả từ Google Sheet.');}));
 $('lookup-refresh').addEventListener('click',()=>action(async()=>{await api('/api/lookup-refresh',{});notice('Đã yêu cầu lấy bản kết quả mới từ Google Sheet.');}));
 $('cancel-review').addEventListener('click',()=>$('review-dialog').close());

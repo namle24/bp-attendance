@@ -17,6 +17,10 @@ async function serverProcess(){
   const filename=process.argv[3],count=Number(process.argv[4]);
   const store=new Store(filename);
   const identities=Array.from({length:count},(_,i)=>({studentId:'S'+String(i).padStart(4,'0'),name:'Student '+i,seat:'B-'+i,requestId:randomBytes(16).toString('hex')}));
+  if(process.env.BP_BENCH_LOCATION==='1'){
+    store.configureLocation({enabled:true,latitude:21,longitude:105,accuracy:5,radius:100},'benchmark');
+    identities.forEach((identity,i)=>{identity.location={status:'OK',latitude:i%3===1?21.01:21,longitude:105,accuracy:i%3===2?2000:8,ageMs:0};});
+  }
   // Keep Sheets unavailable: receipts must not depend on its network response.
   let releaseSheets;
   const pendingSheets=new Promise(resolve=>{releaseSheets=resolve;});
@@ -32,7 +36,7 @@ async function serverProcess(){
       void worker.sync();
       process.send({kind:'start',qr,session:session.id});
     }else if(message==='stats'){
-      process.send({kind:'stats',records:store.db.prepare('SELECT COUNT(*) AS n FROM lan_attendance').get().n,flagged:store.entries().filter(e=>e.status==='PENDING').length,sync:worker.status(),rssMiB:process.memoryUsage().rss/1024/1024});
+      process.send({kind:'stats',records:store.db.prepare('SELECT COUNT(*) AS n FROM lan_attendance').get().n,flagged:store.entries().filter(e=>e.status==='PENDING').length,locations:Object.fromEntries(store.db.prepare('SELECT status,COUNT(*) AS n FROM lan_attendance_locations GROUP BY status').all().map(row=>[row.status,row.n])),sync:worker.status(),rssMiB:process.memoryUsage().rss/1024/1024});
     }else if(message==='stop'){
       await new Promise(resolve=>server.close(resolve));
       releaseSheets();
@@ -100,11 +104,12 @@ async function measure(count,run,roundCount=1){
       assert.equal(first.success,count,JSON.stringify(first));assert.equal(first.duplicates,0);
       assert.equal(retry.success,count,JSON.stringify(retry));assert.equal(retry.duplicates,count);
       assert.equal(stats.records,count*round);assert.equal(stats.flagged,count*round);
+      if(process.env.BP_BENCH_LOCATION==='1')assert.deepEqual(stats.locations,{INSIDE:Math.floor((count+2)/3)*round,OUTSIDE:Math.floor((count+1)/3)*round,UNCERTAIN:Math.floor(count/3)*round});
       rounds.push({round,scan,first,retry,records:stats.records});
     }
     const stopped=await command(child,'stop');
     const {scan,first,retry}=rounds[0];
-    const result={count,run,...(roundCount===1?{scan,first,retry}:{rounds}),records:stats.records,flagged:stats.flagged,persistedRecords:stopped.persistedRecords,sheetsBlocked:stats.sync.busy&&stats.sync.pending,rssMiB:Math.round(stats.rssMiB),sqlite:ready.sqlite};
+    const result={count,run,...(roundCount===1?{scan,first,retry}:{rounds}),records:stats.records,flagged:stats.flagged,locations:stats.locations,persistedRecords:stopped.persistedRecords,sheetsBlocked:stats.sync.busy&&stats.sync.pending,rssMiB:Math.round(stats.rssMiB),sqlite:ready.sqlite};
     console.log(JSON.stringify(result));
     assert.equal(stopped.persistedRecords,count*roundCount);assert.equal(result.sheetsBlocked,true);
     return result;
@@ -118,7 +123,7 @@ async function main(){
   const roundCount=Number(process.env.BP_BENCH_ROUNDS||1),counts=(process.env.BP_BENCH_COUNTS||'100,300,700').split(',').map(Number);
   assert.ok(Number.isInteger(roundCount)&&roundCount>=1);
   for(const count of counts)assert.ok(Number.isInteger(count)&&count>0&&count*roundCount*3<=6000,'Keep the test within the real 6,000-request shared-IP per-minute limit');
-  const report={measuredAt:new Date().toISOString(),platform:process.platform,node:process.version,cpu:os.cpus()[0]?.model,availableParallelism:os.availableParallelism(),totalMemoryGiB:Math.round(os.totalmem()/1024**3),roundsPerDay:roundCount,method:'Separate server/load processes, loopback HTTP, real clock, temporary disk SQLite WAL with FULL synchronous; concurrent rotating QR admissions followed by three-field submissions and idempotent retries in each round; same students across rounds in one date; actual shared loopback socket IP; all peers flagged; Sheets writer held pending. Does not measure Wi-Fi, browser assets or real Sheets API.',submission:'LAN rotating QR',results:[]};
+  const report={measuredAt:new Date().toISOString(),platform:process.platform,node:process.version,cpu:os.cpus()[0]?.model,availableParallelism:os.availableParallelism(),totalMemoryGiB:Math.round(os.totalmem()/1024**3),roundsPerDay:roundCount,locationChecks:process.env.BP_BENCH_LOCATION==='1',method:'Separate server/load processes, loopback HTTP, real clock, temporary disk SQLite WAL with FULL synchronous; concurrent rotating QR admissions followed by submissions and idempotent retries in each round; same students across rounds in one date; actual shared loopback socket IP; all peers flagged; Sheets writer held pending. Optional locations are synthetic; does not measure Wi-Fi, GPS, HTTPS helper, browser assets or real Sheets API.',submission:'LAN rotating QR',results:[]};
   for(const count of counts)for(let run=1;run<=3;run++)report.results.push(await measure(count,run,roundCount));
   if(process.argv[2])writeFileSync(path.resolve(process.argv[2]),JSON.stringify(report,null,2)+'\n');
   console.log('All bursts and duplicate retries passed; records persisted after reopening SQLite.');

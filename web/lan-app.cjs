@@ -2,6 +2,7 @@ const express=require('express');
 const path=require('node:path');
 const {random,contains,equal,fail,today}=require('./security.cjs');
 const publicDirectory=path.join(__dirname,'lan-public');
+const location=require('./location.cjs');
 function common(config,admin){
   const app=express();app.disable('x-powered-by');app.set('trust proxy',false);
   app.use((req,res,next)=>{
@@ -49,7 +50,7 @@ function createStudentApp(config,store,options={}){
     res.json(options.lookup.search(req.body.studentId));
   });
   app.get('/api/session',(req,res)=>{
-    const session=store.activeSession(now());res.json({session:session?{id:session.id,date:session.date,endsAt:session.ends_at,number:session.number,label:session.label,generation:session.generation}:null,serverTime:now()});
+    const session=store.activeSession(now());res.json({session:session?{id:session.id,date:session.date,endsAt:session.ends_at,number:session.number,label:session.label,generation:session.generation,location:location.publicPolicy(store.roundLocation(session.id))}:null,serverTime:now()});
   });
   app.post('/api/scan',(req,res)=>res.json(store.scan(req.body,req.socket.remoteAddress,now())));
   app.post('/api/check-in',(req,res)=>res.json({receipt:store.checkIn(req.body,req.socket.remoteAddress,now())}));
@@ -59,6 +60,8 @@ function createAdminApp(config,store,worker,options={}){
   const now=options.clock||Date.now,app=common(config,true),csrf=random(),actor='TA tại máy host';
   app.use('/api',(req,res,next)=>{if(req.method==='POST'&&!equal(req.headers['x-csrf-token'],csrf))fail(403,'CSRF_INVALID','Tải lại trang quản lý rồi thử lại.');next();});
   app.get('/api/dashboard',(req,res)=>res.json({csrf,today:today(now()),sessions:store.sessions(),sync:worker.status(),url:config.origin,serverTime:now(),network:config.network,cidrs:config.campusCidrs}));
+  app.get('/api/location-config',(req,res)=>res.json({settings:store.locationSettings(),helperUrl:location.HELPER_URL}));
+  app.post('/api/location-config',(req,res)=>res.json({settings:store.configureLocation(req.body,actor,now())}));
   // The same 40-bit HMAC-derived room code keeps the projected QR easy to scan.
   // It has exactly the same expiry and admission checks as manual code entry.
   app.get('/api/qr',(req,res)=>{const qr=store.currentQr(now());res.json({qr:qr?{...qr,url:config.origin+'/#code='+qr.code}:null});});

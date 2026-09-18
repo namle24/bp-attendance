@@ -1,4 +1,12 @@
-# Validation scope · LAN attendance 0.7
+# Validation scope · LAN attendance 0.8
+
+Version 0.8 on 2026-09-18 adds optional per-round location evidence. **81/81 tests passed**, plus the existing full browser scenario and a new location scenario. The latter uses a real private-IP HTTP parent (verified insecure context), an intercepted copy of the actual static helper at its HTTPS URL (verified secure context), simulated geolocation permission/coordinates, origin/source/state validation, in-range/outside/uncertain/denied/missing results, and TA review. Screenshots contain synthetic data. This is not yet a physical iPhone/Android test of the published helper.
+
+The server recomputes distance and combines class-center/device uncertainty, ignores client verdicts, freezes the center/radius per round, requires confirmation for a new date, preserves retries and historical records, and flags unresolved location evidence for TA review. Raw student coordinates are not persisted to SQLite/CSV/Sheets. QR/network/CSRF checks remain in force. See [TA instructions and deployment prerequisite](LOCATION-CHECK.vi.md).
+
+With location checks enabled, three runs of two same-day rounds at 700 concurrent students passed **12,600/12,600 requests** (QR admission + initial submission + idempotent retry). Each database held exactly 1,400 records; evidence distribution was 468 inside, 466 outside, 466 uncertain. Submission bursts took **2.084–2.184 seconds** on this machine. These are synthetic positions over loopback, not physical GPS, helper hosting, classroom Wi-Fi or live Sheets. See [raw report](load-2026-09-18-location.json).
+
+The GitHub Pages workflow is manual only and publishes just `site/`. Publishing the static helper and physically testing mobile geolocation are separate deployment steps; ordinary pushes do not publish it.
 
 Version 0.7 on 2026-09-16: **76/76 tests passed**, syntax checks and the extended Chromium scenario passed. The original student page was reproduced failing before showing its form when `AbortSignal.timeout` was absent. The shared transport now uses XMLHttpRequest with bounded timeouts, and the student page avoids optional chaining, `URLSearchParams` and `replaceChildren`. QR admission happens before a session GET, using the session returned by admission; a transport failure preserves the QR fragment for retry. No QR expiry or network/admission checks were relaxed.
 

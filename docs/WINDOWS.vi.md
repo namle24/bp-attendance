@@ -1,6 +1,6 @@
 # Hướng dẫn chạy trên laptop Windows · Giảng viên và TA
 
-Laptop host và sinh viên cùng kết nối Wi-Fi của lớp. App lưu điểm danh trên laptop, chiếu QR động và xuất CSV để mở bằng Excel. Bản 0.7 hỗ trợ nhiều đợt trong một ngày, mở lại đợt, chiếu QR trong tab riêng và tra cứu kết quả từ Google Sheet. Không cần cấu hình Google Sheets để bắt đầu điểm danh.
+Laptop host và sinh viên cùng kết nối Wi-Fi của lớp. App lưu điểm danh trên laptop, chiếu QR động và xuất CSV để mở bằng Excel. Bản 0.8 hỗ trợ nhiều đợt trong một ngày, mở lại đợt, chiếu QR trong tab riêng và tra cứu kết quả từ Google Sheet. Không cần cấu hình Google Sheets để bắt đầu điểm danh.
 
 ## 1. Máy đã có thư mục bp-attendance
 
@@ -120,3 +120,7 @@ Kiểm thử tự động trên [Windows, macOS và Linux](https://github.com/na
 ## 8. Bật tra cứu kết quả cho sinh viên
 
 Trong **Lịch sử & xuất dữ liệu**, dán link Google Sheet của tab TA sửa, giữ phần `gid`, nhập tên tab rồi **Lưu nguồn tra cứu**. Với link đã có quyền xem, app đọc được ngay. Sinh viên mở **Tra cứu MSSV** trên trang điểm danh; kết quả lấy từ Sheet, có thời gian cập nhật. Xem [hướng dẫn tra cứu](STUDENT-LOOKUP.vi.md). Mỗi laptop host lưu cấu hình nguồn riêng.
+
+## 9. Đối chiếu vị trí lớp (tùy chọn)
+
+Trong **Kiểm tra vị trí lớp**, đặt tâm, sai số và bán kính rồi lưu cho hôm nay trước khi mở đợt mới. Sinh viên bấm **Lấy vị trí**, cho phép trong tab HTTPS rồi quay lại gửi; ngoài phạm vi hoặc chưa xác minh được sẽ cần TA đối chiếu. Mặc định tính năng tắt; trang hỗ trợ HTTPS cần được người quản lý repo xuất bản một lần. Máy host vẫn chạy bằng `npm start`, không cần mua tên miền/cài chứng chỉ. Xem [hướng dẫn đầy đủ](LOCATION-CHECK.vi.md).

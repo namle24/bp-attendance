@@ -1,5 +1,6 @@
 'use strict';
 const $=id=>document.getElementById(id);let session,pending,busy=false,scanGrant,scanAt=0;
+let positionSample=null,positionAt=0,positionRound='',cancelPosition;
 const notice=(message,error=false)=>{$('notice').textContent=message;$('notice').className=error?'notice error':'notice';};
 function loadPending(sid){try{
   const current=JSON.parse(sessionStorage.getItem('bp-lan-pending')||'null');
@@ -25,18 +26,27 @@ async function admit(input){
   $('scan-form').hidden=true;$('attendance-form').hidden=false;
   notice('Đã xác nhận mã trong phòng. Nhập MSSV, họ tên và vị trí ngồi rồi gửi.');scanClock();
 }
-function lockFields(){for(const id of ['student-id','full-name','seat'])$(id).readOnly=!!pending;}
+function lockFields(){for(const id of ['student-id','full-name','seat'])$(id).readOnly=!!pending;$('location-button').disabled=!!pending;}
 function savePending(){lockFields();try{sessionStorage.setItem('bp-lan-pending',JSON.stringify(pending));if(pending)sessionStorage.setItem('bp-lan-pending:'+pending.sessionId,JSON.stringify(pending));}catch{}}
-function showRound(){$('date').textContent=session?session.date+' · Đợt '+session.number+(session.label?' · '+session.label:''):'';}
+function showRound(){
+  $('date').textContent=session?session.date+' · Đợt '+session.number+(session.label?' · '+session.label:''):'';
+  const key=session?session.id+':'+session.generation:'';
+  if(key!==positionRound){if(cancelPosition)cancelPosition();cancelPosition=null;positionSample=null;positionRound=key;$('location-status').textContent='Chưa lấy vị trí. Nếu gửi ngay, lượt gửi sẽ cần TA kiểm tra.';}
+  const enabled=session&&session.location&&session.location.enabled;
+  $('location-section').hidden=!enabled;
+  if(enabled)$('location-info').textContent='Bán kính lớp: '+session.location.radius+' m. Bấm Lấy vị trí, cho phép trong tab mới rồi quay lại đây để gửi.';
+}
 function randomId(){return BPClient.randomId();}
 function request(url,data){return BPClient.request(url,data);}
 function receipt(row){
+  $('receipt-title').textContent=row.status==='PENDING'?'Đã lưu, chờ TA đối chiếu':row.status==='REJECTED'?'TA không xác nhận điểm danh':'Đã ghi nhận điểm danh';
   $('receipt-fields').textContent='';
   for(const [key,value] of [['Đợt','Đợt '+(row.roundNumber||1)+(row.roundLabel?' · '+row.roundLabel:'')],['MSSV',row.studentId],['Họ tên',row.name],['Vị trí ngồi',row.seat],['Thời gian',BPClient.time(row.at)]]){
     const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=key;dd.textContent=value;$('receipt-fields').appendChild(dt);$('receipt-fields').appendChild(dd);
   }
+  if(row.location){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent='Đối chiếu vị trí';dd.textContent=row.location.status==='INSIDE'?'Trong phạm vi theo vị trí thiết bị cung cấp.':row.location.reason+' Cần TA xác minh.';$('receipt-fields').appendChild(dt);$('receipt-fields').appendChild(dd);}
   $('attendance-form').hidden=true;$('scan-form').hidden=true;$('scan-time').textContent='';$('receipt').hidden=false;$('reload').hidden=false;$('reload').textContent='Kiểm tra đợt điểm danh tiếp theo';
-  notice(row.duplicate?'Lượt gửi này đã được lưu trước đó.':row.status==='PENDING'?'Đã lưu. TA sẽ đối chiếu thông tin tại ghế ngồi.':'Điểm danh đã được lưu.');
+  notice(row.status==='REJECTED'?'Lượt gửi đã được TA đối chiếu và không xác nhận. Liên hệ TA nếu cần làm rõ.':row.status==='PENDING'?'Đã lưu. TA sẽ đối chiếu thông tin tại ghế ngồi.':row.duplicate?'Lượt gửi này đã được lưu trước đó.':'Điểm danh đã được lưu.');
 }
 async function boot(){
   $('reload').disabled=true;
@@ -78,9 +88,11 @@ async function boot(){
 $('attendance-form').addEventListener('submit',async event=>{
   event.preventDefault();if(busy)return;busy=true;$('submit').disabled=true;
   try{
-    if(!pending){if(!session)throw Error('Chưa mở điểm danh.');if(remaining()<=0){$('scan-form').hidden=false;throw Error('Quét QR hoặc nhập mã đang chiếu để tiếp tục.');}pending={sessionId:session.id,studentId:$('student-id').value.trim().toUpperCase(),name:$('full-name').value.trim().replace(/\s+/g,' '),seat:$('seat').value.trim().replace(/\s+/g,' '),requestId:randomId(),scanTicket:scanGrant.scanTicket};}
+    if(!pending){if(!session)throw Error('Chưa mở điểm danh.');if(remaining()<=0){$('scan-form').hidden=false;throw Error('Quét QR hoặc nhập mã đang chiếu để tiếp tục.');}pending={sessionId:session.id,studentId:$('student-id').value.trim().toUpperCase(),name:$('full-name').value.trim().replace(/\s+/g,' '),seat:$('seat').value.trim().replace(/\s+/g,' '),requestId:randomId(),scanTicket:scanGrant.scanTicket};
+      if(session.location&&session.location.enabled&&positionSample){pending.location=Object.assign({},positionSample);if(pending.location.status==='OK')pending.location.ageMs+=Math.max(0,performance.now()-positionAt);}
+    }
     savePending();notice('Đang gửi điểm danh…');
-    const {receipt:row}=await request('/api/check-in',pending);pending.receipt=row;savePending();receipt(row);
+    const {receipt:row}=await request('/api/check-in',pending);pending.receipt=row;delete pending.location;positionSample=null;savePending();receipt(row);
   }catch(error){
     if(['INPUT_INVALID','ID_INVALID','REQUEST_INVALID','ALREADY_RECORDED'].includes(error.code)){pending=null;savePending();notice(error.message,true);}
     else if(error.code){if(['SCAN_REQUIRED','SCAN_INVALID','SCAN_EXPIRED'].includes(error.code)){$('scan-form').hidden=false;scanGrant=null;saveGrant();}notice(error.message,true);}
@@ -88,5 +100,14 @@ $('attendance-form').addEventListener('submit',async event=>{
   }finally{busy=false;$('submit').disabled=false;}
 });
 $('reload').addEventListener('click',boot);boot();
+$('location-button').addEventListener('click',()=>{
+  if(!session||!session.location||!session.location.enabled||pending)return;
+  if(cancelPosition)cancelPosition();const key=positionRound;
+  positionSample=null;$('location-status').textContent='Cho phép vị trí trong tab mới rồi quay lại trang này.';
+  cancelPosition=BPGeo.request(session.location.helperUrl,sample=>{
+    if(key!==positionRound)return;positionSample=sample;positionAt=performance.now();
+    $('location-status').textContent=sample.status==='OK'?'Đã lấy vị trí; sai số khoảng '+Math.ceil(sample.accuracy)+' m. Gửi trong vòng 60 giây.':BPGeo.failure(sample.status)+'. Bạn có thể thử lại hoặc gửi để TA kiểm tra tại ghế.';
+  });
+});
 $('scan-form').addEventListener('submit',async event=>{event.preventDefault();$('scan-submit').disabled=true;try{await admit({code:$('room-code').value});}catch(error){notice(error.message||'Chưa xác nhận được mã. Kiểm tra Wi-Fi rồi thử lại.',true);}finally{$('scan-submit').disabled=false;}});
 window.addEventListener('hashchange',boot);setInterval(scanClock,1000);
