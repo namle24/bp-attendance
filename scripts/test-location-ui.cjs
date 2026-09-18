@@ -1,11 +1,12 @@
-// Synthetic data only. Serve the actual static HTTPS helper through browser
-// interception before publication; its top-level secure context is still real.
+// Synthetic data only. Set BP_LOCATION_LIVE_HELPER=1 to verify the published
+// HTTPS helper; otherwise intercept it with local assets before publication.
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict');
 const {startFixture}=require('../tests/helpers/lan-browser-fixture.cjs');
 const {HELPER_URL}=require('../web/location.cjs');
 const {chromium}=require(process.env.BP_PLAYWRIGHT_MODULE||'playwright');
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 async function main(){
+  const liveHelper=process.env.BP_LOCATION_LIVE_HELPER==='1';
   const host=Object.values(os.networkInterfaces()).flat().find(a=>a.family==='IPv4'&&!a.internal&&/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(a.address))?.address;
   if(!host)throw Error('A private LAN IPv4 is required to test a genuinely insecure HTTP parent.');
   const f=await startFixture({studentHost:host});
@@ -24,7 +25,7 @@ async function main(){
     async function client(id,kind){
       const context=await browser.newContext({viewport:{width:390,height:844},geolocation:{latitude:kind==='OUTSIDE'?21.01:21,longitude:105,accuracy:kind==='UNCERTAIN'?1000:8}});
       try{
-        await context.route(HELPER_URL+'**',async route=>{
+        if(!liveHelper)await context.route(HELPER_URL+'**',async route=>{
           const file=new URL(route.request().url()).pathname.split('/').at(-1)||'index.html';
           if(!['index.html','location.js','style.css'].includes(file))return route.abort();
           await route.fulfill({path:path.join(__dirname,'../site/location',file),contentType:file.endsWith('.js')?'application/javascript':file.endsWith('.css')?'text/css':'text/html'});
@@ -56,6 +57,7 @@ async function main(){
     await admin.locator('#review-note').fill('Đã đối chiếu tại ghế; sai số thiết bị.');await admin.locator('#save-review').click();
     await admin.locator('#review-dialog').waitFor({state:'hidden'});assert.equal(f.store.entries().find(r=>r.id===outside.id).status,'CONFIRMED');
     console.log('HTTP parent → HTTPS helper → permission → exact-origin message → geofence → review: passed.');
+    console.log('Helper: '+(liveHelper?'published HTTPS page (no interception)':'local assets intercepted at HTTPS URL')+'. GPS: simulated.');
     console.log('Synthetic screenshots: '+screenshotDir);
   }finally{await browser.close();await f.close();}
 }

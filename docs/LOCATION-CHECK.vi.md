@@ -8,7 +8,7 @@ App vẫn chạy trên laptop, cùng mạng với sinh viên. TA có thể bật
 
 Trình duyệt yêu cầu [secure context và quyền của người dùng để lấy vị trí](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation/getCurrentPosition). Trang IP LAN HTTP không đáp ứng điều này. Repo có một trang hỗ trợ tĩnh trong `site/location/`; chỉ trang này cần HTTPS, không chuyển máy chủ điểm danh ra Internet.
 
-URL dự kiến sau khi xuất bản: `https://namle24.github.io/bp-attendance/location/`.
+Trang HTTPS đã xuất bản ngày 18/09/2026: `https://namle24.github.io/bp-attendance/location/`.
 
 Người quản lý repo bật **Settings → Pages → Source: GitHub Actions**, rồi chạy thủ công workflow **Publish location helper**. Workflow chỉ xuất bản thư mục `site`, không chứa database, cấu hình, danh sách lớp hoặc API điểm danh. Push code không tự xuất bản trang này. Cần xác minh URL HTTPS tải được trước khi bật đối chiếu vị trí cho lớp. Fork repo phải sửa `HELPER_URL` trong `web/location.cjs` thành địa chỉ của trang hỗ trợ thuộc repo đó.
 
@@ -69,6 +69,10 @@ npm test
 npm run check
 BP_BENCH_COUNTS=700 BP_BENCH_ROUNDS=2 BP_BENCH_LOCATION=1 npm run bench:web
 BP_PLAYWRIGHT_MODULE=/path/to/playwright BP_CHROMIUM=/path/to/chromium node scripts/test-location-ui.cjs
+# Kiểm tra trang HTTPS đã xuất bản, không chặn/đáp ứng bằng nội dung local:
+BP_LOCATION_LIVE_HELPER=1 BP_PLAYWRIGHT_MODULE=/path/to/playwright BP_CHROMIUM=/path/to/chromium node scripts/test-location-ui.cjs
 ```
 
-Kiểm thử trình duyệt dùng trang HTTP trên địa chỉ LAN riêng và nội dung trang hỗ trợ được chặn/đáp ứng tại URL HTTPS trong Chromium; xác minh HTTP parent là insecure context, popup HTTPS là secure context, quyền vị trí, trả kết quả và TA xác nhận. Tọa độ là dữ liệu giả lập. Cần thử lại trang HTTPS đã xuất bản trên iPhone/Android thật trước khi bật cho lớp.
+Mặc định, kiểm thử trình duyệt dùng trang HTTP trên địa chỉ LAN riêng và nội dung trang hỗ trợ được chặn/đáp ứng tại URL HTTPS trong Chromium. Chế độ `BP_LOCATION_LIVE_HELPER=1` tải trực tiếp từ GitHub Pages. Cả hai xác minh HTTP parent là insecure context, popup HTTPS là secure context, quyền vị trí, trả kết quả và TA xác nhận. Tọa độ là dữ liệu giả lập.
+
+Ngày 18/09/2026, chế độ trang HTTPS thật đã chạy thành công cho các trường hợp trong phạm vi, ngoài phạm vi, sai số lớn, từ chối quyền và thiếu vị trí. Giao diện QR, gửi lại khi mất mạng, mở lại đợt, xuất CSV và tra cứu cũng vượt qua kiểm tra lại. Cần thử quyền và vị trí thật trên iPhone/Android trước khi bật cho lớp; kết quả Chromium với tọa độ giả lập chưa xác nhận được bước này.
