@@ -123,4 +123,8 @@ Trong **Lịch sử & xuất dữ liệu**, dán link Google Sheet của tab TA 
 
 ## 9. Đối chiếu vị trí lớp (tùy chọn)
 
-Trong **Kiểm tra vị trí lớp**, đặt tâm, sai số và bán kính rồi lưu cho hôm nay trước khi mở đợt mới. Sinh viên bấm **Lấy vị trí**, cho phép trong tab HTTPS rồi quay lại gửi; ngoài phạm vi hoặc chưa xác minh được sẽ cần TA đối chiếu. Mặc định tính năng tắt; trang hỗ trợ HTTPS cần được người quản lý repo xuất bản một lần. Máy host vẫn chạy bằng `npm start`, không cần mua tên miền/cài chứng chỉ. Xem [hướng dẫn đầy đủ](LOCATION-CHECK.vi.md).
+Mặc định sinh viên quét QR, nhập MSSV, họ tên và ghế rồi gửi; không xin quyền GPS. Chỉ khi TA bật và lưu **Kiểm tra vị trí lớp**, sinh viên mới có nút mở tab HTTPS để lấy vị trí. Để tắt cho đợt mới, đóng đợt đang mở, bỏ chọn đối chiếu vị trí, lưu rồi mở đợt mới. Mở lại đợt giữ nguyên thiết lập cũ. Máy host vẫn chạy bằng `npm start`, không cần mua tên miền/cài chứng chỉ. Xem [hướng dẫn đầy đủ](LOCATION-CHECK.vi.md).
+
+## 10. Tìm và lọc danh sách
+
+Bản 0.8.1 thêm tìm MSSV/họ tên/ghế/IP và lọc theo trạng thái, trùng IP, vị trí, ngày/đợt trên trang TA. CSV danh sách/chi tiết/cần xử lý áp dụng bộ lọc đang chọn; bảng tổng CSV giữ đủ kết quả của ngày. Xem [hướng dẫn có ảnh](TA-FILTERS.vi.md).

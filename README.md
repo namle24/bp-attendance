@@ -8,7 +8,9 @@ Kết quả được lưu vào SQLite trước khi trả thông báo thành côn
 
 **Tra cứu cho sinh viên:** mở **Tra cứu MSSV** để xem kết quả từ tab Google Sheet do TA sửa trực tiếp. TA dán link đúng tab tại **Lịch sử & xuất dữ liệu**; app đọc mỗi phút, hiển thị thời điểm đọc và cảnh báo nếu dữ liệu chưa cập nhật. Xem [hướng dẫn kết nối và sử dụng](docs/STUDENT-LOOKUP.vi.md).
 
-**Đối chiếu vị trí tùy chọn:** TA đặt tâm lớp và bán kính cho đợt mới; ngoài phạm vi hoặc chưa xác minh được sẽ cần TA đối chiếu. App vẫn host trên laptop; một trang HTTPS tĩnh hỗ trợ xin quyền vị trí trên điện thoại và cần được xuất bản một lần. Mặc định tính năng tắt. Xem [hướng dẫn vị trí và giới hạn](docs/LOCATION-CHECK.vi.md).
+**Đối chiếu vị trí tùy chọn:** mặc định sinh viên chỉ nhập MSSV, họ tên và ghế; không cần GPS hay trang HTTPS. Khi TA bật và lưu tùy chọn cho đợt mới, sinh viên mới có thêm nút mở tab xin vị trí. App vẫn host trên laptop. Xem [hướng dẫn vị trí và giới hạn](docs/LOCATION-CHECK.vi.md).
+
+**Bộ lọc TA:** tìm MSSV/họ tên/ghế/IP, lọc trạng thái, trùng IP, vị trí và ngày/đợt; tải CSV chi tiết đúng danh sách đã lọc. Cảnh báo trùng IP và giới hạn một MSSV mỗi đợt được giữ nguyên. Xem [hướng dẫn sử dụng bộ lọc](docs/TA-FILTERS.vi.md).
 
 **Nhiều MSSV cùng IP trong một đợt:** tất cả bản ghi liên quan được tô đỏ trên bảng TA, tab chi tiết và ô ngày tương ứng của bảng tổng. TA kiểm tra người/thẻ tại ghế ngồi rồi lưu xác nhận trên app. Cùng IP chỉ là cờ đối chiếu; các thiết bị chung NAT có thể cùng IP và một người có thể dùng nhiều IP.
 

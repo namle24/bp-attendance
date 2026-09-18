@@ -3,6 +3,7 @@ const path=require('node:path');
 const {random,contains,equal,fail,today}=require('./security.cjs');
 const publicDirectory=path.join(__dirname,'lan-public');
 const location=require('./location.cjs');
+const {filterEntries}=require('./attendance-filters.cjs');
 function common(config,admin){
   const app=express();app.disable('x-powered-by');app.set('trust proxy',false);
   app.use((req,res,next)=>{
@@ -59,7 +60,7 @@ function createStudentApp(config,store,options={}){
 function createAdminApp(config,store,worker,options={}){
   const now=options.clock||Date.now,app=common(config,true),csrf=random(),actor='TA tại máy host';
   app.use('/api',(req,res,next)=>{if(req.method==='POST'&&!equal(req.headers['x-csrf-token'],csrf))fail(403,'CSRF_INVALID','Tải lại trang quản lý rồi thử lại.');next();});
-  app.get('/api/dashboard',(req,res)=>res.json({csrf,today:today(now()),sessions:store.sessions(),sync:worker.status(),url:config.origin,serverTime:now(),network:config.network,cidrs:config.campusCidrs}));
+  app.get('/api/dashboard',(req,res)=>res.json({csrf,today:today(now()),sessions:store.sessions().map(s=>({...s,location:location.publicPolicy(store.roundLocation(s.id))})),sync:worker.status(),url:config.origin,serverTime:now(),network:config.network,cidrs:config.campusCidrs}));
   app.get('/api/location-config',(req,res)=>res.json({settings:store.locationSettings(),helperUrl:location.HELPER_URL}));
   app.post('/api/location-config',(req,res)=>res.json({settings:store.configureLocation(req.body,actor,now())}));
   // The same 40-bit HMAC-derived room code keeps the projected QR easy to scan.
@@ -75,9 +76,9 @@ function createAdminApp(config,store,worker,options={}){
   app.post('/api/sessions',(req,res)=>res.json({session:store.open(today(now()),Number(req.body.minutes),actor,now(),req.body.label??'')}));
   app.post('/api/sessions/:id/reopen',(req,res)=>res.json({session:store.reopen(req.params.id,Number(req.body.minutes),actor,now())}));
   app.post('/api/sessions/:id/close',(req,res)=>res.json({session:store.closeSession(req.params.id,actor,now())}));
-  app.get('/api/entries',(req,res)=>res.json({entries:store.entries(typeof req.query.session==='string'?req.query.session:undefined)}));
-  app.get('/api/history',(req,res)=>res.json({entries:store.history(req.query.date)}));
-  app.get('/api/issues',(req,res)=>res.json(store.issues(req.query.date,req.query.status)));
+  app.get('/api/entries',(req,res)=>{const rows=store.entries(typeof req.query.session==='string'?req.query.session:undefined);res.json({entries:filterEntries(rows,req.query),total:rows.length,pending:rows.filter(r=>r.status==='PENDING').length});});
+  app.get('/api/history',(req,res)=>{const rows=store.history(req.query.date);res.json({entries:filterEntries(rows,req.query),total:rows.length});});
+  app.get('/api/issues',(req,res)=>res.json(store.issues(req.query.date,req.query.status,req.query)));
   app.post('/api/entries/:id/review',(req,res)=>{store.reviewEntry(Number(req.params.id),req.body.review,req.body.note,req.body.peers,actor,now());res.json({ok:true});});
   app.post('/api/sync',(req,res)=>{void worker.sync(true);res.json(worker.status());});
   app.get('/api/lookup-source',(req,res)=>res.json({source:options.lookup?.source()||null,...(options.lookup?.status()||{configured:false,updatedAt:null,refreshing:false,stale:false,error:''})}));
@@ -92,7 +93,7 @@ function createAdminApp(config,store,worker,options={}){
   app.post('/api/roster',(req,res)=>res.json({count:store.importRoster(req.body.csv,actor)}));
   app.post('/api/online',(req,res)=>res.json({count:store.importOnline(req.body.date,req.body.list,req.body.evidence,actor,now())}));
   for(const [route,kind] of [['export','summary'],['detail','detail'],['issues','issues']])app.get('/api/'+route+'.csv',(req,res)=>{
-    const report=store.report(kind,req.query.date,req.query.status);res.type('text/csv').attachment(report.filename).send(report.csv);
+    const report=store.report(kind,req.query.date,req.query.status,req.query);res.type('text/csv').attachment(report.filename).send(report.csv);
   });
   app.get('/api/audit',(req,res)=>res.json({events:store.db.prepare('SELECT * FROM audit ORDER BY id DESC LIMIT 200').all()}));
   return finish(app,'admin.html');

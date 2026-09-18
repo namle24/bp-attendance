@@ -5,6 +5,7 @@ const ipaddr=require('ipaddr.js');
 const BP=require('./core.cjs');
 const {randomUUID}=require('node:crypto');
 const location=require('./location.cjs');
+const {filterEntries}=require('./attendance-filters.cjs');
 
 function clean(value,max,label){
   if(typeof value!=='string'||/[\p{Cc}\p{Cf}]/u.test(value))fail(400,'INPUT_INVALID',label+' không hợp lệ.');
@@ -127,14 +128,14 @@ class LanStore extends Store {
     if(!this.db.prepare('SELECT 1 FROM sessions WHERE date=?').get(date))fail(404,'DATE_UNKNOWN','Chưa có buổi học trong ngày này.');
     return date;
   }
-  history(date){return this.entries(undefined,this.reportDate(date));}
-  issues(date,status='ALL'){
+  history(date,filters={}){return filterEntries(this.entries(undefined,this.reportDate(date)),filters);}
+  issues(date,status='ALL',filters={}){
     if(!['ALL','PENDING','REJECTED'].includes(status))fail(400,'STATUS_INVALID','Chọn chờ đối chiếu, không hợp lệ hoặc cả hai trạng thái.');
-    const rows=this.history(date).filter(row=>['PENDING','REJECTED'].includes(row.status));
+    const rows=this.history(date,{...filters,status:'ALL'}).filter(row=>['PENDING','REJECTED'].includes(row.status));
     return {counts:{pending:rows.filter(r=>r.status==='PENDING').length,rejected:rows.filter(r=>r.status==='REJECTED').length},
       entries:rows.filter(row=>status==='ALL'||row.status===status).map(row=>({...row,reason:issueReason(row)}))};
   }
-  report(kind,date,status='ALL'){
+  report(kind,date,status='ALL',filters={}){
     date=this.reportDate(date);let rows;
     if(kind==='summary'){
       rows=this.matrix();
@@ -144,9 +145,9 @@ class LanStore extends Store {
         // recorded only on other days must not leak into this day's export.
         rows=[rows[0],...rows.slice(1).filter(row=>row[col]!=='')].map(row=>[...row.slice(0,3),row[col]]);
       }
-    }else if(kind==='detail')rows=detailTable(this.entries(undefined,date));
+    }else if(kind==='detail')rows=detailTable(this.history(date,filters));
     else if(kind==='issues'){
-      const entries=this.issues(date,status).entries;rows=detailTable(entries);
+      const entries=this.issues(date,status,filters).entries;rows=detailTable(entries);
       rows[0].push('Lý do cần xử lý');entries.forEach((row,i)=>rows[i+1].push(row.reason));
     }else fail(400,'REPORT_INVALID','Loại báo cáo không hợp lệ.');
     const prefix={summary:'BP_Attendance',detail:'BP_Offline_Check',issues:'BP_Review'}[kind];

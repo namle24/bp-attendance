@@ -48,6 +48,7 @@ const screenshot=(page,name)=>page.screenshot({path:require('node:path').join(sc
     const qrLink=()=>fixture.origin+'/#code='+fixture.store.currentQr().code;
     await mobile.goto(qrLink());await mobile.locator('#attendance-form').waitFor();
     assert.equal(await mobile.locator('#attendance-form input').count(),3);assert.ok(await mobile.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+    assert.equal(await mobile.locator('#location-section').isVisible(),false,'Normal attendance must not ask for location');
     assert.equal(await mobile.locator('#scan-form').isVisible(),false);assert.equal(new URL(mobile.url()).hash,'');
     await screenshot(mobile,'web-student-ready.png');
     await mobile.locator('#student-id').fill('001');await mobile.locator('#full-name').fill('Nguyễn An');await mobile.locator('#seat').fill('B-12');
@@ -68,6 +69,14 @@ const screenshot=(page,name)=>page.screenshot({path:require('node:path').join(sc
     await admin.waitForFunction(()=>document.querySelectorAll('#entries tr.flagged').length===2,{},{timeout:15000});
     await projector.waitForFunction(()=>document.getElementById('count').textContent==='2 sinh viên đã gửi');
     await screenshot(admin,'web-admin.png');
+    await admin.locator('#attendance-ip').selectOption('DUPLICATE');await admin.locator('#attendance-q').fill('001');
+    await admin.waitForFunction(()=>document.querySelectorAll('#entries tr[data-entry-id]').length===1&&!busy);
+    assert.match(await admin.locator('#entries').textContent(),/2 MSSV/,'Filtering one student must retain the full IP group count');
+    const filteredDownload=admin.waitForEvent('download');await admin.locator('#attendance-export').click();const filteredFile=await filteredDownload;
+    assert.deepEqual(parse(fs.readFileSync(await filteredFile.path(),'utf8'),{bom:true}).slice(1).map(r=>r[1]),['001']);
+    await screenshot(admin,'web-ta-filters.png');
+    await admin.locator('#attendance-location').selectOption('INSIDE');await admin.waitForFunction(()=>!busy&&document.querySelector('#entries').textContent.includes('Không có bản ghi phù hợp'));
+    await admin.locator('#attendance-reset').click();await admin.waitForFunction(()=>document.querySelectorAll('#entries tr[data-entry-id]').length===2&&!busy);
     await admin.locator('#entries button').first().click();await admin.locator('#review-note').fill('Đã đối chiếu thẻ sinh viên và người ngồi ghế B-12.');
     await screenshot(admin,'web-review.png');await admin.locator('#save-review').click();await admin.waitForFunction(()=>document.querySelectorAll('#entries tr.flagged').length===1);
     assert.equal(fixture.store.entries()[0].status,'CONFIRMED');
@@ -87,6 +96,10 @@ const screenshot=(page,name)=>page.screenshot({path:require('node:path').join(sc
     await admin.locator('#issues-entries button').click();await admin.locator('#review-note').fill('Không có mặt tại ghế B-13 khi đối chiếu.');await admin.locator('#review-result').selectOption('REJECTED');await admin.locator('#save-review').click();
     await admin.waitForFunction(()=>document.querySelector('#issues-entries tr.rejected'));
     await navigate('history');await admin.waitForFunction(()=>document.querySelectorAll('#history-entries tr[data-entry-id]').length===4&&!busy);
+    await admin.locator('#history-q').fill('099');await admin.locator('#history-status').selectOption('REJECTED');
+    await admin.waitForFunction(()=>document.querySelectorAll('#history-entries tr[data-entry-id]').length===1&&!busy);
+    const filteredHistory=await download('history-detail-export');assert.deepEqual(filteredHistory.rows.slice(1).map(r=>r[1]),['099']);
+    await admin.locator('#history-reset').click();await admin.waitForFunction(()=>document.querySelectorAll('#history-entries tr[data-entry-id]').length===4&&!busy);
     await screenshot(admin,'web-history.png');
     const all=await download('history-summary-export');assert.deepEqual(all.rows[0].slice(3),[previousDate,currentDate]);assert.equal(all.rows.length,4);assert.match(all.name,/all\.csv$/);
     await admin.locator('#history-date').selectOption(currentDate);await admin.waitForFunction(()=>document.querySelectorAll('#history-entries tr[data-entry-id]').length===2&&!busy);

@@ -1,4 +1,10 @@
-# Validation scope · LAN attendance 0.8
+# Validation scope · LAN attendance 0.8.1
+
+Version 0.8.1 on 2026-09-18 keeps ordinary attendance independent of GPS. The existing **81 tests** passed, together with the new filter integration test (**82 total**). The full Chromium UI scenario verifies searching/filtering and CSV downloads. The location UI scenario verifies that unsaved opt-in settings cannot be silently ignored, turning location off restores the simple form, and historical round policies remain unchanged.
+
+`scripts/test-browser-compat.cjs` passed on **Chromium, Firefox and WebKit**, using actual private-IP HTTP and temporary databases. It disables geolocation, blocks the optional location script, removes fetch/AbortController/URLSearchParams and denies browser storage. Each engine checks committed submissions with lost responses, retries without duplicate records, another tab/QR attempting the same MSSV, same-IP flags, duplicate rejection after reopening and a valid new-round submission. No student request reaches an external HTTPS helper in normal mode. WebKit here is an automated Linux build, not a test of every Safari/iPhone version; network isolation remains outside browser compatibility.
+
+Filter API/CSV tests cover accent-insensitive name search, student IDs, seat/IP search, date/round, review state and location evidence. Peer counts are calculated before filtering; narrowing to one MSSV does not change the duplicate-IP warning or any saved data. Malformed filter values are rejected. Aggregate CSV keeps complete daily round counts; detail/case CSV follows the visible filters. See [TA guide and screenshot](TA-FILTERS.vi.md).
 
 Version 0.8 on 2026-09-18 adds optional per-round location evidence. **81/81 tests passed**, plus the existing full browser scenario and a new location scenario. The latter uses a real private-IP HTTP parent (verified insecure context), an intercepted copy of the actual static helper at its HTTPS URL (verified secure context), simulated geolocation permission/coordinates, origin/source/state validation, in-range/outside/uncertain/denied/missing results, and TA review. Screenshots contain synthetic data. This is not yet a physical iPhone/Android test of the published helper.
 

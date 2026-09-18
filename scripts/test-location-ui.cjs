@@ -18,6 +18,7 @@ async function main(){
     await admin.getByText('Kiểm tra vị trí lớp',{exact:true}).click();
     await admin.locator('#location-enabled').check();
     await admin.locator('#location-latitude').fill('21');await admin.locator('#location-longitude').fill('105');await admin.locator('#location-accuracy').fill('5');
+    await admin.locator('#open').click();await admin.locator('#notice').filter({hasText:'Lưu tùy chọn vị trí'}).waitFor();assert.equal(f.store.activeSession(),undefined,'Opening must not silently ignore an unsaved location opt-in');
     await admin.locator('#location-save').click();await admin.locator('#notice').filter({hasText:'Đã lưu thiết lập vị trí'}).waitFor();
     await admin.locator('#open').click();
     for(let i=0;i<30&&!f.store.activeSession();i++)await pause(100);
@@ -74,6 +75,13 @@ async function main(){
     await admin.locator('#issues-entries tr[data-entry-id="'+outside.id+'"] button').click();
     await admin.locator('#review-note').fill('Đã đối chiếu tại ghế; sai số thiết bị.');await admin.locator('#save-review').click();
     await admin.locator('#review-dialog').waitFor({state:'hidden'});assert.equal(f.store.entries().find(r=>r.id===outside.id).status,'CONFIRMED');
+    await admin.getByRole('link',{name:'Điểm danh tại lớp',exact:true}).click();await admin.waitForFunction(()=>!busy);
+    await admin.locator('#close').click();await admin.waitForFunction(()=>!busy);
+    await admin.getByText('Kiểm tra vị trí lớp',{exact:true}).click();
+    await admin.locator('#location-enabled').uncheck();await admin.locator('#location-save').click();await admin.waitForFunction(()=>!busy);
+    await admin.locator('#open').click();await admin.waitForFunction(()=>!busy);
+    const plain=await browser.newPage();await plain.goto(f.origin+'/#code='+f.store.currentQr().code);await plain.locator('#attendance-form').waitFor();
+    assert.equal(await plain.locator('#location-section').isVisible(),false);assert.equal(f.store.roundLocation(f.store.activeSession().id).enabled,false);assert.equal(f.store.roundLocation(outside.round_id).enabled,true,'Turning location off must preserve historical evidence');
     console.log('HTTP parent → HTTPS helper → permission/retry/review fallback → exact-origin message → geofence → review: passed.');
     console.log('Helper: '+(liveHelper?'published HTTPS page (no interception)':'local assets intercepted at HTTPS URL')+'. GPS: simulated.');
     console.log('Synthetic screenshots: '+screenshotDir);

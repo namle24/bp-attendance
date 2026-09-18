@@ -2,7 +2,41 @@
 const $=id=>document.getElementById(id);
 let dashboard,selected='',entries=[],reviewing,busy=false,refreshQueued=false,loadedURL='',screen='attendance';
 let currentQr,qrBusy=false,qrAt=0;
-let projectorWindow;
+let projectorWindow,locationSettings={enabled:false},filterTimer;
+function buildFilters(prefix){
+  const container=$(prefix+'-filters');
+  function field(key,label,options){
+    const wrapper=document.createElement('div'),title=document.createElement('label'),input=document.createElement(options?'select':'input');
+    input.id=prefix+'-'+key;title.htmlFor=input.id;title.textContent=label;
+    if(options)for(const [value,text] of options){const option=document.createElement('option');option.value=value;option.textContent=text;input.append(option);}
+    else{input.type='search';input.maxLength=120;input.placeholder='MSSV, họ tên, ghế hoặc IP';}
+    input.addEventListener(options?'change':'input',()=>{clearTimeout(filterTimer);markLoading();if(options)requestRefresh();else filterTimer=setTimeout(requestRefresh,250);});
+    wrapper.append(title,input);container.append(wrapper);
+  }
+  field('q','Tìm sinh viên');
+  if(prefix!=='attendance')field('round','Đợt điểm danh',[['','Tất cả các đợt']]);
+  if(prefix!=='issues')field('status','Trạng thái',[['ALL','Tất cả trạng thái'],['RECORDED','Đã ghi nhận'],['PENDING','Cần TA xác nhận'],['CONFIRMED','TA đã xác nhận'],['REJECTED','TA không xác nhận']]);
+  field('ip','IP kết nối',[['ALL','Tất cả IP'],['DUPLICATE','Trùng IP'],['UNIQUE','Không trùng IP']]);
+  field('location','Vị trí',[['ALL','Tất cả vị trí'],['OFF','Không kiểm tra'],['INSIDE','Trong phạm vi'],['OUTSIDE','Ngoài phạm vi'],['UNVERIFIED','Chưa xác minh được']]);
+  const reset=document.createElement('button');reset.type='button';reset.className='secondary';reset.textContent='Xóa bộ lọc';reset.id=prefix+'-reset';
+  reset.addEventListener('click',()=>{clearTimeout(filterTimer);for(const input of container.querySelectorAll('input,select'))input.value=input.tagName==='SELECT'&&input.id!==prefix+'-round'?'ALL':'';if(prefix==='issues')$('issues-status').value='ALL';requestRefresh();});container.append(reset);
+}
+function filterQuery(prefix,base={}){
+  const query=new URLSearchParams(base);
+  for(const key of ['q','round','status','ip','location']){const input=$(prefix+'-'+key);if(input&&input.value&&input.value!=='ALL')query.set(key,input.value);}
+  return query.toString();
+}
+function fillRounds(prefix){
+  const input=$(prefix+'-round'),date=$(prefix+'-date').value,rows=dashboard.sessions.filter(s=>s.mode==='OFFLINE'&&(!date||s.date===date));
+  const key=rows.map(s=>s.id).join(',');if(input.dataset.rounds===key)return;
+  const previous=input.value;input.replaceChildren();
+  for(const row of [null,...rows]){const option=document.createElement('option');option.value=row?.id||'';option.textContent=row?row.date+' · '+roundTitle(row):'Tất cả các đợt';input.append(option);}
+  input.value=rows.some(s=>s.id===previous)?previous:'';input.dataset.rounds=key;
+}
+function locationEdited(){
+  if($('location-enabled').checked!==locationSettings.enabled)return true;
+  return locationSettings.enabled&&['latitude','longitude','accuracy','radius'].some(key=>$('location-'+key).value===''||Number($('location-'+key).value)!==locationSettings[key]);
+}
 function drawQr(){
   const remaining=currentQr?currentQr.expiresAt-currentQr.serverTime-(performance.now()-qrAt):0;
   if(remaining<=0){$('qr').replaceChildren();$('attendance-code').textContent='';$('qr-countdown').textContent=currentQr?'Đang đổi QR…':'';loadedURL='';return;}
@@ -53,9 +87,9 @@ function renderTable(id,rows,dated=false){
   }
   if(!rows.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=dated?7:5;td.textContent='Không có bản ghi phù hợp.';tr.append(td);table.append(tr);}
 }
-function renderEntries(){
-  $('review-summary').textContent=`${entries.length} lượt gửi · ${entries.filter(e=>e.status==='PENDING').length} cần TA xác nhận`;
-  renderTable('entries',entries.filter(e=>!$('only-pending').checked||e.status==='PENDING'));
+function renderEntries(total,pending){
+  $('review-summary').textContent=`Hiển thị ${entries.length}/${total} lượt gửi · ${pending} cần TA xác nhận trong đợt`;
+  renderTable('entries',entries);
 }
 function fillDates(id){
   const select=$(id),dates=[...new Set(dashboard.sessions.map(s=>s.date))].sort().reverse(),key=dates.join(',');
@@ -67,25 +101,27 @@ function downloadLink(id,url){
   const link=$(id);if(url){link.href=url;link.removeAttribute('aria-disabled');}else{link.removeAttribute('href');link.setAttribute('aria-disabled','true');}
 }
 function markLoading(){
+  if(screen==='attendance')downloadLink('attendance-export');
   if(screen==='history'){for(const id of ['history-summary-export','history-detail-export'])downloadLink(id);$('history-summary').textContent='Đang tải dữ liệu…';}
   if(screen==='issues'){downloadLink('issues-export');$('issues-summary').textContent='Đang tải danh sách…';}
 }
 async function refreshReports(){
   fillDates('history-date');fillDates('issues-date');
+  fillRounds('history');fillRounds('issues');
   if(screen==='history'){
-    const date=$('history-date').value,query=new URLSearchParams({date}).toString(),data=await api('/api/history?'+query);
-    if(screen!=='history'||date!==$('history-date').value)return;
+    const date=$('history-date').value,query=filterQuery('history',{date}),data=await api('/api/history?'+query);
+    if(screen!=='history'||query!==filterQuery('history',{date:$('history-date').value}))return;
     renderTable('history-entries',data.entries,true);
-    $('history-summary').textContent=(date||'Tất cả các ngày')+' · '+data.entries.length+' lượt gửi offline · '+new Set(data.entries.map(e=>e.student_id)).size+' MSSV';
-    downloadLink('history-summary-export','/api/export.csv?'+query);downloadLink('history-detail-export','/api/detail.csv?'+query);
+    $('history-summary').textContent=(date||'Tất cả các ngày')+' · Hiển thị '+data.entries.length+'/'+data.total+' lượt gửi offline · '+new Set(data.entries.map(e=>e.student_id)).size+' MSSV';
+    downloadLink('history-summary-export','/api/export.csv?'+new URLSearchParams({date}));downloadLink('history-detail-export','/api/detail.csv?'+query);
     const lookup=await api('/api/lookup-source');
     if(!$('lookup-sheet').dataset.loaded){$('lookup-sheet').value=lookup.source?'https://docs.google.com/spreadsheets/d/'+lookup.source.spreadsheetId+'/edit'+(lookup.source.gid!==undefined?'#gid='+lookup.source.gid:''):'';$('lookup-tab').value=lookup.source?.tab||'';$('lookup-sheet').dataset.loaded='1';}
     $('lookup-link').href=dashboard.url+'/history';
     $('lookup-status').textContent=!lookup.configured?'Chưa chọn Google Sheet kết quả.':lookup.error?lookup.error:lookup.refreshing?'Đang đọc Google Sheet…':lookup.updatedAt?'Đã đọc Sheet lúc '+BPClient.time(lookup.updatedAt)+(lookup.stale?' · Chưa lấy được bản mới.':''):'Đang chờ lần đọc Sheet đầu tiên.';
     $('lookup-status').className=lookup.error||lookup.stale?'notice error':'muted';$('lookup-refresh').disabled=!lookup.configured||lookup.refreshing;
   }else if(screen==='issues'){
-    const date=$('issues-date').value,status=$('issues-status').value,query=new URLSearchParams({date,status}).toString(),data=await api('/api/issues?'+query);
-    if(screen!=='issues'||date!==$('issues-date').value||status!==$('issues-status').value)return;
+    const date=$('issues-date').value,query=filterQuery('issues',{date,status:$('issues-status').value}),data=await api('/api/issues?'+query);
+    if(screen!=='issues'||query!==filterQuery('issues',{date:$('issues-date').value,status:$('issues-status').value}))return;
     renderTable('issues-entries',data.entries,true);
     $('issues-pending').textContent=data.counts.pending+' chờ đối chiếu';$('issues-rejected').textContent=data.counts.rejected+' không hợp lệ';
     $('issues-summary').textContent=(date||'Tất cả các ngày')+' · '+data.entries.length+' bản ghi đang hiển thị · '+new Set(data.entries.map(e=>e.student_id)).size+' MSSV';
@@ -109,17 +145,23 @@ async function refresh(){
   $('sync-state').textContent=!sync.enabled?'Lưu trên laptop · Sheet chưa cấu hình':sync.error?'Sheet chưa đồng bộ được · dữ liệu đã lưu trên laptop':sync.pending?'Đang chờ đồng bộ Sheet':'Sheet đã đồng bộ';
   $('network').textContent=dashboard.network+' · '+dashboard.cidrs.join(', ');
   const position=await api('/api/location-config');
+  locationSettings=position.settings;
   if(!$('location-enabled').dataset.loaded){$('location-enabled').checked=position.settings.enabled;for(const key of ['latitude','longitude','accuracy','radius'])if(position.settings[key]!==undefined)$('location-'+key).value=position.settings[key];$('location-enabled').dataset.loaded='1';}
   $('location-helper-link').href=position.helperUrl;
   $('location-config-status').textContent=!position.settings.enabled?'Đang tắt kiểm tra vị trí.':position.settings.date!==dashboard.today?'Cần xác nhận lại vị trí lớp cho ngày hôm nay.':'Vị trí lớp cho đợt mới đã lưu · Bán kính '+position.settings.radius+' m.';
+  $('location-mode').textContent=shown?'Đợt đang xem: '+(shown.location?.enabled?'Có kiểm tra vị trí · '+shown.location.radius+' m':'Điểm danh thông thường · Không yêu cầu vị trí'):'Đợt mới: '+(position.settings.enabled?'Có kiểm tra vị trí':'Điểm danh thông thường · Không yêu cầu vị trí');
   for(const key of ['enabled','latitude','longitude','accuracy','radius','host','save'])$('location-'+key).disabled=!!live;
-  if(screen==='attendance'){entries=selected?(await api('/api/entries?session='+encodeURIComponent(selected))).entries:[];renderEntries();}
+  if(screen==='attendance'){
+    const query=filterQuery('attendance',{round:selected}),data=selected?await api('/api/entries?session='+encodeURIComponent(selected)+'&'+query):{entries:[],total:0,pending:0};
+    if(screen==='attendance'&&query===filterQuery('attendance',{round:selected})){entries=data.entries;renderEntries(data.total,data.pending);downloadLink('attendance-export',selected?'/api/detail.csv?'+query:null);}
+  }
   await refreshReports();
 }
 async function action(fn){if(busy)return;busy=true;try{await fn();await refresh();}catch(error){notice(error.message,true);}finally{busy=false;if(refreshQueued){refreshQueued=false;requestRefresh();}}}
 function requestRefresh(){markLoading();if(busy){refreshQueued=true;return;}void action(async()=>{});}
 $('open').addEventListener('click',()=>{
   if(busy)return;
+  if(locationEdited()){notice('Lưu tùy chọn vị trí trước khi mở đợt mới.',true);$('location-enabled').closest('details').open=true;return;}
   // Open during the click gesture, before any await, so browsers allow the tab.
   const opened=project();
   void action(async()=>{const result=await api('/api/sessions',{minutes:Number($('minutes').value),label:$('round-label').value.trim()});selected=result.session.id;$('round-label').value='';if(opened)notice('Đã mở '+roundTitle(result.session)+'. Sinh viên quét QR mới để điểm danh.');});
@@ -130,7 +172,7 @@ $('reopen').addEventListener('click',()=>{
 });
 $('close').addEventListener('click',()=>action(async()=>{await api('/api/sessions/'+selected+'/close',{});notice('Đã đóng đợt điểm danh.');}));
 $('project').addEventListener('click',project);
-$('session').addEventListener('change',()=>{selected=$('session').value;requestRefresh();});$('only-pending').addEventListener('change',renderEntries);
+$('session').addEventListener('change',()=>{selected=$('session').value;requestRefresh();});
 for(const id of ['history-date','issues-date','issues-status'])$(id).addEventListener('change',requestRefresh);
 window.addEventListener('hashchange',()=>{showScreen();requestRefresh();});
 $('sync').addEventListener('click',()=>action(async()=>{await api('/api/sync',{});notice('Đã yêu cầu đồng bộ Sheet.');}));
@@ -149,5 +191,6 @@ $('cancel-review').addEventListener('click',()=>$('review-dialog').close());
 $('review-form').addEventListener('submit',async event=>{event.preventDefault();$('save-review').disabled=true;try{await api('/api/entries/'+reviewing.id+'/review',{review:$('review-result').value,note:$('review-note').value,peers:reviewing.peers});$('review-dialog').close();await refresh();notice('Đã lưu kết quả đối chiếu của TA.');}catch(error){$('review-error').textContent=error.message;}finally{$('save-review').disabled=false;}});
 $('import-roster').addEventListener('click',()=>action(async()=>{const file=$('roster').files[0];if(!file)throw Error('Chọn file CSV danh sách lớp.');const result=await api('/api/roster',{csv:await file.text()});notice('Đã nhập '+result.count+' sinh viên.');}));
 $('import-online').addEventListener('click',()=>action(async()=>{const result=await api('/api/online',{date:$('online-date').value,list:$('online-list').value,evidence:$('online-evidence').value});notice('Đã bổ sung '+result.count+' kết quả online.');}));
+for(const prefix of ['attendance','history','issues'])buildFilters(prefix);
 showScreen();requestRefresh();setInterval(()=>{if(!busy&&!$('review-dialog').open)requestRefresh();},10000);
 setInterval(()=>{drawQr();void refreshQr();},1000);
