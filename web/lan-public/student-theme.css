@@ -1,0 +1,108 @@
+/* Local assets and system fonts keep the student flow light on classroom Wi-Fi. */
+body.campus-student{--blue:#293896;--ink:#253057;--muted:#65708a;--line:#e0e2ef;background:#f8f7f3;color:var(--ink);font-family:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.campus-student:before{height:4px;background:linear-gradient(90deg,#293896 0 70%,#ed1d24 70% 75%,#d6d5f5 75%)}
+.campus-student .student-page{max-width:1080px;padding:30px 30px 18px}
+.campus-student .student-brand{justify-content:space-between;margin:0 0 24px;gap:16px}
+.campus-student .brand-lockup{display:flex;gap:18px;align-items:center}
+.campus-student .student-brand img{width:94px;height:auto}
+.campus-student .brand-copy{border-left:1px solid #d9dceb;padding-left:18px;line-height:1.4}
+.brand-copy strong{display:block;font-size:13px;letter-spacing:.02em}
+.brand-copy span{display:block;font-size:11px;color:var(--muted);margin-top:3px}
+.hello-pill{border:1px solid #e0dbe9;border-radius:99px;background:#efebf6;padding:7px 12px;font-size:11px;font-weight:650;white-space:nowrap;color:#584772}
+.campus-student .student-layout{display:grid;grid-template-columns:minmax(0,.86fr) minmax(0,1fr);align-items:start;gap:64px}
+.campus-student .welcome{padding-top:52px;position:sticky;top:32px}
+.welcome .eyebrow{font-size:11px;letter-spacing:1.6px;display:flex;gap:8px;align-items:center}
+.welcome .eyebrow:before{content:"";height:7px;width:7px;border-radius:50%;background:#82987f;box-shadow:0 0 0 4px #e5ecdf}
+.campus-student .welcome h1{font-size:52px;letter-spacing:-2.2px;line-height:1.13;margin:22px 0 18px;font-weight:780}
+.welcome h1 span{color:var(--blue);position:relative;z-index:0}
+.welcome h1 span:after{content:"";position:absolute;bottom:3px;left:-3px;right:-7px;height:13px;border-radius:5px;transform:rotate(-2deg);background:#e5e1f9;z-index:-1}
+.welcome-copy{color:var(--muted);max-width:300px;font-size:15px;line-height:1.75}
+.buddy{width:285px;max-width:100%;height:auto;display:block;margin:9px 0 0 15px}
+.study-note{display:inline-flex;align-items:center;gap:9px;margin:0 0 0 30px;font-size:12px;color:#616986}
+.study-note span{display:inline-block;background:#f7e7b6;color:#675623;padding:4px 9px;border-radius:6px;transform:rotate(-4deg);font:600 12px ui-monospace,monospace}
+.campus-student .screen-nav{display:flex;background:#eaeaf2;border-radius:15px;padding:5px;gap:4px;margin:0 0 18px;flex-wrap:nowrap}
+.campus-student .screen-nav a{flex:1;min-width:0;text-align:center;border:0;border-radius:11px;background:transparent;padding:11px 9px;color:#646c84;font-size:13px;font-weight:650;white-space:nowrap}
+.campus-student .screen-nav a[aria-current="page"]{background:white;color:var(--blue);box-shadow:0 2px 6px #2938960b}
+.nav-icon{margin-right:6px;font-size:16px;vertical-align:-1px}
+.campus-student .card{border:1px solid #e3e2ed;border-radius:23px;padding:27px;background:#fff;box-shadow:0 5px 0 #eeedf3,0 14px 34px #29389605;margin-bottom:18px}
+.campus-student .badge{border:0;border-radius:7px;background:#ebedf9;letter-spacing:.6px;font-size:9px;padding:5px 8px;line-height:1.5}
+.campus-student .badge.offline-badge{background:#e8f2e9;color:#46604c}
+.offline-badge:before{content:"";display:inline-block;width:5px;height:5px;background:#6b9271;border-radius:50%;margin-right:6px;vertical-align:1px}
+.campus-student #date{font-size:10px;max-width:65%;text-align:right}
+.campus-student .form-heading{display:flex;align-items:center;justify-content:space-between;margin:19px 0 0;gap:10px}
+.campus-student h2{font-size:24px;letter-spacing:-.7px;line-height:1.3;margin:0 0 7px;font-weight:750}
+.heading-mark{color:#ba9763;font-size:25px;line-height:1}
+.campus-student .form-caption{color:var(--muted);font-size:12px;margin:0 0 17px;line-height:1.65}
+.campus-student .notice{background:#f0f1fb;border:1px solid #e8e9f8;padding:11px 13px;border-radius:11px;font-size:12px;line-height:1.6;margin-bottom:14px;color:#4d5983}
+.campus-student .notice:empty{display:none}
+.campus-student .notice.error{color:#9b3549;background:#fff0f2;border-color:#f3d6de}
+.campus-student label{font-size:12px;margin:17px 0 7px;font-weight:700;letter-spacing:.1px}
+.field-number{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;background:#f0eefb;color:#74749a;font-size:9px;border-radius:6px;margin-right:7px;vertical-align:1px}
+.campus-student input{border:1px solid #dfe2ed;background:#fafbfe;border-radius:12px;padding:13px 14px;min-height:49px;font-size:16px;line-height:1.4;transition:border-color .15s,box-shadow .15s}
+.campus-student input::placeholder{color:#8992a8;font-size:13px;opacity:1}
+.campus-student input:focus{background:white;border-color:#909ad4;outline:3px solid #e9eafb;outline-offset:1px}
+.campus-student input:read-only{background:#f1f2f6}
+.campus-student small{font-size:10px;line-height:1.6;margin-top:6px}
+.campus-student button{min-height:46px;border-radius:12px;font-size:13px;transition:transform .15s,background .15s;font-weight:700}
+.campus-student button:hover{filter:none;background:#222f83}
+.campus-student button:active{transform:translateY(1px)}
+.campus-student #submit,.campus-student #lookup-submit,.campus-student #scan-submit{padding:14px 18px;box-shadow:0 4px 0 #1d296f;display:flex;align-items:center;justify-content:space-between;text-align:left;margin-top:21px}
+.button-arrow{font-size:21px;line-height:1;font-weight:400}
+.campus-student button.secondary{background:#f5f5fb;border-color:#e5e5f0;color:#5b6485;box-shadow:none;font-size:12px}
+.campus-student button.secondary:hover{background:#ebedf8}
+.campus-student #reload{margin-top:15px;min-height:42px}
+.campus-student #scan-time{font-size:10px;color:#7c668b;line-height:1.5;margin:0}
+.campus-student #scan-time:empty{display:none}
+.campus-student #room-code{font-size:23px;text-align:center;letter-spacing:5px}
+.campus-student #scan-form p{font-size:11px;line-height:1.6}
+.privacy-note{color:#7b8399;font-size:10px;line-height:1.7;margin:16px 0 0;padding-top:12px;border-top:1px dashed #e4e5ee}
+.campus-student #connection-help{border-top:1px solid #edecf3;padding-top:14px;margin-top:18px;font-size:11px}
+.campus-student #connection-help summary{font-size:11px;color:#70788e;font-weight:500}
+.campus-student #location-section{border:1px solid #e2dbf0;border-radius:14px;background:#f7f4fc;padding:14px;margin-top:18px;font-size:12px}
+.campus-student #location-section h3{font-size:14px;margin:0 0 8px}
+.campus-student #location-section p{font-size:11px}
+.campus-student .receipt{border:0;padding:15px 0 0;text-align:center}
+.receipt-stamp{width:64px;height:64px;margin:0 auto 17px;display:flex;align-items:center;justify-content:center;border:1px solid #ccdfd2;border-radius:22px;background:#e8f3ec;color:#4c745a;font-size:31px;transform:rotate(-6deg);box-shadow:4px 4px 0 #f0f6f1}
+.campus-student .receipt .badge{font-size:8px;background:#edf3ee;color:#506d58}
+.campus-student .receipt h2{margin:14px 0 20px;font-size:24px}
+.campus-student .receipt dl{padding:16px;text-align:left;background:#f8f9fc;border:1px dashed #dadde9;border-radius:14px;grid-template-columns:78px minmax(0,1fr);font-size:11px;gap:11px}
+.campus-student .receipt dt{font-size:11px}
+.campus-student .receipt dd{font-size:12px;font-weight:600}
+.campus-student .receipt p{font-size:11px;color:var(--muted)}
+.campus-student .receipt[data-status="PENDING"] .receipt-stamp{background:#fff1d7;color:#91672b;border-color:#ecd4aa;box-shadow:4px 4px 0 #fff8e8}
+.campus-student .receipt[data-status="REJECTED"] .receipt-stamp{background:#fae9ec;color:#a74659;border-color:#ebcbd2;box-shadow:4px 4px 0 #fdf0f3}
+.campus-student #lookup-result{border-top:1px dashed #dfe2ef;padding-top:22px;margin-top:22px}
+.campus-student #lookup-result h2{font-size:17px;letter-spacing:-.3px;margin:0}
+.campus-student #lookup-result .table-wrap{border:1px solid #e4e6f0;border-radius:13px;margin-top:15px}
+.campus-student #lookup-result table{font-size:12px}
+.campus-student #lookup-result th{font-size:10px;background:#f0f1fa;color:#6b7596;white-space:normal}
+.campus-student #lookup-result td{padding:13px 12px}
+.campus-student #lookup-result tr:last-child td{border-bottom:0}
+.campus-student #lookup-updated,.lookup-help{font-size:10px;line-height:1.7;color:var(--muted)}
+.campus-student .lookup-footnote{display:flex;gap:10px;margin:21px 7px;color:#78819a;font-size:11px;line-height:1.7}
+.lookup-footnote .footnote-icon{color:#8792be;font-size:20px}
+.campus-student footer{font-size:10px;letter-spacing:.25px;margin:27px 0 10px;color:#8690a5}
+.footer-star{color:#bba267;margin:0 6px}
+@media(min-width:760px){.campus-student .student-workspace{padding-top:10px}.campus-student .history-page .welcome{padding-top:67px}.campus-student .history-page .card{min-height:270px}}
+@media(max-width:759px){
+  .campus-student .student-page{max-width:520px;padding:19px 18px 12px}
+  .campus-student .student-brand{margin-bottom:18px;gap:9px}
+  .campus-student .student-brand img{width:72px}
+  .campus-student .brand-lockup{gap:11px}.campus-student .brand-copy{padding-left:11px}.brand-copy strong{font-size:11px}.brand-copy span{font-size:9px}.hello-pill{font-size:9px;padding:6px 8px}
+  .campus-student .student-layout{display:block}
+  .campus-student .welcome{position:relative;top:auto;padding:4px 0 15px;min-height:147px}
+  .welcome .eyebrow{font-size:8px;letter-spacing:1.1px}.welcome .eyebrow:before{width:5px;height:5px;box-shadow:0 0 0 3px #e5ecdf}
+  .campus-student .welcome h1{font-size:32px;letter-spacing:-1.3px;line-height:1.14;margin:14px 0 9px;max-width:230px}
+  .welcome h1 span:after{height:8px;bottom:2px}
+  .welcome-copy{max-width:200px;font-size:10px;line-height:1.65;margin:0}
+  .buddy{position:absolute;right:-9px;top:14px;width:135px;margin:0}
+  .study-note{display:none}
+  .campus-student .screen-nav{margin-bottom:14px;border-radius:13px;padding:4px}.campus-student .screen-nav a{font-size:11px;padding:10px 6px;border-radius:10px}.nav-icon{font-size:14px}
+  .campus-student .card{padding:21px;border-radius:21px}
+  .campus-student h2{font-size:22px}.campus-student .form-heading{margin-top:16px}.campus-student .form-caption{font-size:11px;margin-bottom:14px}
+  .campus-student .notice{font-size:11px;padding:10px 11px}.campus-student label{margin-top:15px;font-size:11px}
+  .campus-student input{min-height:47px;padding:12px}.campus-student .receipt dl{padding:13px}
+  .campus-student .history-page .welcome h1{max-width:230px}.campus-student .lookup-footnote{font-size:10px}
+}
+@media(max-width:359px){.hello-pill{display:none}.buddy{width:105px;right:-7px;top:30px}.campus-student .welcome h1{font-size:30px}.welcome-copy{max-width:185px}.campus-student .card{padding:18px}}
+@media(prefers-reduced-motion:reduce){.campus-student input,.campus-student button{transition:none}}

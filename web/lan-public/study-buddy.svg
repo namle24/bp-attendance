@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="250" viewBox="0 0 320 250" fill="none">
+  <ellipse cx="162" cy="226" rx="108" ry="13" fill="#293896" opacity=".09"/>
+  <path d="m50 29 5 14 15 5-15 5-5 15-5-15-14-5 14-5Z" fill="#FFE59D" stroke="#283572" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="m279 84 4 10 10 4-10 4-4 10-4-10-10-4 10-4Z" fill="#F79DAD" stroke="#283572" stroke-width="2.5" stroke-linejoin="round"/>
+  <circle cx="271" cy="42" r="5" fill="#B2DACC"/>
+  <path d="m37 115-9 5m12 6-7 8m233 46 12 3m-15 7 8 7" stroke="#283572" stroke-width="2.5" stroke-linecap="round"/>
+  <g transform="rotate(-6 158 131)">
+    <rect x="69" y="50" width="188" height="139" rx="19" fill="#D0D2FF" stroke="#283572" stroke-width="3"/>
+    <rect x="82" y="64" width="162" height="108" rx="10" fill="#FFFCF6" stroke="#283572" stroke-width="2.5"/>
+    <path d="M83 86h160" stroke="#283572" stroke-width="2"/>
+    <circle cx="94" cy="75" r="3" fill="#F48483"/><circle cx="104" cy="75" r="3" fill="#E9C467"/><circle cx="114" cy="75" r="3" fill="#87BDA6"/>
+    <path d="m108 107-9 7 9 7m110-14 9 7-9 7" stroke="#8990C1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="133" y="113" width="7" height="13" rx="3.5" fill="#283572"/><rect x="186" y="113" width="7" height="13" rx="3.5" fill="#283572"/>
+    <ellipse cx="124" cy="132" rx="10" ry="5" fill="#F8C6CD"/><ellipse cx="202" cy="132" rx="10" ry="5" fill="#F8C6CD"/>
+    <path d="M149 132q14 18 28 0" stroke="#283572" stroke-width="3" stroke-linecap="round"/>
+    <path d="M69 179h188l22 26c3 5-1 12-7 12H53c-7 0-10-7-6-12Z" fill="#BACBE9" stroke="#283572" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M95 189h138m-145 8h152" stroke="#899CBF" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="7 8"/>
+    <path d="M141 205h42" stroke="#283572" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  <g transform="rotate(10 224 47)"><rect x="189" y="22" width="87" height="30" rx="8" fill="#DDF0E6" stroke="#283572" stroke-width="2.5"/><path d="m201 37 5 5 10-12" stroke="#42705D" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><text x="225" y="42" fill="#283572" font-family="ui-monospace,monospace" font-size="16" font-weight="700">BP!</text></g>
+</svg>

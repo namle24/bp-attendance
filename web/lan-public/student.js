@@ -39,6 +39,8 @@ function showRound(){
 function randomId(){return BPClient.randomId();}
 function request(url,data){return BPClient.request(url,data);}
 function receipt(row){
+  $('receipt').dataset.status=row.status;
+  $('receipt-mark').textContent=row.status==='PENDING'?'…':row.status==='REJECTED'?'!':'✓';
   $('receipt-title').textContent=row.status==='PENDING'?'Đã lưu, chờ TA đối chiếu':row.status==='REJECTED'?'TA không xác nhận điểm danh':'Đã ghi nhận điểm danh';
   $('receipt-fields').textContent='';
   for(const [key,value] of [['Đợt','Đợt '+(row.roundNumber||1)+(row.roundLabel?' · '+row.roundLabel:'')],['MSSV',row.studentId],['Họ tên',row.name],['Vị trí ngồi',row.seat],['Thời gian',BPClient.time(row.at)]]){
