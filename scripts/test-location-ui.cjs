@@ -31,7 +31,14 @@ async function main(){
           await route.fulfill({path:path.join(__dirname,'../site/location',file),contentType:file.endsWith('.js')?'application/javascript':file.endsWith('.css')?'text/css':'text/html'});
         });
         if(kind!=='DENIED')await context.grantPermissions(['geolocation'],{origin:new URL(HELPER_URL).origin});
-        if(kind==='DENIED')await context.addInitScript(()=>{if(location.protocol==='https:')navigator.geolocation.getCurrentPosition=(_,error)=>error({code:1});});
+        if(['DENIED','TIMEOUT','UNAVAILABLE','RECOVERED'].includes(kind))await context.addInitScript(kind=>{
+          if(location.protocol!=='https:')return;
+          const getPosition=navigator.geolocation.getCurrentPosition.bind(navigator.geolocation);let attempts=0;
+          navigator.geolocation.getCurrentPosition=(ok,error,options)=>{
+            if(kind==='RECOVERED'&&attempts++>0)return getPosition(ok,error,options);
+            error({code:kind==='TIMEOUT'?3:kind==='UNAVAILABLE'?2:1,message:'Synthetic browser error'});
+          };
+        },kind);
         const page=await context.newPage(),qr=f.store.currentQr();
         await page.goto(f.origin+'/#code='+qr.code);await page.locator('#attendance-form').waitFor({state:'visible'});
         assert.equal(await page.evaluate(()=>isSecureContext),false);
@@ -40,23 +47,34 @@ async function main(){
           await popup.locator('#locate').waitFor();assert.equal(await popup.evaluate(()=>isSecureContext),true);
           await page.evaluate(origin=>window.dispatchEvent(new MessageEvent('message',{origin,source:window,data:{type:'bp-location-result',state:'wrong',sample:{status:'OK',latitude:21,longitude:105,accuracy:0,ageMs:0}}})),new URL(HELPER_URL).origin);
           assert.match(await page.locator('#location-status').textContent(),/Cho phép/);
-          const closed=popup.waitForEvent('close');await popup.locator('#locate').click();await closed;
-          await page.locator('#location-status').filter({hasText:kind==='DENIED'?'Không cấp quyền':'Đã lấy vị trí'}).waitFor();
+          const closed=popup.waitForEvent('close');await popup.locator('#locate').click();
+          if(['DENIED','TIMEOUT','UNAVAILABLE','RECOVERED'].includes(kind)){
+            await popup.locator('#permission-help').waitFor({state:'visible'});
+            assert.equal(popup.isClosed(),false,'A location error must keep its recovery instructions open');
+            assert.match(await page.locator('#location-status').textContent(),/Cho phép/,'A failed position must not be delivered until the user chooses TA review');
+            assert.equal(f.store.entries().some(r=>r.student_id===id),false);
+            assert.equal(await popup.locator('#locate').isEnabled(),true);
+            if(kind==='RECOVERED')await popup.locator('#locate').click();
+            else await popup.locator('#continue-review').click();
+          }
+          await closed;
+          const expectedText={DENIED:'chặn quyền vị trí',TIMEOUT:'quá thời gian',UNAVAILABLE:'Không lấy được vị trí'}[kind]||'Đã lấy vị trí';
+          await page.locator('#location-status').filter({hasText:expectedText}).waitFor();
         }
         await page.locator('#student-id').fill(id);await page.locator('#full-name').fill('Synthetic Student');await page.locator('#seat').fill('B-12');
         await page.locator('#submit').click();await page.locator('#receipt').waitFor({state:'visible'});
-        const row=f.store.entries().find(r=>r.student_id===id);assert.equal(row.location_status,kind);assert.equal(row.status,kind==='INSIDE'?'RECORDED':'PENDING');
+        const row=f.store.entries().find(r=>r.student_id===id);assert.equal(row.location_status,kind==='RECOVERED'?'INSIDE':kind);assert.equal(row.status,kind==='INSIDE'?'RECORDED':'PENDING');
         if(kind==='OUTSIDE'){assert.match(await page.locator('#receipt-fields').textContent(),/ngoài phạm vi/);await page.screenshot({path:path.join(screenshotDir,'location-student.png'),fullPage:true});}
       }finally{await context.close();}
     }
-    for(const [i,kind] of ['INSIDE','OUTSIDE','UNCERTAIN','DENIED','MISSING'].entries())await client('GEO00'+i,kind);
+    for(const [i,kind] of ['INSIDE','OUTSIDE','UNCERTAIN','DENIED','MISSING','TIMEOUT','UNAVAILABLE','RECOVERED'].entries())await client('GEO00'+i,kind);
     await admin.reload();await admin.getByRole('link',{name:'Cần xử lý',exact:true}).click();await admin.locator('#issues-entries').filter({hasText:'GEO001'}).waitFor();
     await admin.screenshot({path:path.join(screenshotDir,'location-review.png'),fullPage:true});
     const outside=f.store.entries().find(r=>r.student_id==='GEO001');
     await admin.locator('#issues-entries tr[data-entry-id="'+outside.id+'"] button').click();
     await admin.locator('#review-note').fill('Đã đối chiếu tại ghế; sai số thiết bị.');await admin.locator('#save-review').click();
     await admin.locator('#review-dialog').waitFor({state:'hidden'});assert.equal(f.store.entries().find(r=>r.id===outside.id).status,'CONFIRMED');
-    console.log('HTTP parent → HTTPS helper → permission → exact-origin message → geofence → review: passed.');
+    console.log('HTTP parent → HTTPS helper → permission/retry/review fallback → exact-origin message → geofence → review: passed.');
     console.log('Helper: '+(liveHelper?'published HTTPS page (no interception)':'local assets intercepted at HTTPS URL')+'. GPS: simulated.');
     console.log('Synthetic screenshots: '+screenshotDir);
   }finally{await browser.close();await f.close();}

@@ -26,13 +26,13 @@
       if (link.protocol !== 'https:') { finish({status: 'UNSUPPORTED'}); return function () {}; }
       helperOrigin = link.protocol + '//' + link.host;
       root.addEventListener('message', receive);
-      popup = root.open(helperUrl + '#origin=' + encodeURIComponent(location.origin) + '&state=' + state, '_blank');
+      popup = root.open(helperUrl + (helperUrl.indexOf('?') === -1 ? '?' : '&') + 'v=2#origin=' + encodeURIComponent(location.origin) + '&state=' + state, '_blank');
       if (!popup) { finish({status: 'UNAVAILABLE'}); return function () {}; }
       closedTimer = setInterval(function () { if (popup.closed) finish({status: 'UNAVAILABLE'}); }, 500);
     }
     timeout = setTimeout(function () { finish({status: 'TIMEOUT'}); }, 120000);
     return function () { finished = true; clearTimeout(timeout); clearInterval(closedTimer); root.removeEventListener('message', receive); };
   }
-  function failure(status) { return ({DENIED: 'Không cấp quyền vị trí',TIMEOUT: 'Lấy vị trí quá thời gian',UNAVAILABLE: 'Không lấy được vị trí hoặc tab mới bị chặn',UNSUPPORTED: 'Trình duyệt không hỗ trợ lấy vị trí'})[status] || 'Chưa xác minh được vị trí'; }
+  function failure(status) { return ({DENIED: 'Trình duyệt hoặc thiết bị đang chặn quyền vị trí',TIMEOUT: 'Lấy vị trí quá thời gian',UNAVAILABLE: 'Không lấy được vị trí hoặc tab mới bị chặn',UNSUPPORTED: 'Trình duyệt không hỗ trợ lấy vị trí'})[status] || 'Chưa xác minh được vị trí'; }
   root.BPGeo = {request: request, failure: failure};
 }(window));

@@ -28,9 +28,17 @@ Mỗi ngày cần xác nhận lại tâm lớp. Đợt mới chụp lại thiế
 ## Sinh viên sử dụng
 
 1. Quét QR đang chiếu, nhập MSSV, họ tên và ghế như trước.
-2. Bấm **Lấy vị trí**. Trong tab mới, bấm **Cho phép lấy vị trí** và đồng ý với yêu cầu của trình duyệt.
+2. Bấm **Lấy vị trí**. Trong tab mới, bấm **Lấy vị trí**, sau đó chọn **Cho phép** trong hộp thoại quyền của Safari/Chrome. Nút trên trang chỉ bắt đầu yêu cầu, chưa cấp quyền cho trình duyệt.
 3. Khi tab trả kết quả, quay lại biểu mẫu và gửi trong **60 giây**. Nếu để lâu, lấy lại vị trí trước khi gửi.
 4. Nếu không lấy được vị trí, có thể gửi để TA kiểm tra tại ghế. Biên nhận ghi rõ **chờ TA đối chiếu**, không tự ghi là hợp lệ.
+
+### Đã bấm nút nhưng quyền vị trí vẫn bị chặn
+
+Mã lỗi `PERMISSION_DENIED` cho biết trang chưa có quyền cần thiết; không xác định được sinh viên đã chọn gì trong hộp thoại. Quyền có thể bị chặn bởi cài đặt trang, trình duyệt, thiết bị hoặc chính sách: [mô tả lỗi của MDN](https://developer.mozilla.org/en-US/docs/Web/API/GeolocationPositionError).
+
+Tab hỗ trợ giữ nguyên khi gặp lỗi, hiện hướng dẫn và nút **Thử lấy vị trí lại**. Trên iPhone, kiểm tra Dịch vụ định vị và quyền của Trang web Safari trong Cài đặt → Quyền riêng tư & Bảo mật, sau đó kiểm tra quyền Vị trí của `namle24.github.io` trong Cài đặt trang web của Safari. Trên Android, kiểm tra quyền Vị trí của ứng dụng Chrome và của `namle24.github.io` trong Cài đặt trang web. Xem [Apple](https://support.apple.com/en-us/102647), [cài đặt từng trang Safari](https://support.apple.com/guide/iphone/browse-the-web-privately-iphb01fc3c85/ios) và [Chrome](https://support.google.com/chrome/answer/142065?co=GENIE.Platform%3DAndroid&hl=vi).
+
+Nếu vẫn không lấy được, bấm **Tiếp tục để TA đối chiếu**, quay lại biểu mẫu rồi gửi. Chỉ gửi mã trạng thái lỗi về laptop; chi tiết lỗi trình duyệt hiển thị trên điện thoại. Nếu đã gửi điểm danh, kết quả cũ được giữ nguyên; để thử lại dùng đợt mới hoặc nhờ TA đối chiếu bản ghi cũ, không ghi đè bằng một lượt gửi lặp.
 
 ![Biên nhận cần đối chiếu vị trí](location-student.png)
 

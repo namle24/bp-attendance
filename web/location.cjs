@@ -2,7 +2,7 @@
 // distance and uncertainty; client-supplied verdicts/distances are never trusted.
 const {fail}=require('./security.cjs');
 const HELPER_URL='https://namle24.github.io/bp-attendance/location/';
-const labels={OFF:'Không kiểm tra',INSIDE:'Trong phạm vi',OUTSIDE:'Ngoài phạm vi',UNCERTAIN:'Chưa đủ độ chính xác',MISSING:'Chưa gửi vị trí',DENIED:'Không cấp quyền',UNAVAILABLE:'Không lấy được vị trí',TIMEOUT:'Lấy vị trí quá thời gian',UNSUPPORTED:'Không hỗ trợ vị trí',INVALID:'Vị trí không hợp lệ',STALE:'Vị trí đã quá hạn'};
+const labels={OFF:'Không kiểm tra',INSIDE:'Trong phạm vi',OUTSIDE:'Ngoài phạm vi',UNCERTAIN:'Chưa đủ độ chính xác',MISSING:'Chưa gửi vị trí',DENIED:'Quyền vị trí bị chặn',UNAVAILABLE:'Không lấy được vị trí',TIMEOUT:'Lấy vị trí quá thời gian',UNSUPPORTED:'Không hỗ trợ vị trí',INVALID:'Vị trí không hợp lệ',STALE:'Vị trí đã quá hạn'};
 const label=status=>labels[status]||labels.OFF;
 const finite=(n,min,max)=>typeof n==='number'&&Number.isFinite(n)&&n>=min&&n<=max;
 function policy(input){
@@ -18,7 +18,7 @@ function distance(a,b){
   const h=Math.sin(dlat/2)**2+Math.cos(a.latitude*rad)*Math.cos(b.latitude*rad)*Math.sin(dlon/2)**2;
   return 6371008.8*2*Math.asin(Math.sqrt(Math.min(1,Math.max(0,h))));
 }
-const reasons={MISSING:'Chưa cung cấp vị trí.',DENIED:'Không cấp quyền vị trí.',UNAVAILABLE:'Thiết bị không lấy được vị trí.',TIMEOUT:'Lấy vị trí quá thời gian.',UNSUPPORTED:'Trình duyệt không hỗ trợ lấy vị trí.',INVALID:'Dữ liệu vị trí không hợp lệ.',STALE:'Vị trí đã quá 60 giây; cần đối chiếu lại.',UNCERTAIN:'Sai số vị trí chưa đủ để xác định trong hay ngoài phạm vi.',OUTSIDE:'Vị trí báo cáo ở ngoài phạm vi lớp.'};
+const reasons={MISSING:'Chưa cung cấp vị trí.',DENIED:'Trình duyệt hoặc thiết bị đang chặn quyền vị trí; chưa xác định được nguyên nhân.',UNAVAILABLE:'Thiết bị không lấy được vị trí.',TIMEOUT:'Lấy vị trí quá thời gian.',UNSUPPORTED:'Trình duyệt không hỗ trợ lấy vị trí.',INVALID:'Dữ liệu vị trí không hợp lệ.',STALE:'Vị trí đã quá 60 giây; cần đối chiếu lại.',UNCERTAIN:'Sai số vị trí chưa đủ để xác định trong hay ngoài phạm vi.',OUTSIDE:'Vị trí báo cáo ở ngoài phạm vi lớp.'};
 function evaluate(config,sample){
   if(!config?.enabled)return {status:'OFF',distance:null,accuracy:null,radius:null,reason:''};
   const result={status:'MISSING',distance:null,accuracy:null,radius:config.radius};
