@@ -1,5 +1,13 @@
 # Web validation
 
+## Version 0.9.2 · 2026-09-23
+
+Portable CI isolated an additional Windows burst failure: the server was still listening, but 187 of 700 requests reset during a 6.49-second submission batch, with only 513 rows committed. This is consistent with reused connections reaching the short idle deadline while the event loop is occupied by synchronous writes; it does not establish the cause on any previously unobserved phone.
+
+The shared HTTP listener now keeps idle connections for 45 seconds plus a 5-second buffer. Header receipt (15 s), request receipt (20 s) and active socket inactivity (30 s) limits remain finite. Production and load fixtures use the same listener settings. QR expiry and attendance rules are unchanged. [Node HTTP timeout behavior](https://nodejs.org/docs/latest-v24.x/api/http.html#serverkeepalivetimeout).
+
+All **90 automated tests pass locally**. A separate-process regression warms 700 connections, then submits 700 requests while modeling slow synchronous work (11 ms per request). The batch exceeds the old 6-second effective idle deadline; locally it completes all 700 with no transport failure in about 8.6 seconds. This test is included on Windows, macOS and Linux CI. A further three runs of two 700-student rounds complete 21,000/21,000 requests, preserving 1,400 records per run. [Report with shared listener settings](load-2026-09-23-listener.json). These remain synthetic/loopback tests, not classroom Wi-Fi measurements.
+
 ## Version 0.9.1 · 2026-09-23
 
 Duplicate MSSV submissions from another signed browser in the same round keep the first attendance and mark it pending TA review. The second browser is locked to its attempt; retrying the same request is idempotent. Students supply a school email and present their card at the TA desk. A server check requires a saved email, the current evidence count and an explicit TA card confirmation before marking present. There is no automatic absence decision.

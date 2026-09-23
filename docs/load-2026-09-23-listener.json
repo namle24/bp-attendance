@@ -1,0 +1,434 @@
+{
+  "measuredAt": "2026-09-23T16:23:59.727Z",
+  "platform": "linux",
+  "node": "v24.19.0",
+  "cpu": "Intel(R) Core(TM) i5-9300H CPU @ 2.40GHz",
+  "availableParallelism": 8,
+  "totalMemoryGiB": 8,
+  "roundsPerDay": 2,
+  "locationChecks": false,
+  "method": "Separate server/load processes, loopback HTTP, real clock, temporary disk SQLite WAL with FULL synchronous; concurrent compressed page loads, rotating QR admissions followed by submissions, idempotent retries and private receipt refreshes in each round; same students across rounds in one date; actual shared loopback socket IP; all peers flagged; Sheets writer held pending. Each simulated browser has its own signed cookie. One keep-alive pool retains up to the full concurrent connection count across bursts to avoid exhausting source ports on the load generator; no throttling or retry-on-error. Does not measure classroom Wi-Fi or real Sheets API.",
+  "submission": "LAN rotating QR",
+  "results": [
+    {
+      "count": 700,
+      "run": 1,
+      "rounds": [
+        {
+          "round": 1,
+          "page": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 248.3,
+            "elapsedMs": 880.4,
+            "p50Ms": 602,
+            "p95Ms": 626.7,
+            "maxMs": 632.1
+          },
+          "scan": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 24,
+            "elapsedMs": 511.7,
+            "p50Ms": 280.5,
+            "p95Ms": 468,
+            "maxMs": 487.7
+          },
+          "first": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 23.5,
+            "elapsedMs": 3812.4,
+            "p50Ms": 1942,
+            "p95Ms": 3556.4,
+            "maxMs": 3788.8
+          },
+          "retry": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 700,
+            "errors": {},
+            "dispatchMs": 102.7,
+            "elapsedMs": 689.7,
+            "p50Ms": 451.8,
+            "p95Ms": 575.9,
+            "maxMs": 586.9
+          },
+          "receipt": {
+            "matchingReceipts": 700,
+            "requests": 700,
+            "success": 700,
+            "duplicates": 700,
+            "errors": {},
+            "dispatchMs": 14.2,
+            "elapsedMs": 369,
+            "p50Ms": 183.5,
+            "p95Ms": 340.7,
+            "maxMs": 354.8
+          },
+          "records": 700
+        },
+        {
+          "round": 2,
+          "page": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 14.4,
+            "elapsedMs": 308.8,
+            "p50Ms": 168.2,
+            "p95Ms": 283.8,
+            "maxMs": 294.4
+          },
+          "scan": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 28.1,
+            "elapsedMs": 568.8,
+            "p50Ms": 354.8,
+            "p95Ms": 524,
+            "maxMs": 540.7
+          },
+          "first": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 13.3,
+            "elapsedMs": 4509.4,
+            "p50Ms": 2244.1,
+            "p95Ms": 4256.1,
+            "maxMs": 4496
+          },
+          "retry": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 700,
+            "errors": {},
+            "dispatchMs": 69.8,
+            "elapsedMs": 646,
+            "p50Ms": 441.7,
+            "p95Ms": 565.1,
+            "maxMs": 576.1
+          },
+          "receipt": {
+            "matchingReceipts": 700,
+            "requests": 700,
+            "success": 700,
+            "duplicates": 700,
+            "errors": {},
+            "dispatchMs": 13.2,
+            "elapsedMs": 351.8,
+            "p50Ms": 181.9,
+            "p95Ms": 319.5,
+            "maxMs": 338.5
+          },
+          "records": 1400
+        }
+      ],
+      "records": 1400,
+      "flagged": 1400,
+      "locations": {},
+      "persistedRecords": 1400,
+      "sheetsBlocked": true,
+      "rssMiB": 207,
+      "sqlite": {
+        "journal": {
+          "journal_mode": "wal"
+        },
+        "synchronous": {
+          "synchronous": 2
+        }
+      }
+    },
+    {
+      "count": 700,
+      "run": 2,
+      "rounds": [
+        {
+          "round": 1,
+          "page": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 111.8,
+            "elapsedMs": 615.9,
+            "p50Ms": 434.9,
+            "p95Ms": 497,
+            "maxMs": 504.1
+          },
+          "scan": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 14.6,
+            "elapsedMs": 448.6,
+            "p50Ms": 233.8,
+            "p95Ms": 415.5,
+            "maxMs": 433.9
+          },
+          "first": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 13.4,
+            "elapsedMs": 4721.9,
+            "p50Ms": 2396.2,
+            "p95Ms": 4472.3,
+            "maxMs": 4708.4
+          },
+          "retry": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 700,
+            "errors": {},
+            "dispatchMs": 70.4,
+            "elapsedMs": 626.6,
+            "p50Ms": 405.3,
+            "p95Ms": 536.6,
+            "maxMs": 556.2
+          },
+          "receipt": {
+            "matchingReceipts": 700,
+            "requests": 700,
+            "success": 700,
+            "duplicates": 700,
+            "errors": {},
+            "dispatchMs": 12.8,
+            "elapsedMs": 347.6,
+            "p50Ms": 168.7,
+            "p95Ms": 320.7,
+            "maxMs": 334.7
+          },
+          "records": 700
+        },
+        {
+          "round": 2,
+          "page": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 10.7,
+            "elapsedMs": 251.8,
+            "p50Ms": 127.3,
+            "p95Ms": 229.9,
+            "maxMs": 241.1
+          },
+          "scan": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 11.4,
+            "elapsedMs": 649.7,
+            "p50Ms": 442.3,
+            "p95Ms": 621.2,
+            "maxMs": 638.3
+          },
+          "first": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 12.2,
+            "elapsedMs": 4561,
+            "p50Ms": 2250.2,
+            "p95Ms": 4329.1,
+            "maxMs": 4548.7
+          },
+          "retry": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 700,
+            "errors": {},
+            "dispatchMs": 69.6,
+            "elapsedMs": 641.7,
+            "p50Ms": 434.6,
+            "p95Ms": 558.6,
+            "maxMs": 572
+          },
+          "receipt": {
+            "matchingReceipts": 700,
+            "requests": 700,
+            "success": 700,
+            "duplicates": 700,
+            "errors": {},
+            "dispatchMs": 17.6,
+            "elapsedMs": 374.5,
+            "p50Ms": 198.6,
+            "p95Ms": 343.3,
+            "maxMs": 356.9
+          },
+          "records": 1400
+        }
+      ],
+      "records": 1400,
+      "flagged": 1400,
+      "locations": {},
+      "persistedRecords": 1400,
+      "sheetsBlocked": true,
+      "rssMiB": 208,
+      "sqlite": {
+        "journal": {
+          "journal_mode": "wal"
+        },
+        "synchronous": {
+          "synchronous": 2
+        }
+      }
+    },
+    {
+      "count": 700,
+      "run": 3,
+      "rounds": [
+        {
+          "round": 1,
+          "page": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 112.1,
+            "elapsedMs": 774.7,
+            "p50Ms": 514.3,
+            "p95Ms": 657.6,
+            "maxMs": 662.6
+          },
+          "scan": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 15,
+            "elapsedMs": 475,
+            "p50Ms": 256.9,
+            "p95Ms": 437.4,
+            "maxMs": 459.9
+          },
+          "first": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 14.2,
+            "elapsedMs": 4651.6,
+            "p50Ms": 2328.1,
+            "p95Ms": 4397.2,
+            "maxMs": 4637.3
+          },
+          "retry": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 700,
+            "errors": {},
+            "dispatchMs": 74.6,
+            "elapsedMs": 626.8,
+            "p50Ms": 418.6,
+            "p95Ms": 540.1,
+            "maxMs": 552.2
+          },
+          "receipt": {
+            "matchingReceipts": 700,
+            "requests": 700,
+            "success": 700,
+            "duplicates": 700,
+            "errors": {},
+            "dispatchMs": 16.9,
+            "elapsedMs": 354.3,
+            "p50Ms": 169.6,
+            "p95Ms": 323.2,
+            "maxMs": 337.4
+          },
+          "records": 700
+        },
+        {
+          "round": 2,
+          "page": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 13.5,
+            "elapsedMs": 314.4,
+            "p50Ms": 181,
+            "p95Ms": 291.2,
+            "maxMs": 300.9
+          },
+          "scan": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 11.4,
+            "elapsedMs": 451.6,
+            "p50Ms": 242.3,
+            "p95Ms": 423.3,
+            "maxMs": 440.2
+          },
+          "first": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 13.4,
+            "elapsedMs": 4580.4,
+            "p50Ms": 2238.4,
+            "p95Ms": 4343.4,
+            "maxMs": 4566.9
+          },
+          "retry": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 700,
+            "errors": {},
+            "dispatchMs": 62,
+            "elapsedMs": 583.3,
+            "p50Ms": 385,
+            "p95Ms": 509.8,
+            "maxMs": 521.3
+          },
+          "receipt": {
+            "matchingReceipts": 700,
+            "requests": 700,
+            "success": 700,
+            "duplicates": 700,
+            "errors": {},
+            "dispatchMs": 12.1,
+            "elapsedMs": 376.8,
+            "p50Ms": 190.9,
+            "p95Ms": 349,
+            "maxMs": 364.7
+          },
+          "records": 1400
+        }
+      ],
+      "records": 1400,
+      "flagged": 1400,
+      "locations": {},
+      "persistedRecords": 1400,
+      "sheetsBlocked": true,
+      "rssMiB": 208,
+      "sqlite": {
+        "journal": {
+          "journal_mode": "wal"
+        },
+        "synchronous": {
+          "synchronous": 2
+        }
+      }
+    }
+  ]
+}

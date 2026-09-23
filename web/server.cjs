@@ -12,7 +12,6 @@ async function main(options={}){
   const servers=[];let timer,lookupTimer,stopping=false;
   function listen(app,port,host){return new Promise((resolve,reject)=>{
     const server=listenHTTP(app,port,host);servers.push(server);
-    server.headersTimeout=15000;server.requestTimeout=20000;server.keepAliveTimeout=5000;server.setTimeout(30000,socket=>socket.destroy());
     server.once('error',reject);server.once('listening',()=>{server.on('error',error=>{console.error('Lỗi server: '+error.code);void stop(1);});resolve(server);});
   });}
   async function stop(code=0){
