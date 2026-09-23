@@ -8,10 +8,13 @@ test('TA filters and CSV agree without changing round-wide IP evidence, decision
     const send=(round,id,name,ip,location)=>f.store.submit({sessionId:round.id,studentId:id,name,seat:'B-'+id,requestId:randomUUID(),location},ip,now);
     const first=f.store.open(date,8,'TA',now);
     send(first,'001','Nguyễn An','192.168.2.1');send(first,'002','Lê Bình','192.168.2.1');f.store.closeSession(first.id,'TA',now);
-    f.store.configureLocation({enabled:true,latitude:21,longitude:105,accuracy:5,radius:100},'TA',now);
+
     const second=f.store.open(date,8,'TA',now),near={status:'OK',latitude:21,longitude:105,accuracy:8,ageMs:0};
     send(second,'003','Đặng Minh','192.168.2.1',near);send(second,'004','Ngọc Anh','192.168.2.1',{...near,latitude:21.01});
     send(second,'005','Sơn Đỗ','192.168.2.2',{status:'DENIED'});send(second,'006','Bình An','192.168.2.3',near);
+    // Historical GPS evidence must still be searchable after collection is retired.
+    const records=f.store.entries(second.id);
+    for(let i=0;i<records.length;i++)f.store.db.prepare('INSERT INTO lan_attendance_locations VALUES (?,?,?,?,?,?)').run(records[i].id,['INSIDE','OUTSIDE','DENIED','INSIDE'][i],i===1?1100:0,8,100,'Bằng chứng vị trí cũ');
     const rows=f.store.entries();f.store.reviewEntry(rows[2].id,'CONFIRMED','Đã kiểm tra tại ghế',2,'TA');f.store.reviewEntry(rows[4].id,'REJECTED','Không có mặt khi đối chiếu',1,'TA');
     const before=f.store.snapshot(),revision=f.store.meta('revision');
     for(const [query,ids] of [

@@ -2,15 +2,15 @@
 
 # BP Attendance · USTH
 
-Điểm danh offline trên **Windows, macOS và Linux**, laptop host cùng Wi-Fi với sinh viên. Chạy `npm start`, app tự chuẩn bị dữ liệu và mở trang TA. TA bấm **Mở QR điểm danh**; QR và mã cho máy tính đổi mỗi **30 giây**. Sinh viên quét mã rồi nhập **MSSV, họ tên, vị trí ngồi**.
+Điểm danh offline trên **Windows, macOS và Linux**, laptop host cùng Wi-Fi với sinh viên. Chạy `npm start`, app tự chuẩn bị dữ liệu và mở trang TA. TA bấm **Mở QR điểm danh**; QR và mã cho máy tính đổi mỗi **30 giây**. Sinh viên quét mã rồi nhập **MSSV và họ tên**.
 
 Kết quả được lưu vào SQLite trước khi trả thông báo thành công. Google Sheets đồng bộ sau, khoảng 15 giây mỗi đợt có thay đổi. Chưa cấu hình Sheets vẫn dùng được app và tải CSV để mở bằng Excel.
 
 **Tra cứu cho sinh viên:** mở **Tra cứu MSSV** để xem kết quả từ tab Google Sheet do TA sửa trực tiếp. TA dán link đúng tab tại **Lịch sử & xuất dữ liệu**; app đọc mỗi phút, hiển thị thời điểm đọc và cảnh báo nếu dữ liệu chưa cập nhật. Xem [hướng dẫn kết nối và sử dụng](docs/STUDENT-LOOKUP.vi.md).
 
-**Đối chiếu vị trí tùy chọn:** mặc định sinh viên chỉ nhập MSSV, họ tên và ghế; không cần GPS hay trang HTTPS. Khi TA bật và lưu tùy chọn cho đợt mới, sinh viên mới có thêm nút mở tab xin vị trí. App vẫn host trên laptop. Xem [hướng dẫn vị trí và giới hạn](docs/LOCATION-CHECK.vi.md).
+**Bản 0.9.0:** bỏ thu vị trí và hàng ghế. Một trình duyệt đã gửi sẽ bị khóa trong đợt đó, kể cả mở tab mới/quét QR mới. Gửi lại sau mất kết nối lấy lại biên nhận; đợt mới được gửi thêm một lượt. Xem [truy cập điện thoại và giới hạn nhận diện](docs/MOBILE-ACCESS.vi.md).
 
-**Bộ lọc TA:** tìm MSSV/họ tên/ghế/IP, lọc trạng thái, trùng IP, vị trí và ngày/đợt; tải CSV chi tiết đúng danh sách đã lọc. Cảnh báo trùng IP và giới hạn một MSSV mỗi đợt được giữ nguyên. Xem [hướng dẫn sử dụng bộ lọc](docs/TA-FILTERS.vi.md).
+**Bộ lọc TA:** tìm MSSV/họ tên/IP, lọc trạng thái, trùng IP và ngày/đợt; tải CSV chi tiết đúng danh sách đã lọc. Cảnh báo trùng IP và giới hạn một MSSV mỗi đợt được giữ nguyên. Xem [hướng dẫn sử dụng bộ lọc](docs/TA-FILTERS.vi.md).
 
 **Nhiều MSSV cùng IP trong một đợt:** tất cả bản ghi liên quan được tô đỏ trên bảng TA, tab chi tiết và ô ngày tương ứng của bảng tổng. TA kiểm tra người/thẻ tại ghế ngồi rồi lưu xác nhận trên app. Cùng IP chỉ là cờ đối chiếu; các thiết bị chung NAT có thể cùng IP và một người có thể dùng nhiều IP.
 
@@ -57,7 +57,7 @@ Cập nhật bản đã clone: dừng cửa sổ app, chạy `git pull --ff-only
 | Cài đặt, chạy, dừng, backup | [Hướng dẫn máy host](docs/HOST-QUICKSTART.vi.md) |
 | Bật Google Sheets và hiểu các cột | [Cấu hình Sheets](docs/WEB-SETUP.vi.md) |
 | Sinh viên tra cứu kết quả TA sửa trên Sheet | [Tra cứu bằng MSSV](docs/STUDENT-LOOKUP.vi.md) |
-| Đặt tâm lớp, bán kính và đối chiếu vị trí | [Kiểm tra vị trí](docs/LOCATION-CHECK.vi.md) |
+| Điện thoại tải lâu, trang trắng, khóa lượt gửi | [Truy cập điện thoại](docs/MOBILE-ACCESS.vi.md) |
 | Xử lý mạng trường | [Wi-Fi / LAN](docs/LAPTOP-LAN.vi.md) |
 | Căn cứ ghi nhận và giới hạn IP | [Đối chiếu điểm danh](docs/ANTI-PROXY.vi.md) |
 | Khả năng chịu tải | [Kết quả đo](docs/LOAD-TEST.vi.md) · [Phạm vi kiểm thử](docs/WEB-VALIDATION.md) |
@@ -66,7 +66,7 @@ Cập nhật bản đã clone: dừng cửa sổ app, chạy `git pull --ff-only
 
 | Biểu mẫu sinh viên | Sau khi lưu thành công |
 | --- | --- |
-| ![Nhập MSSV, họ tên và ghế](docs/web-student-ready.png) | ![Biên nhận](docs/web-student.png) |
+| ![Nhập MSSV và họ tên](docs/web-student-ready.png) | ![Biên nhận](docs/web-student.png) |
 
 Ảnh chụp qua kiểm thử trình duyệt với dữ liệu hư cấu trong database tạm, không đưa vào database lớp. IP localhost/cổng ngẫu nhiên trong ảnh là địa chỉ của kiểm thử; sinh viên thật dùng IP Wi-Fi được máy host in ra.
 
@@ -81,7 +81,7 @@ Bảng tổng vẫn có **một cột mỗi ngày**. Khi có nhiều đợt, ô 
 ![Điểm danh nhiều đợt trong cùng ngày](docs/web-rounds.png)
 
 - **Lịch sử & xuất dữ liệu:** chọn một ngày hoặc **Tất cả các ngày**, xem các lượt gửi offline và tải bảng tổng/chi tiết CSV. Bảng tổng theo ngày chỉ có một cột ngày và các MSSV có kết quả ngày đó; bản toàn bộ giữ đủ cột của các buổi. Tên file chứa ngày hoặc `all`.
-- **Cần xử lý:** danh sách các bản ghi chờ đối chiếu hoặc TA không xác nhận. Lọc theo ngày và trạng thái, xem ghế/IP/lý do, lưu đối chiếu trực tiếp hoặc tải danh sách CSV theo đúng bộ lọc.
+- **Cần xử lý:** danh sách các bản ghi chờ đối chiếu hoặc TA không xác nhận. Lọc theo ngày và trạng thái, xem IP/lý do, lưu đối chiếu trực tiếp hoặc tải danh sách CSV theo đúng bộ lọc.
 - Dữ liệu các ngày cùng lưu trong SQLite trên laptop, giữ nguyên khi khởi động lại. Xem/xuất không sửa dữ liệu gốc hoặc phạm vi đồng bộ Sheet. Bản ghi đã được xác nhận có mặt rời danh sách cần xử lý và vẫn có trong lịch sử.
 
 ![Lịch sử và xuất dữ liệu theo ngày hoặc toàn bộ](docs/web-history.png)
@@ -104,7 +104,7 @@ CSV mở được bằng Excel nhưng không giữ màu; cột trạng thái, l�
 | `Đã gửi 2/3 đợt` | Ngày có nhiều đợt: đã gửi ở hai đợt; TA quyết định kết quả cuối cùng |
 | `Đã gửi 2/3 đợt · 1 cần xác nhận` + nền đỏ | Có lượt trùng IP chưa được TA đối chiếu; không tự coi là hợp lệ |
 
-`BP_Web_Attendance`: bảng tổng, mỗi ngày học một cột. `BP_Offline_Check`: họ tên đã nhập, ghế, IP, số MSSV cùng IP, trạng thái và ghi chú TA. Bấm **Đối chiếu** trên app để cập nhật; không sửa trực tiếp hai tab do app quản lý vì lần đồng bộ sau sẽ ghi lại dữ liệu. Sheet tổng do lớp tự quản lý có thể đặt ở tab khác.
+`BP_Web_Attendance`: bảng tổng, mỗi ngày học một cột. `BP_Offline_Check`: họ tên đã nhập, IP, số MSSV cùng IP, trạng thái và ghi chú TA. Cột ghế và vị trí trong CSV/Sheet chi tiết chỉ giữ để đọc lịch sử; lượt mới để trống. Bấm **Đối chiếu** trên app để cập nhật; không sửa trực tiếp hai tab do app quản lý vì lần đồng bộ sau sẽ ghi lại dữ liệu. Sheet tổng do lớp tự quản lý có thể đặt ở tab khác.
 
 Mỗi đợt mặc định 8 phút, tùy chọn 5–30 phút. Đợt đóng/hết giờ có thể được mở lại trong cùng ngày với thời lượng mới. QR và quyền gửi chưa dùng từ trước khi mở lại đều bị vô hiệu hóa; sinh viên phải quét mã mới. Người đã gửi trong đợt đó vẫn chỉ có một bản ghi. **Đợt mới** cho phép cùng MSSV gửi lại bằng một lượt quét mới. Retry của lượt cũ chỉ trả biên nhận đợt cũ, không điểm danh thay cho đợt mới. IP được lấy từ kết nối trực tiếp, bỏ qua IP tự khai và các header chuyển tiếp.
 

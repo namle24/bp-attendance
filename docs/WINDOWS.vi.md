@@ -47,7 +47,7 @@ Thư mục tải ZIP không dùng được `git pull`. Khi cập nhật bản ZI
 3. Trang TA tự mở. Nếu chưa mở, vào **http://127.0.0.1:4181** trên chính laptop host.
 4. Kiểm tra ngày, chọn thời lượng, nhập tên đợt nếu muốn (ví dụ `Đầu giờ`), rồi bấm **Mở QR điểm danh**.
 5. Tab chiếu QR mở riêng. QR và mã 8 ký tự đổi mỗi **30 giây**.
-6. Sinh viên quét QR bằng điện thoại, hoặc mở địa chỉ và nhập mã đang chiếu trên máy tính; điền **MSSV, họ tên, vị trí ngồi**, rồi gửi.
+6. Sinh viên quét QR bằng điện thoại, hoặc mở địa chỉ và nhập mã đang chiếu trên máy tính; điền **MSSV và họ tên**, rồi gửi.
 7. Kiểm tra biên nhận có đúng ngày/đợt và bản ghi xuất hiện trong bảng TA. Bảng TA cập nhật khoảng mỗi 10 giây.
 
 **Giữ cửa sổ CMD mở, cắm sạc và giữ laptop thức suốt buổi.** App không tự ngăn Windows sleep. Đổi Wi-Fi hoặc IP thì Ctrl+C, mở app lại và dùng QR mới.
@@ -121,10 +121,10 @@ Kiểm thử tự động trên [Windows, macOS và Linux](https://github.com/na
 
 Trong **Lịch sử & xuất dữ liệu**, dán link Google Sheet của tab TA sửa, giữ phần `gid`, nhập tên tab rồi **Lưu nguồn tra cứu**. Với link đã có quyền xem, app đọc được ngay. Sinh viên mở **Tra cứu MSSV** trên trang điểm danh; kết quả lấy từ Sheet, có thời gian cập nhật. Xem [hướng dẫn tra cứu](STUDENT-LOOKUP.vi.md). Mỗi laptop host lưu cấu hình nguồn riêng.
 
-## 9. Đối chiếu vị trí lớp (tùy chọn)
+## 9. Truy cập điện thoại và chống gửi trùng
 
-Mặc định sinh viên quét QR, nhập MSSV, họ tên và ghế rồi gửi; không xin quyền GPS. Chỉ khi TA bật và lưu **Kiểm tra vị trí lớp**, sinh viên mới có nút mở tab HTTPS để lấy vị trí. Để tắt cho đợt mới, đóng đợt đang mở, bỏ chọn đối chiếu vị trí, lưu rồi mở đợt mới. Mở lại đợt giữ nguyên thiết lập cũ. Máy host vẫn chạy bằng `npm start`, không cần mua tên miền/cài chứng chỉ. Xem [hướng dẫn đầy đủ](LOCATION-CHECK.vi.md).
+Bản 0.9.0 không thu hàng ghế hoặc vị trí. Khi điện thoại tải lâu, dùng liên kết **biểu mẫu tối giản** ở đầu form. Mục **Kiểm tra máy không vào được** trên trang TA cho biết yêu cầu nào đã tới laptop. Trình duyệt đã gửi chỉ xem lại biên nhận trong cùng đợt; đổi tab hoặc quét lại QR không cho đổi MSSV. Xem [hướng dẫn và giới hạn](MOBILE-ACCESS.vi.md).
 
 ## 10. Tìm và lọc danh sách
 
-Bản 0.8.1 thêm tìm MSSV/họ tên/ghế/IP và lọc theo trạng thái, trùng IP, vị trí, ngày/đợt trên trang TA. CSV danh sách/chi tiết/cần xử lý áp dụng bộ lọc đang chọn; bảng tổng CSV giữ đủ kết quả của ngày. Xem [hướng dẫn có ảnh](TA-FILTERS.vi.md).
+App có tìm MSSV/họ tên/IP và lọc theo trạng thái, trùng IP, ngày/đợt trên trang TA. CSV danh sách/chi tiết/cần xử lý áp dụng bộ lọc đang chọn; bảng tổng CSV giữ đủ kết quả của ngày. Xem [hướng dẫn có ảnh](TA-FILTERS.vi.md).

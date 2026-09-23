@@ -106,3 +106,5 @@ body.campus-student{--blue:#293896;--ink:#253057;--muted:#65708a;--line:#e0e2ef;
 }
 @media(max-width:359px){.hello-pill{display:none}.buddy{width:105px;right:-7px;top:30px}.campus-student .welcome h1{font-size:30px}.welcome-copy{max-width:185px}.campus-student .card{padding:18px}}
 @media(prefers-reduced-motion:reduce){.campus-student input,.campus-student button{transition:none}}
+
+.campus-student #fallback-help{font-size:11px;line-height:1.6;margin:0 0 14px}.campus-student #fallback-help a{color:#65708a}

@@ -35,7 +35,7 @@ test('admission and one-use binding survive a restart without changing historica
 });
 test('public HTTP cannot obtain the current QR or bypass scanning; actual socket IP owns the admission',async()=>{
   const f=await startFixture();
-  async function post(route,input){const response=await fetch(f.origin+route,{method:'POST',headers:{Origin:f.origin,'Content-Type':'application/json'},body:JSON.stringify(input)});return {status:response.status,body:await response.json()};}
+  const student=require('./helpers/lan-http-client.cjs').client(f.origin),post=(route,input)=>student.request(route,input);
   try{
     const session=f.store.open(require('../web/security.cjs').today(),8,'TA'),input=body(session.id);
     assert.equal((await post('/api/check-in',input)).status,403);

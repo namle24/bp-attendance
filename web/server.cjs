@@ -8,6 +8,7 @@ async function main(options={}){
   const config=options.config||loadLanConfig(),store=new LanStore(config.database);
   const worker=new SyncWorker(store,config.spreadsheetId?new SheetsWriter(config,store):null);
   const lookup=new StudentLookup(store,{writerConfig:config});
+  const connections=require('./connections.cjs').connections();
   const servers=[];let timer,lookupTimer,stopping=false;
   function listen(app,port,host){return new Promise((resolve,reject)=>{
     const server=listenHTTP(app,port,host);servers.push(server);
@@ -23,8 +24,8 @@ async function main(options={}){
     store.close();clearTimeout(deadline);process.exitCode=code;
   }
   try{
-    await listen(createAdminApp(config,store,worker,{lookup}),config.adminPort,'127.0.0.1');
-    await listen(createStudentApp(config,store,{lookup}),config.port,config.host);
+    await listen(createAdminApp(config,store,worker,{lookup,connections}),config.adminPort,'127.0.0.1');
+    await listen(createStudentApp(config,store,{lookup,connections}),config.port,config.host);
     timer=setInterval(()=>void worker.sync(),15000);timer.unref();
     void lookup.sync();lookupTimer=setInterval(()=>void lookup.sync(),60000);lookupTimer.unref();
     console.log('Sinh viên: '+config.origin+' · '+config.network+' · '+config.campusCidrs.join(', '));

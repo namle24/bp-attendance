@@ -1,6 +1,6 @@
 # Chuẩn bị trước buổi học
 
-Luồng hiện tại: **Windows/macOS/Linux → tự nhận mạng → QR đổi mỗi 30 giây → MSSV, họ tên, ghế → đối chiếu trùng IP**.
+Luồng hiện tại: **Windows/macOS/Linux → tự nhận mạng → QR đổi mỗi 30 giây → MSSV và họ tên → đối chiếu trùng IP**.
 
 ## Chuẩn bị trước
 

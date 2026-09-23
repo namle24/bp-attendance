@@ -50,7 +50,7 @@ test('TA review is audited, clears red, persists rejections and reflags confirme
 });
 test('self-declared inputs are bounded, normalized and CSV formula injection is escaped',()=>{
   const {store,session}=setup();try{
-    for(const fields of [{studentId:'bad id'},{name:''},{seat:''},{name:'abc\nxyz'},{seat:'x'.repeat(33)},{requestId:'guess'}])assert.throws(()=>store.submit({...payload(session.id),...fields},'192.168.2.1',now));
+    for(const fields of [{studentId:'bad id'},{name:''},{name:'abc\nxyz'},{seat:'x'.repeat(33)},{requestId:'guess'}])assert.throws(()=>store.submit({...payload(session.id),...fields},'192.168.2.1',now));
     const body={...payload(session.id),studentId:'sv_001',name:'  =1+1  ',seat:'@SUM(A1)'};
     const result=store.submit(body,'192.168.2.1',now);assert.equal(result.studentId,'SV_001');assert.equal(result.name,'=1+1');assert.match(store.detailCSV(),/'=1\+1/);assert.match(store.detailCSV(),/'@SUM/);
   }finally{store.close();}
@@ -81,8 +81,9 @@ function post(origin,body,headers={}){return {method:'POST',headers:{Origin:orig
 test('HTTP ignores forwarded and submitted IP, separates TA API, enforces origin/host/CSRF and protects receipts',async()=>{
   const f=await fixture();try{
     const origin=f.config.origin,admin=f.config.adminOrigins[0],body=payload(f.session.id);
-    body.scanTicket=f.store.scan({token:f.store.currentQr(now).token},'127.0.0.1',now).scanTicket;
-    let res=await fetch(origin+'/api/check-in',post(origin,{...body,ip:'10.1.2.3'},{'X-Forwarded-For':'10.1.2.3'}));assert.equal(res.status,200);assert.equal(f.store.entries()[0].ip,'127.0.0.1');
+    const student=require('./helpers/lan-http-client.cjs').client(origin);
+    body.scanTicket=(await student.request('/api/scan',{token:f.store.currentQr(now).token})).body.scanTicket;
+    let res=await fetch(origin+'/api/check-in',post(origin,{...body,ip:'10.1.2.3'},{'X-Forwarded-For':'10.1.2.3',Cookie:student.cookie}));assert.equal(res.status,200);assert.equal(f.store.entries()[0].ip,'127.0.0.1');
     assert.equal((await fetch(origin+'/api/dashboard')).status,404);assert.equal((await fetch(origin+'/api/entries')).status,404);
     const wrongHostStatus=await new Promise((resolve,reject)=>{require('node:http').get(origin+'/api/session',{headers:{Host:'evil.example'}},res=>{res.resume();res.on('end',()=>resolve(res.statusCode));}).on('error',reject);});assert.equal(wrongHostStatus,403);
     assert.equal((await fetch(origin+'/api/check-in',post('https://evil.example',payload(f.session.id,'002')))).status,403);

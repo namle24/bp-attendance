@@ -35,8 +35,8 @@ const screenshot=(page,name)=>page.screenshot({path:require('node:path').join(sc
     const pagesBefore=admin.context().pages().length;await admin.locator('#project').click();assert.equal(admin.context().pages().length,pagesBefore,'Chiếu QR reuses the existing projection tab');
     // The projection must keep rotating with the TA tab closed, without postMessage or opener state.
     const firstQr=fixture.store.currentQr(),firstCode=await projector.locator('#attendance-code').textContent();
-    await admin.close();
-    await projector.waitForFunction(code=>document.getElementById('attendance-code').textContent&&document.getElementById('attendance-code').textContent!==code,firstCode,{timeout:35000});
+    await admin.close();await projector.bringToFront();
+    await projector.waitForFunction(code=>document.getElementById('attendance-code').textContent&&document.getElementById('attendance-code').textContent!==code,firstCode,{timeout:35000,polling:100});
     // Hide the code on a connection error, then recover automatically.
     await projector.route('**/api/projector',route=>route.fulfill({status:503,contentType:'application/json',body:'{}'}));
     await projector.waitForFunction(()=>document.getElementById('session-state').textContent==='MẤT KẾT NỐI');
@@ -47,24 +47,24 @@ const screenshot=(page,name)=>page.screenshot({path:require('node:path').join(sc
     const mobile=await browser.newPage({viewport:{width:390,height:844}});mobile.on('pageerror',e=>errors.push(e.message));mobile.on('request',r=>requests.push(r.url()));
     const qrLink=()=>fixture.origin+'/#code='+fixture.store.currentQr().code;
     await mobile.goto(qrLink());await mobile.locator('#attendance-form').waitFor();
-    assert.equal(await mobile.locator('#attendance-form input').count(),3);assert.ok(await mobile.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+    assert.equal(await mobile.locator('#attendance-form input').count(),2);assert.ok(await mobile.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
     assert.equal(await mobile.locator('#location-section').isVisible(),false,'Normal attendance must not ask for location');
     assert.equal(await mobile.locator('#scan-form').isVisible(),false);assert.equal(new URL(mobile.url()).hash,'');
     await screenshot(mobile,'web-student-ready.png');
-    await mobile.locator('#student-id').fill('001');await mobile.locator('#full-name').fill('Nguyễn An');await mobile.locator('#seat').fill('B-12');
+    await mobile.locator('#student-id').fill('001');await mobile.locator('#full-name').fill('Nguyễn An');
     let attempted=0;await mobile.route('**/api/check-in',async route=>{if(++attempted===1)return route.abort('failed');await route.fetch();await route.abort('failed');});
     await mobile.locator('#submit').click();await mobile.waitForFunction(()=>document.getElementById('notice').textContent.includes('Chưa xác nhận được'));
     assert.equal(await mobile.locator('#receipt').isVisible(),false);assert.equal(fixture.store.entries().length,0);
     await mobile.locator('#submit').click();await mobile.waitForFunction(()=>document.getElementById('notice').textContent.includes('Chưa xác nhận được'));
     assert.equal(fixture.store.entries().length,1);assert.equal(await mobile.locator('#receipt').isVisible(),false);
-    await mobile.unroute('**/api/check-in');await mobile.reload();await mobile.locator('#submit').click();await mobile.locator('#receipt').waitFor();
+    await mobile.unroute('**/api/check-in');await mobile.reload();await mobile.locator('#receipt').waitFor();
     assert.match(await mobile.locator('#receipt').textContent(),/001/);assert.match(await mobile.locator('#notice').textContent(),/trước đó/);
     await screenshot(mobile,'web-student.png');
     const desktop=await browser.newPage({viewport:{width:1200,height:900}});desktop.on('pageerror',e=>errors.push(e.message));await desktop.goto(fixture.origin);
     await desktop.locator('#scan-form').waitFor();assert.equal(await desktop.locator('#attendance-form').isVisible(),false);
     await screenshot(desktop,'web-student-code.png');
     await desktop.locator('#room-code').fill(fixture.store.currentQr().code);await desktop.locator('#scan-submit').click();await desktop.locator('#attendance-form').waitFor();
-    await desktop.locator('#student-id').fill('002');await desktop.locator('#full-name').fill('Trần Bình');await desktop.locator('#seat').fill('B-13');
+    await desktop.locator('#student-id').fill('002');await desktop.locator('#full-name').fill('Trần Bình');
     await screenshot(desktop,'web-student-desktop.png');await desktop.locator('#submit').click();await desktop.locator('#receipt').waitFor();
     await admin.waitForFunction(()=>document.querySelectorAll('#entries tr.flagged').length===2,{},{timeout:15000});
     await projector.waitForFunction(()=>document.getElementById('count').textContent==='2 sinh viên đã gửi');
@@ -75,7 +75,7 @@ const screenshot=(page,name)=>page.screenshot({path:require('node:path').join(sc
     const filteredDownload=admin.waitForEvent('download');await admin.locator('#attendance-export').click();const filteredFile=await filteredDownload;
     assert.deepEqual(parse(fs.readFileSync(await filteredFile.path(),'utf8'),{bom:true}).slice(1).map(r=>r[1]),['001']);
     await screenshot(admin,'web-ta-filters.png');
-    await admin.locator('#attendance-location').selectOption('INSIDE');await admin.waitForFunction(()=>!busy&&document.querySelector('#entries').textContent.includes('Không có bản ghi phù hợp'));
+    await admin.locator('#attendance-status').selectOption('CONFIRMED');await admin.waitForFunction(()=>!busy&&document.querySelector('#entries').textContent.includes('Không có bản ghi phù hợp'));
     await admin.locator('#attendance-reset').click();await admin.waitForFunction(()=>document.querySelectorAll('#entries tr[data-entry-id]').length===2&&!busy);
     await admin.locator('#entries button').first().click();await admin.locator('#review-note').fill('Đã đối chiếu thẻ sinh viên và người ngồi ghế B-12.');
     await screenshot(admin,'web-review.png');await admin.locator('#save-review').click();await admin.waitForFunction(()=>document.querySelectorAll('#entries tr.flagged').length===1);
@@ -145,12 +145,12 @@ const screenshot=(page,name)=>page.screenshot({path:require('node:path').join(sc
     const compatible=await older.newPage();watch(compatible);
     await compatible.route('**/api/session',route=>route.abort('failed'));
     await compatible.goto(qrLink());await compatible.locator('#attendance-form').waitFor();
-    await compatible.locator('#student-id').fill('COMPAT01');await compatible.locator('#full-name').fill('Kiểm tra trình duyệt');await compatible.locator('#seat').fill('C-01');
+    await compatible.locator('#student-id').fill('COMPAT01');await compatible.locator('#full-name').fill('Kiểm tra trình duyệt');
     await compatible.route('**/api/check-in',async route=>{await route.fetch();await route.abort('failed');});
     await compatible.locator('#submit').click();await compatible.waitForFunction(()=>document.getElementById('notice').textContent.includes('Chưa xác nhận được'));
     const beforeRetry=fixture.store.entries().length;await compatible.unroute('**/api/check-in');await compatible.unroute('**/api/session');
     await compatible.locator('#reload').click();await compatible.waitForFunction(()=>!document.getElementById('reload').disabled);
-    await compatible.locator('#submit').click();await compatible.locator('#receipt').waitFor();
+    await compatible.locator('#receipt').waitFor();
     assert.equal(fixture.store.entries().length,beforeRetry);assert.match(await compatible.locator('#receipt').textContent(),/COMPAT01/);
     const retryScan=await browser.newPage();watch(retryScan);await retryScan.route('**/api/scan',route=>route.abort('failed'));
     await retryScan.goto(qrLink());await retryScan.waitForFunction(()=>document.getElementById('notice').classList.contains('error'));
@@ -170,6 +170,7 @@ const screenshot=(page,name)=>page.screenshot({path:require('node:path').join(sc
     await historyPage.locator('#lookup-submit').click();await historyPage.waitForFunction(()=>document.getElementById('lookup-notice').textContent.includes('Chưa lấy được bản cập nhật'));
     assert.match(await historyPage.locator('#lookup-rows').textContent(),/TA đã xác nhận/);
     assert.deepEqual(errors,[]);assert.ok(requests.every(url=>url.startsWith(fixture.origin)||url.startsWith(fixture.adminOrigin)));
+    await admin.locator('#connection-tools').evaluate(el=>{el.open=true;});await admin.locator('#connections-refresh').click();await admin.locator('#connection-rows tr').first().waitFor();assert.match(await admin.locator('#connection-rows').textContent(),/127.0.0.1/);await screenshot(admin,'web-connections.png');
     assert.doesNotMatch(await admin.locator('body').innerText(),/demo|minh họa|dữ liệu giả/i);
     console.log('LAN UI passed: legacy browser APIs/storage, immediate QR admission, lost scan retry, read-only Sheet history with refreshed/stale results, same-day new/reopened rounds, per-round receipts, independent fullscreen projection, QR rotation/expiry, network loss before/after commit, peer review, CSV reports and screenshots.');
   }finally{if(browser)await browser.close();await fixture.close();}

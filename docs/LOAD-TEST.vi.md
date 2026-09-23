@@ -1,5 +1,8 @@
 # Đo tải luồng LAN
 
+Bản **0.9.0 / 23-09-2026** thêm tải HTML nén và cookie riêng cho mỗi trình duyệt mô phỏng. Ba lần chạy, mỗi lần hai đợt × 700 sinh viên: **16.800/16.800 yêu cầu đạt**, không mất bản ghi hay tạo thêm dòng khi gửi lại. Tải 700 trang cùng lúc mất 0,518–0,870 giây; ghi 700 lượt mất 3,772–4,428 giây trên loopback của laptop này. Đây chưa phải phép đo Wi-Fi lớp. Xem [báo cáo mới](load-2026-09-23-mobile.json) và [phạm vi kiểm thử](WEB-VALIDATION.md). Các kết quả bên dưới là lịch sử của bản trước.
+
+
 ## Tại trường · Bản 0.6 · 16/09/2026
 
 Laptop kết nối USTH_CONNECT; một điện thoại thật đã quét QR và gửi điểm danh thành công. Đã đối chiếu bản ghi trong database thử và số lượt trên trang TA. Dữ liệu thử được tách khỏi database lớp và không đồng bộ Google Sheets.

@@ -4,7 +4,7 @@
 
 Người host chạy `npm start` trên Windows, macOS hoặc Linux. App tự chuẩn bị dữ liệu và mở trình duyệt. Nếu hiện trang chọn mạng, bấm Wi-Fi đang dùng trong phòng. Trang TA tại **http://127.0.0.1:4181** chỉ mở trên laptop host. Giữ cửa sổ chạy app mở trong giờ học.
 
-Kiểm tra đúng ngày, thống nhất cách ghi ghế (ví dụ hàng B, ghế 12), chọn thời gian rồi bấm **Mở QR điểm danh**. Mặc định 8 phút. App mở **tab chiếu QR riêng**, giữ nguyên bảng TA để theo dõi và đối chiếu sinh viên. Nếu đã mở phiên, bấm **Chiếu QR** để quay lại tab chiếu hoặc mở lại tab đã đóng.
+Kiểm tra đúng ngày, chọn thời gian rồi bấm **Mở QR điểm danh**. Mặc định 8 phút. App mở **tab chiếu QR riêng**, giữ nguyên bảng TA để theo dõi và đối chiếu sinh viên. Nếu đã mở phiên, bấm **Chiếu QR** để quay lại tab chiếu hoặc mở lại tab đã đóng.
 
 Trên tab chiếu, bấm **Toàn màn hình** ở góc trên bên phải; nhấn **Esc** hoặc **Thoát toàn màn hình** để thoát. Có thể kéo tab sang màn hình máy chiếu nếu laptop dùng chế độ mở rộng màn hình. Nếu trình duyệt chặn tab mới, bấm liên kết **Mở tab chiếu QR** trên bảng TA. Nếu trình duyệt không cho bật toàn màn hình bằng nút, dùng menu trình duyệt hoặc F11 trên Windows/Linux.
 
@@ -27,7 +27,7 @@ QR và quyền gửi chưa dùng của lần mở trước bị vô hiệu khi m
 
 1. Kết nối cùng Wi-Fi của lớp với laptop host, hoàn tất đăng nhập USTH_CONNECT nếu mạng yêu cầu.
 2. Quét QR đang chiếu bằng điện thoại. Với máy tính: mở URL hiển thị (gồm `http://` và `:4180`), nhập mã 8 ký tự đang chiếu. Mã không đúng/đã đổi thì nhập mã hiện tại.
-3. Nhập **MSSV**, **họ tên đầy đủ**, **vị trí ngồi** trong thời gian còn lại (tối đa 3 phút từ lúc xác nhận mã, không quá giờ đóng phiên). Giữ nguyên Wi-Fi.
+3. Nhập **MSSV** và **họ tên đầy đủ** trong thời gian còn lại (tối đa 3 phút từ lúc xác nhận mã, không quá giờ đóng phiên). Giữ nguyên Wi-Fi.
 4. Bấm **Gửi điểm danh**, chờ **Đã ghi nhận điểm danh**.
 
 ![Mã đang chiếu dành cho máy tính](web-student-code.png)
@@ -40,7 +40,7 @@ Nếu báo chưa xác nhận được kết quả, giữ trang và bấm gửi l
 
 ![Biên nhận đã lưu](web-student.png)
 
-Sai họ tên/ghế/MSSV sau khi đã gửi: báo TA để đối chiếu và ghi chú; sinh viên không tự ghi đè lượt đã lưu. TA không coi biên nhận này là bằng chứng chắc chắn về danh tính.
+Sai họ tên/MSSV sau khi đã gửi: báo TA để đối chiếu và ghi chú; sinh viên không tự ghi đè lượt đã lưu. TA không coi biên nhận này là bằng chứng chắc chắn về danh tính.
 
 ## 3. Đối chiếu các dòng đỏ
 

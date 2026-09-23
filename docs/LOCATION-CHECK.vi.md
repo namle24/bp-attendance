@@ -1,5 +1,7 @@
 # Đối chiếu vị trí khi điểm danh
 
+> Lưu trữ cho bản 0.8.x. Từ bản 0.9.0, app đã bỏ thu vị trí và các điều khiển dưới đây. Dữ liệu vị trí cũ vẫn được giữ để TA đối chiếu; không cần triển khai HTTPS helper cho bản hiện tại.
+
 App vẫn chạy trên laptop, cùng mạng với sinh viên. TA có thể bật kiểm tra vị trí cho từng đợt mới. Sinh viên bấm **Lấy vị trí**, cho phép trong tab HTTPS, quay lại biểu mẫu rồi gửi. Laptop tính khoảng cách tới tâm lớp do TA đặt.
 
 **Đây là thông tin hỗ trợ TA đối chiếu.** Ngoài phạm vi được tô đỏ và đưa vào **Cần xử lý**, chưa được tự kết luận có mặt hoặc gian lận. Không lấy được vị trí, từ chối quyền và sai số lớn có lý do riêng. TA kiểm tra tại ghế rồi xác nhận hoặc không xác nhận. QR động, hạn quét, kiểm tra mạng và trùng IP vẫn áp dụng.

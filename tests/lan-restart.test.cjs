@@ -25,12 +25,13 @@ test('production LAN server survives SIGKILL with receipts, seats, IP flags, TA 
     const {session}=await request(admin,'/api/sessions',{minutes:8},profile.csrf);
     const bodies=['001','002'].map((id,i)=>({sessionId:session.id,studentId:id,name:'Student '+id,seat:'B-'+(i+1),requestId:randomBytes(16).toString('hex')}));
     const {qr}=await request(admin,'/api/qr');
-    for(const body of bodies)body.scanTicket=(await request(config.origin,'/api/scan',{token:qr.token})).scanTicket;
-    const before=await request(config.origin,'/api/check-in',bodies[0]);await request(config.origin,'/api/check-in',bodies[1]);
+    const clients=bodies.map(()=>require('./helpers/lan-http-client.cjs').client(config.origin));
+    for(let i=0;i<bodies.length;i++)bodies[i].scanTicket=(await clients[i].request('/api/scan',{token:qr.token})).body.scanTicket;
+    const before=(await clients[0].request('/api/check-in',bodies[0])).body;assert.ok(before.receipt);assert.equal((await clients[1].request('/api/check-in',bodies[1])).status,200);
     const {entries}=await request(admin,'/api/entries');await request(admin,'/api/entries/'+entries[0].id+'/review',{review:'CONFIRMED',note:'Đã đối chiếu thẻ và ghế B-1',peers:2},profile.csrf);
     await assert.rejects(()=>fetch('http://'+config.host+':'+config.adminPort+'/api/dashboard',{signal:AbortSignal.timeout(500)}));
     await stop('SIGKILL');await start();
-    const after=await request(config.origin,'/api/check-in',bodies[0]);assert.equal(after.receipt.at,before.receipt.at);assert.equal(after.receipt.duplicate,true);
+    const retried=await clients[0].request('/api/check-in',bodies[0]);assert.equal(retried.status,200);const after=retried.body;assert.equal(after.receipt.at,before.receipt.at);assert.equal(after.receipt.duplicate,true);
     const recovered=await request(admin,'/api/entries');assert.deepEqual(recovered.entries.map(e=>e.status),['CONFIRMED','PENDING']);assert.equal(recovered.entries[0].seat,'B-1');assert.equal(recovered.entries[0].ip,config.host);
     const nextProfile=await request(admin,'/api/dashboard');assert.notEqual(nextProfile.csrf,profile.csrf);assert.equal(nextProfile.sync.enabled,false);
     await stop('SIGTERM');const db=new LanStore(database);assert.equal(db.db.prepare('PRAGMA quick_check').get().quick_check,'ok');assert.equal(db.entries().length,2);db.close();

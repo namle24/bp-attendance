@@ -1,4 +1,22 @@
-# Validation scope · LAN attendance 0.8.1
+# Web validation
+
+## Version 0.9.0 · 2026-09-23
+
+The student form collects MSSV and name only. Location controls, helper loading and collection have been retired. Historical seats, location evidence and TA decisions remain available in stored/exported records.
+
+- The automated suite passes **84 tests**. New tests cover concurrent submissions with one browser cookie, QR/cookie binding, malformed/missing cookies, private receipt recovery, duplicate MSSV/IP, round reopening, a new round, CSRF on no-JavaScript form submissions, compression and CSP hashes. The restart test exercises the actual production server and disk SQLite.
+- `scripts/test-browser-compat.cjs` passes **Chromium, Firefox and WebKit** on private-IP HTTP, with fetch/AbortController/URLSearchParams/crypto/geolocation and storage APIs unavailable. External JS/CSS routes are deliberately stalled; the page requests none. All engines complete submission, lost-response retry, same-browser new-tab lock, duplicate MSSV/IP, reopened/new rounds, transient admission failure recovery and the no-JavaScript form. Viewports 320/390/768/1280 have no horizontal overflow. These are desktop engines, not physical iOS/Android devices.
+- `scripts/test-web-ui.cjs` passes TA review/filter/CSV, independent fullscreen projector/QR rotation, new and reopened rounds, read-only Sheet lookup including refresh/stale results, network failures before/after commit, connection diagnostics and screenshots.
+- On this laptop, HTML containing the complete student page is **15,706 bytes gzip**; history is **13,026 bytes gzip**. Fonts are local system fonts. There are no separate rendering-critical image/CSS/script requests. The simple form also embeds its minimal styling and requires no JavaScript.
+- Three runs of two rounds, with **700 concurrent simulated browsers per round**, pass **16,800/16,800 HTTP requests**: page load, QR admission, submission and retry. The 700-page bursts finish in **0.518–0.870 s**, submission bursts in **3.772–4.428 s**; each database contains exactly **1,400** persisted rows after reopening. Every browser has a distinct signed cookie; all share the real loopback socket IP and remain flagged. Sheets is held unavailable. This measures loopback/server capacity, **not classroom Wi-Fi or 700 physical devices**. [Raw report](load-2026-09-23-mobile.json).
+
+A reproduction against revision `6347f7f` held `location-client.js` pending while GPS was disabled. No `/api/scan` request occurred until that script was released; the form then appeared. This demonstrates an old dependency-stall failure mode, not proof that it caused the reported failures on the unobserved phones. The new page removes that dependency and bundles the critical assets.
+
+On some browsers, HTML POST forms served with `Referrer-Policy: no-referrer` send `Origin: null`. The simple endpoint supports this only with its signed, browser-bound, expiring CSRF token and cookie. JSON APIs retain strict same-origin checks. [MDN Origin documentation](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Origin).
+
+The user then tested one physical phone on the classroom Wi-Fi and confirmed: the page opened quickly, submission succeeded, and opening a new tab/rescanning showed the existing receipt instead of allowing another MSSV. The isolated preview database held one record. This does not yet verify every previously failing phone or a full-class Wi-Fi burst. A Wi-Fi guest network does not identify a student; browser cookies do not identify a physical phone or prevent changing browsers/devices. [Operation and limits](MOBILE-ACCESS.vi.md).
+
+## Archived validation before 0.9.0
 
 Version 0.8.1 on 2026-09-18 keeps ordinary attendance independent of GPS. The existing **81 tests** passed, together with the new filter integration test (**82 total**). The full Chromium UI scenario verifies searching/filtering and CSV downloads. The location UI scenario verifies that unsaved opt-in settings cannot be silently ignored, turning location off restores the simple form, and historical round policies remain unchanged.
 

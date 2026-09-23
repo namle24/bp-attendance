@@ -2,10 +2,13 @@ const express=require('express');
 const path=require('node:path');
 const {random,contains,equal,fail,today}=require('./security.cjs');
 const publicDirectory=path.join(__dirname,'lan-public');
-const location=require('./location.cjs');
+const devices=require('./device.cjs');
+const simple=require('./simple-page.cjs');
+const {page}=require('./student-page.cjs');
 const {filterEntries}=require('./attendance-filters.cjs');
-function common(config,admin){
+function common(config,admin,diagnostics){
   const app=express();app.disable('x-powered-by');app.set('trust proxy',false);
+  if(diagnostics&&!admin)app.use(diagnostics.middleware);
   app.use((req,res,next)=>{
     res.set({'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','X-Frame-Options':'DENY',
       'Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"});
@@ -13,12 +16,13 @@ function common(config,admin){
     if(!origins.some(origin=>new URL(origin).host===req.headers.host))return res.status(403).json({code:'HOST_DENIED',message:'Mở đúng địa chỉ do TA cung cấp.'});
     const address=req.socket.remoteAddress;
     if(admin?!['127.0.0.1','::1','::ffff:127.0.0.1'].includes(address):!contains(address,config.campus))return res.status(403).json({code:'NETWORK_DENIED',message:'Kết nối Wi-Fi của lớp rồi mở lại link điểm danh.'});
-    if(!['GET','HEAD'].includes(req.method)&&(!origins.includes(req.headers.origin)||!req.is('application/json')))return res.status(403).json({code:'ORIGIN_DENIED',message:'Tải lại trang điểm danh rồi thử lại.'});
+    const simpleForm=!admin&&req.path==='/simple'&&req.method==='POST'&&req.is('application/x-www-form-urlencoded');
+    if(!['GET','HEAD'].includes(req.method)&&(!(simpleForm&&(!req.headers.origin||req.headers.origin==='null'))&&!origins.includes(req.headers.origin)||!(req.is('application/json')||simpleForm)))return res.status(403).json({code:'ORIGIN_DENIED',message:'Tải lại trang điểm danh rồi thử lại.'});
     next();
   });
   // A generous shared-IP budget allows 700 people behind NAT; never infer identity from it.
   const buckets=new Map();let swept=0;
-  app.use('/api',(req,res,next)=>{
+  app.use(['/api','/simple'],(req,res,next)=>{
     const now=Date.now();if(now-swept>60000){for(const [key,b] of buckets)if(now-b.start>=60000)buckets.delete(key);swept=now;}
     const key=req.socket.remoteAddress;let bucket=buckets.get(key);
     if(!bucket){if(buckets.size>=10000)return res.status(503).json({message:'Máy đang bận, thử lại sau ít giây.'});bucket={start:now,count:0};buckets.set(key,bucket);}
@@ -27,6 +31,7 @@ function common(config,admin){
     next();
   });
   app.use(express.json({limit:admin?'512kb':'3kb'}));
+  if(!admin)app.use('/simple',express.urlencoded({extended:false,limit:'3kb',parameterLimit:10}));
   app.use((req,res,next)=>{if(req.method==='POST'&&(!req.body||Array.isArray(req.body)||typeof req.body!=='object'))fail(400,'BODY_INVALID','Dữ liệu gửi không hợp lệ.');next();});
   app.get('/readyz',(req,res)=>res.json({ok:true}));
   return app;
@@ -44,25 +49,41 @@ function finish(app,page){
   return app;
 }
 function createStudentApp(config,store,options={}){
-  const now=options.clock||Date.now,app=common(config,false);
-  app.get('/history',(req,res)=>res.sendFile(path.join(publicDirectory,'history.html')));
+  const now=options.clock||Date.now,app=common(config,false,options.connections);
+  app.use((req,res,next)=>{devices.attach(req,res,store.meta('lanQrSecret'));next();});
+  const studentPage=page('student.html',['client.js','student.js']),historyPage=page('history.html',['client.js','history.js']);
+  app.get(['/','/check-in','/student.html'],studentPage);
+  app.get(['/history','/history.html'],historyPage);
+  app.use('/simple',(req,res,next)=>{res.set('Content-Security-Policy',simple.csp);next();});
+  app.get('/simple',(req,res)=>res.type('html').send(simple.render({store,device:req.device||req.newDevice,now:now()})));
+  app.post('/simple',(req,res)=>{
+    try{
+      simple.verify(req.body.formToken,req.device,store.meta('lanQrSecret'),now());
+      const body={sessionId:req.body.sessionId,studentId:req.body.studentId,name:req.body.name,requestId:req.body.requestId};
+      if(!store.deviceReceipt(body.sessionId,req.device)){const grant=store.scan({code:req.body.code},req.socket.remoteAddress,now(),req.device);body.sessionId=grant.sessionId;body.scanTicket=grant.scanTicket;}
+      const receipt=store.checkIn(body,req.socket.remoteAddress,now(),req.device);
+      res.type('html').send(simple.render({store,device:req.device,now:now(),receipt}));
+    }catch(error){res.status(error.status||500).type('html').send(simple.render({store,device:req.device||req.newDevice,now:now(),input:req.body,message:error.status?error.message:'Máy đang bận. Giữ nguyên trang và gửi lại.'}));}
+  });
   app.post('/api/student-history',(req,res)=>{
     if(!options.lookup)fail(503,'LOOKUP_NOT_CONFIGURED','TA chưa cấu hình Google Sheet kết quả. Vui lòng báo TA.');
     res.json(options.lookup.search(req.body.studentId));
   });
   app.get('/api/session',(req,res)=>{
-    const session=store.activeSession(now());res.json({session:session?{id:session.id,date:session.date,endsAt:session.ends_at,number:session.number,label:session.label,generation:session.generation,location:location.publicPolicy(store.roundLocation(session.id))}:null,serverTime:now()});
+    const session=store.activeSession(now());res.json({session:session?{id:session.id,date:session.date,endsAt:session.ends_at,number:session.number,label:session.label,generation:session.generation,location:{enabled:false}}:null,receipt:session?store.deviceReceipt(session.id,req.device):null,serverTime:now()});
   });
-  app.post('/api/scan',(req,res)=>res.json(store.scan(req.body,req.socket.remoteAddress,now())));
-  app.post('/api/check-in',(req,res)=>res.json({receipt:store.checkIn(req.body,req.socket.remoteAddress,now())}));
+  app.post('/api/scan',(req,res)=>{const device=req.device||req.newDevice,grant=store.scan(req.body,req.socket.remoteAddress,now(),device);res.json({...grant,requestId:require('node:crypto').randomBytes(16).toString('hex'),receipt:store.deviceReceipt(grant.sessionId,device)});});
+  app.post('/api/check-in',(req,res)=>{
+    if(!req.device)fail(403,'COOKIES_REQUIRED','Trình duyệt chưa giữ được lượt quét. Mở link trực tiếp bằng Safari hoặc Chrome, cho phép cookie rồi quét lại QR.');
+    res.json({receipt:store.checkIn(req.body,req.socket.remoteAddress,now(),req.device)});
+  });
   return finish(app,'student.html');
 }
 function createAdminApp(config,store,worker,options={}){
   const now=options.clock||Date.now,app=common(config,true),csrf=random(),actor='TA tại máy host';
   app.use('/api',(req,res,next)=>{if(req.method==='POST'&&!equal(req.headers['x-csrf-token'],csrf))fail(403,'CSRF_INVALID','Tải lại trang quản lý rồi thử lại.');next();});
-  app.get('/api/dashboard',(req,res)=>res.json({csrf,today:today(now()),sessions:store.sessions().map(s=>({...s,location:location.publicPolicy(store.roundLocation(s.id))})),sync:worker.status(),url:config.origin,serverTime:now(),network:config.network,cidrs:config.campusCidrs}));
-  app.get('/api/location-config',(req,res)=>res.json({settings:store.locationSettings(),helperUrl:location.HELPER_URL}));
-  app.post('/api/location-config',(req,res)=>res.json({settings:store.configureLocation(req.body,actor,now())}));
+  app.get('/api/dashboard',(req,res)=>res.json({csrf,today:today(now()),sessions:store.sessions(),sync:worker.status(),url:config.origin,serverTime:now(),network:config.network,cidrs:config.campusCidrs}));
+  app.get('/api/connections',(req,res)=>res.json(options.connections?options.connections.snapshot():{since:now(),rows:[]}));
   // The same 40-bit HMAC-derived room code keeps the projected QR easy to scan.
   // It has exactly the same expiry and admission checks as manual code entry.
   app.get('/api/qr',(req,res)=>{const qr=store.currentQr(now());res.json({qr:qr?{...qr,url:config.origin+'/#code='+qr.code}:null});});

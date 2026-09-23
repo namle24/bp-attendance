@@ -1,0 +1,362 @@
+{
+  "measuredAt": "2026-09-23T10:50:29.643Z",
+  "platform": "linux",
+  "node": "v24.19.0",
+  "cpu": "Intel(R) Core(TM) i5-9300H CPU @ 2.40GHz",
+  "availableParallelism": 8,
+  "totalMemoryGiB": 8,
+  "roundsPerDay": 2,
+  "locationChecks": false,
+  "method": "Separate server/load processes, loopback HTTP, real clock, temporary disk SQLite WAL with FULL synchronous; concurrent compressed page loads, rotating QR admissions followed by submissions and idempotent retries in each round; same students across rounds in one date; actual shared loopback socket IP; all peers flagged; Sheets writer held pending. Each simulated browser has its own signed cookie. Does not measure classroom Wi-Fi or real Sheets API.",
+  "submission": "LAN rotating QR",
+  "results": [
+    {
+      "count": 700,
+      "run": 1,
+      "rounds": [
+        {
+          "round": 1,
+          "page": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 102.5,
+            "elapsedMs": 734.3,
+            "p50Ms": 443.4,
+            "p95Ms": 616.3,
+            "maxMs": 631.6
+          },
+          "scan": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 63.9,
+            "elapsedMs": 843.4,
+            "p50Ms": 467.9,
+            "p95Ms": 746.2,
+            "maxMs": 779.4
+          },
+          "first": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 47.5,
+            "elapsedMs": 3771.9,
+            "p50Ms": 1842.9,
+            "p95Ms": 3526.3,
+            "maxMs": 3724.2
+          },
+          "retry": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 700,
+            "errors": {},
+            "dispatchMs": 125.1,
+            "elapsedMs": 794.8,
+            "p50Ms": 432.2,
+            "p95Ms": 642.5,
+            "maxMs": 669.6
+          },
+          "records": 700
+        },
+        {
+          "round": 2,
+          "page": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 39.4,
+            "elapsedMs": 583.3,
+            "p50Ms": 348.2,
+            "p95Ms": 520.8,
+            "maxMs": 543.8
+          },
+          "scan": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 73.6,
+            "elapsedMs": 1192.2,
+            "p50Ms": 747.5,
+            "p95Ms": 1088.6,
+            "maxMs": 1118.4
+          },
+          "first": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 64.9,
+            "elapsedMs": 4314,
+            "p50Ms": 2067.6,
+            "p95Ms": 4038.5,
+            "maxMs": 4248.9
+          },
+          "retry": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 700,
+            "errors": {},
+            "dispatchMs": 150.8,
+            "elapsedMs": 841.3,
+            "p50Ms": 500.8,
+            "p95Ms": 670.3,
+            "maxMs": 690.4
+          },
+          "records": 1400
+        }
+      ],
+      "records": 1400,
+      "flagged": 1400,
+      "locations": {},
+      "persistedRecords": 1400,
+      "sheetsBlocked": true,
+      "rssMiB": 244,
+      "sqlite": {
+        "journal": {
+          "journal_mode": "wal"
+        },
+        "synchronous": {
+          "synchronous": 2
+        }
+      }
+    },
+    {
+      "count": 700,
+      "run": 2,
+      "rounds": [
+        {
+          "round": 1,
+          "page": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 138.6,
+            "elapsedMs": 870.4,
+            "p50Ms": 502.2,
+            "p95Ms": 714.2,
+            "maxMs": 731.8
+          },
+          "scan": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 37.6,
+            "elapsedMs": 945.7,
+            "p50Ms": 492.2,
+            "p95Ms": 874.6,
+            "maxMs": 908
+          },
+          "first": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 37.9,
+            "elapsedMs": 4294,
+            "p50Ms": 2196.7,
+            "p95Ms": 4062.2,
+            "maxMs": 4255.9
+          },
+          "retry": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 700,
+            "errors": {},
+            "dispatchMs": 134.3,
+            "elapsedMs": 984.4,
+            "p50Ms": 430.9,
+            "p95Ms": 817.7,
+            "maxMs": 850.1
+          },
+          "records": 700
+        },
+        {
+          "round": 2,
+          "page": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 44.9,
+            "elapsedMs": 562.3,
+            "p50Ms": 376.3,
+            "p95Ms": 504.2,
+            "maxMs": 517.3
+          },
+          "scan": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 38.4,
+            "elapsedMs": 727.6,
+            "p50Ms": 391.4,
+            "p95Ms": 660.2,
+            "maxMs": 689.1
+          },
+          "first": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 42.3,
+            "elapsedMs": 4205.2,
+            "p50Ms": 2025.6,
+            "p95Ms": 3924.6,
+            "maxMs": 4162.7
+          },
+          "retry": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 700,
+            "errors": {},
+            "dispatchMs": 172.7,
+            "elapsedMs": 725.3,
+            "p50Ms": 362.8,
+            "p95Ms": 529.3,
+            "maxMs": 552.6
+          },
+          "records": 1400
+        }
+      ],
+      "records": 1400,
+      "flagged": 1400,
+      "locations": {},
+      "persistedRecords": 1400,
+      "sheetsBlocked": true,
+      "rssMiB": 253,
+      "sqlite": {
+        "journal": {
+          "journal_mode": "wal"
+        },
+        "synchronous": {
+          "synchronous": 2
+        }
+      }
+    },
+    {
+      "count": 700,
+      "run": 3,
+      "rounds": [
+        {
+          "round": 1,
+          "page": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 103.1,
+            "elapsedMs": 811.4,
+            "p50Ms": 499.1,
+            "p95Ms": 692.4,
+            "maxMs": 708.2
+          },
+          "scan": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 32.7,
+            "elapsedMs": 1168.2,
+            "p50Ms": 647,
+            "p95Ms": 1052,
+            "maxMs": 1135.4
+          },
+          "first": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 37.5,
+            "elapsedMs": 4428.3,
+            "p50Ms": 2220,
+            "p95Ms": 4181.9,
+            "maxMs": 4390.7
+          },
+          "retry": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 700,
+            "errors": {},
+            "dispatchMs": 114.8,
+            "elapsedMs": 950.5,
+            "p50Ms": 560.8,
+            "p95Ms": 801,
+            "maxMs": 835.7
+          },
+          "records": 700
+        },
+        {
+          "round": 2,
+          "page": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 86.1,
+            "elapsedMs": 518.1,
+            "p50Ms": 309.5,
+            "p95Ms": 418.7,
+            "maxMs": 431.9
+          },
+          "scan": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 32.9,
+            "elapsedMs": 743.1,
+            "p50Ms": 388.2,
+            "p95Ms": 680.1,
+            "maxMs": 710.1
+          },
+          "first": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 0,
+            "errors": {},
+            "dispatchMs": 36.7,
+            "elapsedMs": 4156.7,
+            "p50Ms": 2026.3,
+            "p95Ms": 3895.9,
+            "maxMs": 4119.9
+          },
+          "retry": {
+            "requests": 700,
+            "success": 700,
+            "duplicates": 700,
+            "errors": {},
+            "dispatchMs": 66.8,
+            "elapsedMs": 1003.6,
+            "p50Ms": 559.9,
+            "p95Ms": 901.3,
+            "maxMs": 936.8
+          },
+          "records": 1400
+        }
+      ],
+      "records": 1400,
+      "flagged": 1400,
+      "locations": {},
+      "persistedRecords": 1400,
+      "sheetsBlocked": true,
+      "rssMiB": 214,
+      "sqlite": {
+        "journal": {
+          "journal_mode": "wal"
+        },
+        "synchronous": {
+          "synchronous": 2
+        }
+      }
+    }
+  ]
+}
