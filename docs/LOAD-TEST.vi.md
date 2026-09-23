@@ -12,6 +12,8 @@
 
 Đây là phép đo HTTP loopback trên laptop, SQLite lưu đĩa WAL/FULL, cùng IP thật của socket, Google Sheets bị giữ chờ. Chưa đo Wi-Fi với 700 thiết bị thật. [Dữ liệu đo](load-2026-09-23-review.json) · [phạm vi kiểm thử](WEB-VALIDATION.md).
 
+Sau khi CI phát hiện bộ tạo tải cạn cổng nguồn trên macOS, chương trình đo đã chuyển sang giữ nhóm kết nối keep-alive giữa các bước. Vẫn gửi đồng thời 700 yêu cầu mỗi bước, không tự thử lại yêu cầu lỗi. Bản đã sửa cũng đạt 21.000/21.000 yêu cầu trên laptop; xem [báo cáo mới](load-2026-09-23-keepalive.json). Các mốc thời gian ở bảng trên là lần đo trước khi sửa bộ tạo tải.
+
 Các số liệu bên dưới là các lần đo trước, dùng để tham khảo lịch sử.
 
 

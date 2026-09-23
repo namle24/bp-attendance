@@ -60,8 +60,7 @@ function receive(child,kind){
 }
 function command(child,kind){const result=receive(child,kind);child.send(kind);return result;}
 
-async function burst(port,identities,qr,route='/api/check-in'){
-  const agent=new http.Agent({keepAlive:true,maxSockets:identities.length});
+async function burst(agent,port,identities,qr,route='/api/check-in'){
   const start=performance.now();
   let lastDispatch=start;
   const pending=identities.map(identity=>new Promise(resolve=>{
@@ -75,16 +74,18 @@ async function burst(port,identities,qr,route='/api/check-in'){
     req.on('error',error=>resolve({ms:performance.now()-before,status:0,body:{code:error.code||error.message}}));
     req.end(read?undefined:payload);
   }));
-  try{
-    const replies=await Promise.all(pending),elapsed=performance.now()-start;
-    const latencies=replies.map(r=>r.ms).sort((a,b)=>a-b),round=n=>Math.round(n*10)/10;
-    const errors={};for(const r of replies)if(r.status!==200){const key=r.status+':'+(r.body.code||'UNKNOWN');errors[key]=(errors[key]||0)+1;}
-    return {cookies:['/','/api/scan'].includes(route)?replies.map(r=>r.cookie):undefined,tickets:route==='/api/scan'?replies.map(r=>r.body.scanTicket):undefined,...(route==='/api/receipt'?{matchingReceipts:replies.filter((r,i)=>r.body.receipt?.studentId===identities[i].studentId).length}:{}),requests:identities.length,success:replies.filter(r=>r.status===200).length,duplicates:replies.filter(r=>r.body.receipt?.duplicate).length,errors,dispatchMs:round(lastDispatch-start),elapsedMs:round(elapsed),p50Ms:round(latencies[Math.ceil(latencies.length*.5)-1]),p95Ms:round(latencies[Math.ceil(latencies.length*.95)-1]),maxMs:round(latencies.at(-1))};
-  }finally{agent.destroy();}
+  const replies=await Promise.all(pending),elapsed=performance.now()-start;
+  const latencies=replies.map(r=>r.ms).sort((a,b)=>a-b),round=n=>Math.round(n*10)/10;
+  const errors={};for(const r of replies)if(r.status!==200){const key=r.status+':'+(r.body.code||'UNKNOWN');errors[key]=(errors[key]||0)+1;}
+  return {cookies:['/','/api/scan'].includes(route)?replies.map(r=>r.cookie):undefined,tickets:route==='/api/scan'?replies.map(r=>r.body.scanTicket):undefined,...(route==='/api/receipt'?{matchingReceipts:replies.filter((r,i)=>r.body.receipt?.studentId===identities[i].studentId).length}:{}),requests:identities.length,success:replies.filter(r=>r.status===200).length,duplicates:replies.filter(r=>r.body.receipt?.duplicate).length,errors,dispatchMs:round(lastDispatch-start),elapsedMs:round(elapsed),p50Ms:round(latencies[Math.ceil(latencies.length*.5)-1]),p95Ms:round(latencies[Math.ceil(latencies.length*.95)-1]),maxMs:round(latencies.at(-1))};
 }
 
 async function measure(count,run,roundCount=1){
   const dir=mkdtempSync(path.join(os.tmpdir(),'bp-attendance-bench-'));
+  // Reuse the full concurrent connection pool between bursts. Creating and
+  // destroying a fresh pool for every phase exhausts the load generator's
+  // ephemeral ports (TIME_WAIT) on systems with a small source-port range.
+  const agent=new http.Agent({keepAlive:true,maxSockets:count,maxFreeSockets:count});
   const child=fork(__filename,['--server',path.join(dir,'bench.sqlite'),String(count)],{stdio:['ignore','ignore','inherit','ipc']});
   try{
     const ready=await receive(child,'ready');
@@ -92,14 +93,14 @@ async function measure(count,run,roundCount=1){
     for(let round=1;round<=roundCount;round++){
       const started=await command(child,'start');
       const identities=ready.identities.map(identity=>({...identity,requestId:randomBytes(16).toString('hex')}));
-      const {cookies:pageCookies,tickets:unused,...page}=await burst(ready.port,identities,started.qr,'/');assert.equal(page.success,count,JSON.stringify(page));
+      const {cookies:pageCookies,tickets:unused,...page}=await burst(agent,ready.port,identities,started.qr,'/');assert.equal(page.success,count,JSON.stringify(page));
       identities.forEach((identity,i)=>{identity.cookie=pageCookies[i];});
-      const {tickets,cookies,...scan}=await burst(ready.port,identities,started.qr,'/api/scan');
+      const {tickets,cookies,...scan}=await burst(agent,ready.port,identities,started.qr,'/api/scan');
       assert.equal(scan.success,count,JSON.stringify(scan));
       identities.forEach((identity,i)=>{identity.scanTicket=tickets[i];identity.cookie=cookies[i]||identity.cookie;});
-      const first=await burst(ready.port,identities,started.qr);
-      const retry=await burst(ready.port,identities,started.qr);
-      const receipt=await burst(ready.port,identities,started.qr,'/api/receipt');
+      const first=await burst(agent,ready.port,identities,started.qr);
+      const retry=await burst(agent,ready.port,identities,started.qr);
+      const receipt=await burst(agent,ready.port,identities,started.qr,'/api/receipt');
       assert.equal(receipt.success,count,JSON.stringify(receipt));assert.equal(receipt.matchingReceipts,count);
       stats=await command(child,'stats');
       assert.equal(first.success,count,JSON.stringify(first));assert.equal(first.duplicates,0);
@@ -115,6 +116,7 @@ async function measure(count,run,roundCount=1){
     assert.equal(stopped.persistedRecords,count*roundCount);assert.equal(result.sheetsBlocked,true);
     return result;
   }finally{
+    agent.destroy();
     if(child.exitCode===null){const exited=new Promise(resolve=>child.once('exit',resolve));child.kill();await exited;}
     rmSync(dir,{recursive:true,force:true});
   }
@@ -124,7 +126,7 @@ async function main(){
   const roundCount=Number(process.env.BP_BENCH_ROUNDS||1),counts=(process.env.BP_BENCH_COUNTS||'100,300,700').split(',').map(Number);
   assert.ok(Number.isInteger(roundCount)&&roundCount>=1);
   for(const count of counts)assert.ok(Number.isInteger(count)&&count>0&&count*roundCount*4<=6000,'Keep the test within the real 6,000-request shared-IP per-minute limit');
-  const report={measuredAt:new Date().toISOString(),platform:process.platform,node:process.version,cpu:os.cpus()[0]?.model,availableParallelism:os.availableParallelism(),totalMemoryGiB:Math.round(os.totalmem()/1024**3),roundsPerDay:roundCount,locationChecks:false,method:'Separate server/load processes, loopback HTTP, real clock, temporary disk SQLite WAL with FULL synchronous; concurrent compressed page loads, rotating QR admissions followed by submissions, idempotent retries and private receipt refreshes in each round; same students across rounds in one date; actual shared loopback socket IP; all peers flagged; Sheets writer held pending. Each simulated browser has its own signed cookie. Does not measure classroom Wi-Fi or real Sheets API.',submission:'LAN rotating QR',results:[]};
+  const report={measuredAt:new Date().toISOString(),platform:process.platform,node:process.version,cpu:os.cpus()[0]?.model,availableParallelism:os.availableParallelism(),totalMemoryGiB:Math.round(os.totalmem()/1024**3),roundsPerDay:roundCount,locationChecks:false,method:'Separate server/load processes, loopback HTTP, real clock, temporary disk SQLite WAL with FULL synchronous; concurrent compressed page loads, rotating QR admissions followed by submissions, idempotent retries and private receipt refreshes in each round; same students across rounds in one date; actual shared loopback socket IP; all peers flagged; Sheets writer held pending. Each simulated browser has its own signed cookie. One keep-alive pool retains up to the full concurrent connection count across bursts to avoid exhausting source ports on the load generator; no throttling or retry-on-error. Does not measure classroom Wi-Fi or real Sheets API.',submission:'LAN rotating QR',results:[]};
   for(const count of counts)for(let run=1;run<=3;run++)report.results.push(await measure(count,run,roundCount));
   if(process.argv[2])writeFileSync(path.resolve(process.argv[2]),JSON.stringify(report,null,2)+'\n');
   console.log('All bursts and duplicate retries passed; records persisted after reopening SQLite.');
