@@ -33,3 +33,7 @@ Bấm **Xóa bộ lọc** để bỏ tìm kiếm và các tiêu chí trong màn 
 ## Phạm vi tương thích
 
 Xem [kết quả kiểm thử](WEB-VALIDATION.md). Kiểm thử engine không thay cho việc thử trên điện thoại thật và mạng trường.
+
+## Trùng MSSV
+
+Từ bản 0.9.1, bộ lọc **Trùng MSSV → Có lượt gửi trùng MSSV** có trên cả ba màn TA và áp dụng cho CSV chi tiết/danh sách cần xử lý. Có thể kết hợp **Cần TA xác nhận** để chỉ xem ca chưa xử lý; bỏ lọc trạng thái để xem cả ca đã được TA xác nhận. Xem [quy trình đối chiếu email và thẻ](DUPLICATE-REVIEW.vi.md).

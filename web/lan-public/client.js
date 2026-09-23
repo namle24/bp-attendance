@@ -18,6 +18,7 @@
         }
         if (xhr.status < 200 || xhr.status >= 300) {
           var error = new Error(body.message || 'Không xử lý được yêu cầu. Vui lòng thử lại.');
+          if (body.code === 'DUPLICATE_REVIEW') error.receipt = body.receipt;
           error.code = body.code; error.status = xhr.status; reject(error); return;
         }
         resolve(body);

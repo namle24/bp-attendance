@@ -16,6 +16,7 @@ function buildFilters(prefix){
   field('q','Tìm sinh viên');
   if(prefix!=='attendance')field('round','Đợt điểm danh',[['','Tất cả các đợt']]);
   if(prefix!=='issues')field('status','Trạng thái',[['ALL','Tất cả trạng thái'],['RECORDED','Đã ghi nhận'],['PENDING','Cần TA xác nhận'],['CONFIRMED','TA đã xác nhận'],['REJECTED','TA không xác nhận']]);
+  field('duplicate','Trùng MSSV',[['ALL','Tất cả MSSV'],['MSSV','Có lượt gửi trùng MSSV']]);
   field('ip','IP kết nối',[['ALL','Tất cả IP'],['DUPLICATE','Trùng IP'],['UNIQUE','Không trùng IP']]);
 
   const reset=document.createElement('button');reset.type='button';reset.className='secondary';reset.textContent='Xóa bộ lọc';reset.id=prefix+'-reset';
@@ -23,7 +24,7 @@ function buildFilters(prefix){
 }
 function filterQuery(prefix,base={}){
   const query=new URLSearchParams(base);
-  for(const key of ['q','round','status','ip','location']){const input=$(prefix+'-'+key);if(input&&input.value&&input.value!=='ALL')query.set(key,input.value);}
+  for(const key of ['q','round','status','ip','location','duplicate']){const input=$(prefix+'-'+key);if(input&&input.value&&input.value!=='ALL')query.set(key,input.value);}
   return query.toString();
 }
 function fillRounds(prefix){
@@ -69,6 +70,8 @@ function project(){
 function openReview(entry){
   reviewing=entry;$('review-title').textContent=entry.student_id+' · '+entry.name;
   $('review-detail').textContent=entry.date+' · Đợt '+entry.round_number+(entry.round_label?' · '+entry.round_label:'')+' · IP: '+entry.ip+' · '+entry.peers+' MSSV'+(entry.location_status?' · Vị trí: '+entry.location_label+(entry.location_distance!==null?' · '+entry.location_distance+' m, sai số '+entry.location_accuracy+' m':''):'')+(entry.reason?' · '+entry.reason:'');
+  $('review-duplicates').hidden=!entry.duplicate_attempts;$('review-card').checked=false;
+  $('review-evidence').textContent=['Lượt đầu: '+entry.name+' · '+entry.ip+' · '+BPClient.time(entry.at),...(entry.duplicate_evidence||[]).map((e,i)=>'Lượt trùng '+(i+1)+': '+e.name+' · '+e.ip+' · '+BPClient.time(e.at)),...(entry.duplicate_emails||[]).map(e=>'Email tự khai ('+(e.original?'lượt đầu':'lượt trùng')+'): '+e.email+' · '+BPClient.time(e.at)),entry.duplicate_attempts&&!entry.duplicate_emails.length?'Chưa bổ sung email trường.':''].filter(Boolean).join('\n');
   $('review-note').value=entry.review_note;$('review-result').value=entry.status==='REJECTED'?'REJECTED':'CONFIRMED';$('review-error').textContent='';$('review-dialog').showModal();
 }
 function renderTable(id,rows,dated=false){
@@ -76,7 +79,7 @@ function renderTable(id,rows,dated=false){
   for(const entry of rows){
     const tr=document.createElement('tr');tr.dataset.entryId=entry.id;
     if(entry.status==='PENDING')tr.className='flagged';else if(entry.status==='REJECTED')tr.className='rejected';
-    const values=[entry.student_id+'\n'+entry.name,entry.ip+'\n'+entry.peers+' MSSV',entry.statusLabel+(entry.location_status?'\nVị trí: '+entry.location_label+(entry.location_distance!==null?' · '+entry.location_distance+' m':''):'')];
+    const values=[entry.student_id+'\n'+entry.name,entry.ip+'\n'+entry.peers+' MSSV',entry.statusLabel+(entry.duplicate_attempts?'\n'+entry.duplicate_attempts+' lượt trùng MSSV · '+entry.duplicate_emails.length+' email bổ sung':'')+(entry.location_status?'\nVị trí: '+entry.location_label+(entry.location_distance!==null?' · '+entry.location_distance+' m':''):'')];
     if(dated){values.unshift(entry.date+'\nĐợt '+entry.round_number+(entry.round_label?' · '+entry.round_label:''));values.push(entry.reason?(entry.reason+(entry.review_note&&entry.review_note!==entry.reason?'\nGhi chú trước: '+entry.review_note:'')):(entry.review_note||'—'));}
     for(const value of values){const td=document.createElement('td');td.textContent=value;tr.append(td);}
     const td=document.createElement('td'),button=document.createElement('button');button.className='secondary';button.textContent='Đối chiếu';button.addEventListener('click',()=>openReview(entry));td.append(button);tr.append(td);table.append(tr);
@@ -168,7 +171,8 @@ $('sync').addEventListener('click',()=>action(async()=>{await api('/api/sync',{}
 $('lookup-save').addEventListener('click',()=>action(async()=>{await api('/api/lookup-source',{spreadsheetId:$('lookup-sheet').value,tab:$('lookup-tab').value});notice('Đã lưu nguồn tra cứu. Đang lấy kết quả từ Google Sheet.');}));
 $('lookup-refresh').addEventListener('click',()=>action(async()=>{await api('/api/lookup-refresh',{});notice('Đã yêu cầu lấy bản kết quả mới từ Google Sheet.');}));
 $('cancel-review').addEventListener('click',()=>$('review-dialog').close());
-$('review-form').addEventListener('submit',async event=>{event.preventDefault();$('save-review').disabled=true;try{await api('/api/entries/'+reviewing.id+'/review',{review:$('review-result').value,note:$('review-note').value,peers:reviewing.peers});$('review-dialog').close();await refresh();notice('Đã lưu kết quả đối chiếu của TA.');}catch(error){$('review-error').textContent=error.message;}finally{$('save-review').disabled=false;}});
+$('review-form').addEventListener('input',()=>{$('review-error').textContent='';});
+$('review-form').addEventListener('submit',async event=>{event.preventDefault();$('save-review').disabled=true;try{await api('/api/entries/'+reviewing.id+'/review',{review:$('review-result').value,note:$('review-note').value,peers:reviewing.peers,duplicateAttempts:reviewing.duplicate_attempts,cardChecked:$('review-card').checked});$('review-dialog').close();await refresh();notice('Đã lưu kết quả đối chiếu của TA.');}catch(error){$('review-error').textContent=error.message;}finally{$('save-review').disabled=false;}});
 $('import-roster').addEventListener('click',()=>action(async()=>{const file=$('roster').files[0];if(!file)throw Error('Chọn file CSV danh sách lớp.');const result=await api('/api/roster',{csv:await file.text()});notice('Đã nhập '+result.count+' sinh viên.');}));
 $('import-online').addEventListener('click',()=>action(async()=>{const result=await api('/api/online',{date:$('online-date').value,list:$('online-list').value,evidence:$('online-evidence').value});notice('Đã bổ sung '+result.count+' kết quả online.');}));
 for(const prefix of ['attendance','history','issues'])buildFilters(prefix);

@@ -1,4 +1,4 @@
-# Truy cập điện thoại · bản 0.9.0
+# Truy cập điện thoại · bản 0.9.1
 
 Sinh viên quét QR, nhập **MSSV và họ tên**. Không thu hàng ghế, không xin vị trí, không mở tab HTTPS. Mở lại đợt và tạo đợt mới trong ngày vẫn dùng như trước.
 
@@ -32,10 +32,16 @@ Danh sách chỉ giữ tối đa 1.000 IP trong RAM, hiển thị 30 phút gần
 
 Cookie **không xác định được thiết bị vật lý hay con người**. Xóa cookie, ẩn danh, trình duyệt khác, IP host thay đổi hoặc máy thứ hai có thể tạo nhận diện khác. USTH_CONNECT/guest không cung cấp danh tính cho app. Với MSSV tự khai, không thể tự chặn một người nhập MSSV khác trên laptop sau khi gửi bằng điện thoại. Cần xác thực tài khoản/email gắn MSSV, hoặc TA kiểm tra thẻ rồi phát mã cá nhân dùng một lần; kiểm tra ngẫu nhiên tại lớp vẫn cần thiết.
 
+## Trùng MSSV cần xuống bàn TA
+
+Gửi lại đúng lượt từ cùng trình duyệt chỉ trả biên nhận cũ. Nếu cùng MSSV có một lượt quét/gửi hợp lệ từ trình duyệt khác trong đợt, hệ thống giữ bản ghi đầu và chuyển sang **Thiếu đối chiếu — trùng MSSV**. Cả hai trình duyệt xem được yêu cầu bổ sung email trường và mang thẻ sinh viên xuống bàn TA. Nhập email không tự xác nhận có mặt. Xem [quy trình và ảnh](DUPLICATE-REVIEW.vi.md).
+
+Trang đang mở tự đọc lại biên nhận sau khoảng 25–35 giây, giãn ngẫu nhiên để tránh cả lớp hỏi cùng lúc; tạm ngừng khi tab bị ẩn và kiểm tra khi quay lại. Biểu mẫu không JavaScript có nút tải lại kết quả. Không cần quét lại để bổ sung email cho hồ sơ đã lưu, kể cả khi đợt đã đóng.
+
 ## Nâng cấp và dữ liệu cũ
 
 Dừng app bằng Ctrl+C, trong thư mục đã clone chạy `git pull --ff-only`, rồi `npm start`. Giữ `data` và `.env`. Tải lại trang/QR mới sau khi nâng cấp; vé quét cũ chưa ràng buộc cookie cần quét lại.
 
-Cột hàng ghế và bằng chứng vị trí cũ được giữ trong SQLite/CSV/Sheet chi tiết để không làm mất lịch sử; lượt mới không thu các dữ liệu này. Chính sách vị trí đã lưu không còn cản việc mở đợt mới hoặc yêu cầu sinh viên lấy vị trí. Dữ liệu và quyết định TA trước đây được giữ nguyên.
+Cột hàng ghế và bằng chứng vị trí cũ được giữ trong SQLite/CSV/Sheet chi tiết để không làm mất lịch sử; lượt mới không thu các dữ liệu này. Chính sách vị trí đã lưu không còn cản việc mở đợt mới hoặc yêu cầu sinh viên lấy vị trí. Dữ liệu và quyết định TA trước đây được giữ nguyên. Với bản ghi cũ chưa có nhận diện trình duyệt, gửi cùng MSSV vẫn bị chặn nhưng không suy đoán là một thiết bị khác để tạo hồ sơ vi phạm.
 
 Tài liệu tham khảo: [MDN: thứ tự thực thi script defer](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script), [MDN: Origin của POST form và Referrer-Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Origin), [Apple: quyền mạng cục bộ của ứng dụng](https://support.apple.com/en-sg/102229). Các cơ chế trình duyệt này không xác nhận nguyên nhân trên một điện thoại chưa được quan sát.

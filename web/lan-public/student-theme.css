@@ -108,3 +108,9 @@ body.campus-student{--blue:#293896;--ink:#253057;--muted:#65708a;--line:#e0e2ef;
 @media(prefers-reduced-motion:reduce){.campus-student input,.campus-student button{transition:none}}
 
 .campus-student #fallback-help{font-size:11px;line-height:1.6;margin:0 0 14px}.campus-student #fallback-help a{color:#65708a}
+
+.review-overlay{position:fixed;inset:0;top:0;right:0;bottom:0;left:0;z-index:1000;background:rgba(25,33,60,.65);overflow:auto;padding:24px 12px;box-sizing:border-box}
+.campus-student .review-panel{box-sizing:border-box;max-width:480px;margin:0 auto;padding:24px;background:#fffdf8;border:2px solid #eec4a9;border-radius:22px;box-shadow:0 12px 48px #18213c33;font-size:15px;line-height:1.6}
+.campus-student .review-panel h2{font-size:24px;line-height:1.3}.campus-student .review-panel input{font-size:16px}.campus-student .review-panel label{font-size:14px}
+.review-important,#review-warning{padding:12px;border-radius:12px;background:#fff0dc;color:#734922}#review-warning{margin-top:16px;text-align:left}
+.campus-student .review-panel .muted{font-size:12px}.campus-student #review-email-status{overflow-wrap:break-word}

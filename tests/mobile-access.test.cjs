@@ -15,8 +15,10 @@ test('browser lock is transactional, survives fresh scans/reopening, and allows 
     const again=(await one.request('/api/scan',{code})).body;assert.equal(again.receipt.studentId,accepted.studentId);
     assert.equal((await one.request('/api/check-in',body(round,again,'003'))).body.code,'DEVICE_RECORDED');
     const newGrant=(await two.request('/api/scan',{code})).body;
-    assert.equal((await two.request('/api/check-in',body(round,newGrant,accepted.studentId))).body.code,'ALREADY_RECORDED');
-    assert.equal((await two.request('/api/check-in',body(round,newGrant,'004'))).status,200);
+    assert.equal((await two.request('/api/check-in',body(round,newGrant,accepted.studentId))).body.code,'DUPLICATE_REVIEW');
+    assert.equal((await two.request('/api/check-in',body(round,newGrant,'004'))).body.code,'DEVICE_RECORDED');
+    const four=client(f.origin),fourGrant=(await four.request('/api/scan',{code})).body;
+    assert.equal((await four.request('/api/check-in',body(round,fourGrant,'004'))).status,200);
     assert.ok(f.store.entries().every(r=>r.peers===2&&r.status==='PENDING'&&r.seat===''));
     assert.equal(f.store.db.prepare('SELECT COUNT(*) n FROM lan_attendance_locations').get().n,0);
     const fresh=(await three.request('/api/session')).body;assert.equal(fresh.receipt,null,'Other browser cannot retrieve private receipt');

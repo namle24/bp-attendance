@@ -1,5 +1,17 @@
 # Web validation
 
+## Version 0.9.1 · 2026-09-23
+
+Duplicate MSSV submissions from another signed browser in the same round keep the first attendance and mark it pending TA review. The second browser is locked to its attempt; retrying the same request is idempotent. Students supply a school email and present their card at the TA desk. A server check requires a saved email, the current evidence count and an explicit TA card confirmation before marking present. There is no automatic absence decision.
+
+- **89 automated tests pass**, including concurrent duplicate MSSV submissions, denied/stale/copied QR grants, same-browser recovery, email validation and privacy, same-origin/form CSRF, review requirements, new evidence invalidating an old approval, SQLite restart, no-JavaScript email after closure, daily/round/online summary and filtered CSV consistency.
+- The updated compatibility scenario passes **Chromium, Firefox and WebKit**. It disables modern browser APIs and storage, stalls external JS/CSS, checks normal attendance, popup on both submitting browsers, lost email-response retry, TA card review, no-JavaScript duplicate/email forms, and round reopening/new rounds. A final Chromium pass also checks that the TA dialog fits the viewport. These desktop engine tests do not certify every physical phone or browser version.
+- The complete existing Chromium UI scenario passes: projection/QR rotation, TA filters and review, exports, historical records, new/reopened rounds, missing responses and read-only Sheet lookup. Screenshot fixtures contain synthetic data only.
+- The complete student document is **17,640 bytes gzip**, history **13,349 bytes gzip**. The ordinary form still has only MSSV and name; email is requested only for duplicate-MSSV review. Receipt refresh uses 25–35 second randomized intervals, pauses on hidden tabs and resumes when visible. No new external dependency was added.
+- Three runs × two rounds × 700 simulated browsers complete **21,000/21,000 requests** (page, scan, submit, retry, private receipt refresh). Each run retains exactly **1,400 records** across database reopen, without additional attendance from retries. Page bursts: **0.507–1.109 s**; submit bursts: **4.306–4.578 s**; receipt refresh bursts: **0.605–0.874 s**. SQLite WAL/FULL, real loopback socket IP and blocked Sheets writer are used. These are laptop/server measurements, not a 700-device Wi-Fi test. [Raw report](load-2026-09-23-review.json).
+
+Manual phone verification of this new duplicate popup is still separate from the previously confirmed ordinary phone submission. No test modifies the class database or live Google Sheet. [TA and student procedure](DUPLICATE-REVIEW.vi.md).
+
 ## Version 0.9.0 · 2026-09-23
 
 The student form collects MSSV and name only. Location controls, helper loading and collection have been retired. Historical seats, location evidence and TA decisions remain available in stored/exported records.

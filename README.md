@@ -8,7 +8,9 @@ Kết quả được lưu vào SQLite trước khi trả thông báo thành côn
 
 **Tra cứu cho sinh viên:** mở **Tra cứu MSSV** để xem kết quả từ tab Google Sheet do TA sửa trực tiếp. TA dán link đúng tab tại **Lịch sử & xuất dữ liệu**; app đọc mỗi phút, hiển thị thời điểm đọc và cảnh báo nếu dữ liệu chưa cập nhật. Xem [hướng dẫn kết nối và sử dụng](docs/STUDENT-LOOKUP.vi.md).
 
-**Bản 0.9.0:** bỏ thu vị trí và hàng ghế. Một trình duyệt đã gửi sẽ bị khóa trong đợt đó, kể cả mở tab mới/quét QR mới. Gửi lại sau mất kết nối lấy lại biên nhận; đợt mới được gửi thêm một lượt. Xem [truy cập điện thoại và giới hạn nhận diện](docs/MOBILE-ACCESS.vi.md).
+**Bản 0.9.1:** cùng MSSV gửi từ trình duyệt khác trong một đợt sẽ giữ lượt đầu, chặn lượt sau và báo **Thiếu đối chiếu — trùng MSSV**. Sinh viên bổ sung email trường và mang thẻ xuống bàn TA; TA đối chiếu rồi quyết định, không tự đánh vắng. Xem [quy trình có ảnh](docs/DUPLICATE-REVIEW.vi.md).
+
+**Truy cập điện thoại:** bỏ thu vị trí và hàng ghế. Một trình duyệt đã gửi sẽ bị khóa trong đợt đó, kể cả mở tab mới/quét QR mới. Gửi lại sau mất kết nối lấy lại biên nhận; đợt mới được gửi thêm một lượt. Xem [truy cập điện thoại và giới hạn nhận diện](docs/MOBILE-ACCESS.vi.md).
 
 **Bộ lọc TA:** tìm MSSV/họ tên/IP, lọc trạng thái, trùng IP và ngày/đợt; tải CSV chi tiết đúng danh sách đã lọc. Cảnh báo trùng IP và giới hạn một MSSV mỗi đợt được giữ nguyên. Xem [hướng dẫn sử dụng bộ lọc](docs/TA-FILTERS.vi.md).
 
@@ -95,6 +97,7 @@ CSV mở được bằng Excel nhưng không giữ màu; cột trạng thái, l�
 | Kết quả tại một ngày học | Ý nghĩa |
 | --- | --- |
 | `OFF` | Đã ghi nhận offline; thông tin tự khai hoặc TA đã đối chiếu, xem tab chi tiết |
+| `OFF thiếu đối chiếu (trùng MSSV)` + nền đỏ | MSSV gửi từ trình duyệt khác; cần email trường và thẻ sinh viên tại bàn TA |
 | `OFF cần xác nhận` + nền đỏ | Trùng IP trong cùng đợt, đang chờ TA đối chiếu |
 | `OFF không được xác nhận` | TA đã kiểm tra và không xác nhận, có ghi chú |
 | `ON` | Online đã được TA bổ sung sau đối chiếu |

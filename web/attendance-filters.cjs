@@ -7,6 +7,7 @@ function filterEntries(rows,input={}){
     return result;
   }
   const status=value('status',['ALL','RECORDED','PENDING','CONFIRMED','REJECTED']);
+  const duplicate=value('duplicate',['ALL','MSSV']);
   const ip=value('ip',['ALL','DUPLICATE','UNIQUE']);
   const location=value('location',['ALL','OFF','INSIDE','OUTSIDE','UNVERIFIED']);
   const q=input.q===undefined?'':input.q,round=input.round===undefined?'':input.round;
@@ -15,7 +16,7 @@ function filterEntries(rows,input={}){
   // Peer counts and review state come from the full round, before filtering.
   return rows.filter(row=>{
     const position=row.location_status||'OFF';
-    return (status==='ALL'||row.status===status)&&(!round||row.round_id===round)&&
+    return (status==='ALL'||row.status===status)&&(duplicate==='ALL'||row.duplicate_attempts>0)&&(!round||row.round_id===round)&&
       (ip==='ALL'||(ip==='DUPLICATE'?row.peers>1:row.peers===1))&&
       (location==='ALL'||location==='UNVERIFIED'&&!['OFF','INSIDE','OUTSIDE'].includes(position)||location===position)&&
       (!words.length||words.every(word=>fold([row.student_id,row.name,row.seat,row.ip].join(' ')).includes(word)));

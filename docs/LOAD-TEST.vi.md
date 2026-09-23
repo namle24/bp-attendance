@@ -1,5 +1,20 @@
 # Đo tải luồng LAN
 
+## Bản 0.9.1 · 23/09/2026
+
+Đã đo lại sau khi bổ sung đối chiếu trùng MSSV và tự cập nhật biên nhận. Ba lần chạy riêng, mỗi lần **hai đợt × 700 trình duyệt mô phỏng đồng thời**. Cả **21.000/21.000 request** thành công: tải trang nén, quét, gửi, gửi lại và cập nhật biên nhận. Mỗi database giữ đủ **1.400 bản ghi** sau khi mở lại; retry không sinh thêm bản ghi.
+
+| Nhóm 700 yêu cầu đồng thời | Thời gian hoàn thành cả nhóm |
+| --- | --- |
+| Tải giao diện | 0,507–1,109 giây |
+| Lưu điểm danh | 4,306–4,578 giây |
+| Đọc lại biên nhận | 0,605–0,874 giây |
+
+Đây là phép đo HTTP loopback trên laptop, SQLite lưu đĩa WAL/FULL, cùng IP thật của socket, Google Sheets bị giữ chờ. Chưa đo Wi-Fi với 700 thiết bị thật. [Dữ liệu đo](load-2026-09-23-review.json) · [phạm vi kiểm thử](WEB-VALIDATION.md).
+
+Các số liệu bên dưới là các lần đo trước, dùng để tham khảo lịch sử.
+
+
 Bản **0.9.0 / 23-09-2026** thêm tải HTML nén và cookie riêng cho mỗi trình duyệt mô phỏng. Ba lần chạy, mỗi lần hai đợt × 700 sinh viên: **16.800/16.800 yêu cầu đạt**, không mất bản ghi hay tạo thêm dòng khi gửi lại. Tải 700 trang cùng lúc mất 0,518–0,870 giây; ghi 700 lượt mất 3,772–4,428 giây trên loopback của laptop này. Đây chưa phải phép đo Wi-Fi lớp. Xem [báo cáo mới](load-2026-09-23-mobile.json) và [phạm vi kiểm thử](WEB-VALIDATION.md). Các kết quả bên dưới là lịch sử của bản trước.
 
 

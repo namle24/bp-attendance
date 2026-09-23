@@ -35,8 +35,31 @@ async function run(name){
     await one.locator('#submit').click();await one.locator('#notice').filter({hasText:'Chưa xác nhận được'}).waitFor();assert.equal(f.store.entries().length,1);
     await one.unroute('**/api/check-in');await one.locator('#submit').click();await one.locator('#receipt').waitFor();assert.equal(f.store.entries().length,1);
     const tab=await oneContext.newPage();await tab.goto(link());await tab.locator('#receipt').waitFor();assert.equal(await tab.locator('#attendance-form').isVisible(),false);assert.match(await tab.locator('#receipt-fields').textContent(),/001/);
-    const twoContext=await context(),duplicate=await form(twoContext,'001');await duplicate.locator('#submit').click();await duplicate.locator('#notice').filter({hasText:'MSSV này đã được ghi nhận'}).waitFor();assert.equal(f.store.entries().length,1);
-    await duplicate.locator('#student-id').fill('002');await duplicate.locator('#submit').click();await duplicate.locator('#receipt').waitFor();assert.ok(f.store.entries().every(r=>r.peers===2&&r.status==='PENDING'));
+    const twoContext=await context(),duplicate=await form(twoContext,'001');await duplicate.locator('#submit').click();
+    await duplicate.locator('#duplicate-popup').waitFor();assert.equal(f.store.entries().length,1);
+    assert.equal(await duplicate.locator('#attendance-form').isVisible(),false);
+    assert.match(await duplicate.locator('#duplicate-explanation').textContent(),/mang thẻ sinh viên xuống bàn TA/);
+    if(process.env.BP_SCREENSHOT_DIR)await duplicate.screenshot({path:path.join(process.env.BP_SCREENSHOT_DIR,name+'-duplicate-review.png'),fullPage:false});
+    // The original phone learns of the duplicate without resubmitting attendance.
+    await tab.bringToFront();await tab.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));await tab.locator('#duplicate-popup').waitFor();
+    await duplicate.bringToFront();await duplicate.locator('#school-email').fill('student@usth.edu.vn');
+    await duplicate.route('**/api/review-email',async route=>{await route.fetch();await route.abort();});
+    await duplicate.locator('#save-email').click();await duplicate.locator('#review-email-status').filter({hasText:'Chưa kết nối'}).waitFor();
+    await duplicate.unroute('**/api/review-email');await duplicate.locator('#save-email').click();await duplicate.locator('#review-ack').waitFor();
+    await duplicate.locator('#review-ack').click();assert.equal(await duplicate.locator('#duplicate-popup').isVisible(),false);
+    await duplicate.reload();await duplicate.locator('#duplicate-popup').waitFor();await duplicate.locator('#review-ack').click();
+    assert.equal(f.store.entries()[0].duplicate_emails.length,1);
+    const adminContext=await browser.newContext({viewport:{width:1280,height:900}}),admin=await adminContext.newPage();await admin.goto(f.adminOrigin);
+    await admin.locator('#attendance-duplicate').selectOption('MSSV');await admin.locator('#entries button').click();
+    await admin.locator('#review-dialog').waitFor();assert.match(await admin.locator('#review-evidence').textContent(),/student@usth.edu.vn/);
+    await admin.locator('#review-note').fill('Đã kiểm tra thẻ sinh viên và email trường tại bàn TA');
+    await admin.locator('#save-review').click();await admin.locator('#review-error').filter({hasText:'Xác nhận đã đối chiếu'}).waitFor();
+    await admin.locator('#review-card').check();
+    assert.ok(await admin.locator('#review-dialog').evaluate(e=>e.getBoundingClientRect().top>=0&&e.getBoundingClientRect().bottom<=innerHeight),'TA dialog stays inside viewport');
+    if(process.env.BP_SCREENSHOT_DIR)await admin.screenshot({path:path.join(process.env.BP_SCREENSHOT_DIR,name+'-ta-duplicate-review.png'),fullPage:false});
+    await admin.locator('#save-review').click();await admin.locator('#review-dialog').waitFor({state:'hidden'});assert.equal(f.store.entries()[0].status,'CONFIRMED');
+    await tab.bringToFront();await tab.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));await tab.locator('#receipt[data-status=CONFIRMED]').waitFor();assert.equal(await tab.locator('#duplicate-popup').isVisible(),false);
+    const extra=await form(await context(),'002');await extra.locator('#submit').click();await extra.locator('#receipt').waitFor();assert.ok(f.store.entries().every(r=>r.peers===2&&r.status==='PENDING'));assert.equal(f.store.entries()[0].duplicateReview,false);
     f.store.closeSession(first.id,'TA');f.store.reopen(first.id,8,'TA');await tab.goto(link());await tab.locator('#receipt').waitFor();assert.equal(f.store.entries().length,2);
     f.store.closeSession(first.id,'TA');const second=f.store.open(today(),8,'TA');
     const next=await form(oneContext,'001');await next.locator('#submit').click();await next.locator('#receipt').waitFor();assert.equal(f.store.entries(second.id).length,1);
@@ -48,8 +71,12 @@ async function run(name){
     await basic.locator('[name=studentId]').fill('003');await basic.locator('[name=name]').fill('Nguyễn Minh');await basic.locator('[name=code]').fill(f.store.currentQr().code);
     await basic.locator('button').click();await basic.getByRole('heading',{name:'Đã lưu, chờ TA đối chiếu'}).waitFor({timeout:5000}).catch(async error=>{console.error(await basic.locator('body').innerText());throw error;});assert.equal(f.store.entries(second.id).length,2);
     await basic.goto(f.origin+'/simple');assert.equal(await basic.locator('form').count(),0);
+    const basicTwo=await (await context({javaScriptEnabled:false})).newPage();await basicTwo.goto(f.origin+'/simple');
+    await basicTwo.locator('[name=studentId]').fill('003');await basicTwo.locator('[name=name]').fill('Nguyễn Minh');await basicTwo.locator('[name=code]').fill(f.store.currentQr().code);await basicTwo.locator('button').click();
+    await basicTwo.getByRole('heading',{name:'Thiếu đối chiếu — trùng MSSV'}).waitFor();await basicTwo.locator('[name=email]').fill('basic@usth.edu.vn');await basicTwo.locator('button').click();await basicTwo.getByText('Đã lưu email:',{exact:false}).last().waitFor();
+    assert.equal(f.store.entries(second.id).length,2);assert.equal(f.store.entries(second.id)[1].duplicate_emails.length,1);
     assert.deepEqual(errors,[]);assert.ok(requests.every(url=>url.startsWith(f.origin+'/')),'No external dependency');assert.ok(!requests.some(url=>/\.(js|css)(\?|$)/.test(url)),'No critical subresource requests');
-    console.log(JSON.stringify({engine:name,formReadyMs:measurements,passed:'missing APIs/storage/crypto, stalled subresources, 320–1280px, lost response, same-browser lock, duplicate MSSV/IP, reopen/new round, automatic scan retry, no-JS form'}));
+    console.log(JSON.stringify({engine:name,formReadyMs:measurements,passed:'missing APIs/storage/crypto, stalled subresources, 320–1280px, lost response, same-browser lock, duplicate MSSV/IP, reopen/new round, automatic scan retry, no-JS form and email, duplicate popup on both browsers, email retry, TA card confirmation'}));
   }finally{if(browser)await browser.close();await f.close();}
 }
 (async()=>{for(const name of (process.env.BP_BROWSERS||'chromium,firefox,webkit').split(','))await run(name);})().catch(error=>{console.error(error);process.exitCode=1;});

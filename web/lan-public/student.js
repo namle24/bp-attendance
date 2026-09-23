@@ -4,7 +4,7 @@
   function $(id) { return document.getElementById(id); }
   function notice(message, error) { $('notice').textContent = message; $('notice').className = error ? 'notice error' : 'notice'; }
   if (!window.Promise || !window.BPClient) { notice('Mở biểu mẫu tối giản bên trên để tiếp tục điểm danh.'); return; }
-  var session, pending, busy = false, booting = false, scanGrant, scanAt = 0;
+  var session, pending, busy = false, booting = false, scanGrant, scanAt = 0, currentReceipt = null, receiptTimer, refreshing = false, viewGeneration = 0, popupKey = '', emailBusy = false;
   function clock() { return window.performance && performance.now ? performance.now() : Date.now(); }
   function loadPending(sid) {
     try {
@@ -33,20 +33,51 @@
   function savePending() { lockFields(); try { sessionStorage.setItem('bp-lan-pending', JSON.stringify(pending)); if (pending) sessionStorage.setItem('bp-lan-pending:' + pending.sessionId, JSON.stringify(pending)); } catch (_) {} }
   function fill(previous) { if (previous) { $('student-id').value = previous.studentId; $('full-name').value = previous.name; } }
   function showRound() { $('date').textContent = session ? session.date + ' · Đợt ' + session.number + (session.label ? ' · ' + session.label : '') : ''; }
+  function hideReview() { $('duplicate-popup').hidden = true; }
+  function openReview() {
+    if (!currentReceipt || !currentReceipt.duplicateReview) return;
+    var email = currentReceipt.schoolEmail || '';
+    if (!$('duplicate-popup').hidden && emailBusy) return;
+    if ($('duplicate-popup').hidden || email) $('school-email').value = email;
+    $('review-email-form').hidden = !!email; $('review-ack').hidden = !email;
+    $('review-email-status').textContent = email ? 'Đã lưu ' + email + '. Mang thẻ sinh viên xuống bàn TA để hoàn tất đối chiếu.' : '';
+    var wasHidden = $('duplicate-popup').hidden; $('duplicate-popup').hidden = false;
+    if (wasHidden) $('duplicate-popup').querySelector('.review-panel').focus();
+  }
+  function scheduleReceipt() {
+    clearTimeout(receiptTimer);
+    if (currentReceipt) receiptTimer = setTimeout(refreshReceipt, 25000 + Math.floor(Math.random() * 10000));
+  }
+  function refreshReceipt() {
+    if (!currentReceipt || $('receipt').hidden || document.hidden || busy || booting || refreshing || emailBusy) { scheduleReceipt(); return; }
+    var sid = currentReceipt.sessionId, generation = viewGeneration; refreshing = true;
+    request('/api/receipt?round=' + encodeURIComponent(sid), undefined, false).then(function (data) {
+      if (data.receipt && generation === viewGeneration && currentReceipt && currentReceipt.sessionId === sid && !busy && !booting && !emailBusy) receipt(data.receipt);
+    }).catch(function () { /* Keep the saved receipt available during Wi-Fi interruptions. */ }).then(function () { refreshing = false; scheduleReceipt(); });
+  }
   function receipt(row) {
+    currentReceipt = row;
+    if (!pending || pending.sessionId !== row.sessionId) pending = {sessionId: row.sessionId, studentId: row.studentId, name: row.name};
+    pending.receipt = row; savePending();
+
     $('receipt').setAttribute('data-status', row.status);
     $('receipt-mark').textContent = row.status === 'PENDING' ? '…' : row.status === 'REJECTED' ? '!' : '✓';
-    $('receipt-title').textContent = row.status === 'PENDING' ? 'Đã lưu, chờ TA đối chiếu' : row.status === 'REJECTED' ? 'TA không xác nhận điểm danh' : 'Đã ghi nhận điểm danh';
+    $('receipt-title').textContent = row.duplicateReview ? 'Thiếu đối chiếu — trùng MSSV' : row.status === 'PENDING' ? 'Đã lưu, chờ TA đối chiếu' : row.status === 'REJECTED' ? 'TA không xác nhận điểm danh' : row.duplicateAttempt ? 'TA đã đối chiếu MSSV này' : 'Đã ghi nhận điểm danh';
     $('receipt-fields').textContent = '';
     [['Đợt', 'Đợt ' + (row.roundNumber || 1) + (row.roundLabel ? ' · ' + row.roundLabel : '')], ['MSSV', row.studentId], ['Họ tên', row.name], ['Thời gian', BPClient.time(row.at)]].forEach(function (field) {
       var dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = field[0]; dd.textContent = field[1]; $('receipt-fields').appendChild(dt); $('receipt-fields').appendChild(dd);
     });
     $('attendance-form').hidden = true; $('scan-form').hidden = true; $('scan-time').textContent = ''; $('receipt').hidden = false;
     $('reload').hidden = false; $('reload').textContent = 'Kiểm tra đợt điểm danh tiếp theo';
-    notice(row.status === 'REJECTED' ? 'TA đã đối chiếu và không xác nhận. Liên hệ TA nếu cần làm rõ.' : row.status === 'PENDING' ? 'Đã lưu. TA sẽ đối chiếu thông tin tại lớp.' : row.duplicate ? 'Lượt gửi này đã được lưu trước đó.' : 'Điểm danh đã được lưu.');
+    $('review-warning').hidden = !row.duplicateReview;
+    var key = row.sessionId + ':' + (row.duplicateCount || 0);
+    if (row.duplicateReview) { if (popupKey !== key || ($('duplicate-popup').hidden && !row.schoolEmail)) { popupKey = key; openReview(); } } else { hideReview(); popupKey = ''; }
+    scheduleReceipt();
+    notice(row.duplicateReview ? 'Bổ sung email trường và mang thẻ sinh viên xuống bàn TA. Chưa đối chiếu thì tính là thiếu xác nhận.' : row.duplicateAttempt && row.status !== 'REJECTED' ? 'Lượt gửi trùng không được tính thêm. TA đã đối chiếu hồ sơ của MSSV này.' : row.status === 'REJECTED' ? 'TA đã đối chiếu và không xác nhận. Liên hệ TA nếu cần làm rõ.' : row.status === 'PENDING' ? 'Đã lưu. TA sẽ đối chiếu thông tin tại lớp.' : row.duplicate ? 'Lượt gửi này đã được lưu trước đó.' : 'Điểm danh đã được lưu.');
   }
   function admit(input) {
     return request('/api/scan', input, true).then(function (grant) {
+      viewGeneration++; currentReceipt = null; hideReview();
       scanGrant = grant; scanAt = clock(); saveGrant();
       var previous = pending || loadPending(); session = grant.session;
       pending = previous && previous.sessionId === session.id ? previous : loadPending(session.id);
@@ -61,18 +92,19 @@
   function clearLink() { try { history.replaceState(null, '', location.pathname); } catch (_) {} }
   function boot() {
     if (booting || busy) return;
-    booting = true; $('reload').disabled = true;
+    viewGeneration++; hideReview(); booting = true; $('reload').disabled = true;
     var token = BPClient.fragment('qr'), code = BPClient.fragment('code');
     var task;
     if (token || code) {
       task = admit(token ? {token: token} : {code: code}).then(function () { clearLink(); $('connection-help').open = false; }).catch(function (error) {
         if (error.code) clearLink();
+        currentReceipt = null;
         $('receipt').hidden = true; $('attendance-form').hidden = true; $('scan-form').hidden = false;
         notice(error.message || 'Chưa xác nhận được QR. Quét lại mã đang chiếu.', true); $('connection-help').open = true;
       });
     } else {
       task = request('/api/session', undefined, true).then(function (data) {
-        var previous = pending || loadPending(); session = data.session;
+        currentReceipt = null; var previous = pending || loadPending(); session = data.session;
         pending = previous && (!session || previous.sessionId === session.id) ? previous : loadPending(session && session.id);
         $('receipt').hidden = true; $('reload').hidden = false; $('reload').textContent = 'Kiểm tra đợt điểm danh';
         if (!pending) fill(previous);
@@ -104,7 +136,8 @@
       savePending(); notice('Đang gửi điểm danh…');
       return request('/api/check-in', pending, false);
     }).then(function (result) { pending.receipt = result.receipt; delete pending.location; savePending(); receipt(result.receipt); }).catch(function (error) {
-      if (['INPUT_INVALID', 'ID_INVALID', 'REQUEST_INVALID', 'ALREADY_RECORDED'].indexOf(error.code) !== -1) { pending = null; savePending(); notice(error.message, true); }
+      if (error.code === 'DUPLICATE_REVIEW' && error.receipt) { receipt(error.receipt); }
+      else if (['INPUT_INVALID', 'ID_INVALID', 'REQUEST_INVALID', 'ALREADY_RECORDED'].indexOf(error.code) !== -1) { pending = null; savePending(); notice(error.message, true); }
       else if (error.code) {
         if (['SCAN_REQUIRED', 'SCAN_INVALID', 'SCAN_EXPIRED', 'DEVICE_CHANGED', 'COOKIES_REQUIRED'].indexOf(error.code) !== -1) { $('scan-form').hidden = false; scanGrant = null; saveGrant(); }
         if (error.code === 'DEVICE_RECORDED') { $('attendance-form').hidden = true; $('scan-form').hidden = true; }
@@ -116,6 +149,24 @@
     event.preventDefault(); if (busy || booting) return; booting = true; $('scan-submit').disabled = true;
     admit({code: $('room-code').value}).catch(function (error) { notice(error.message || 'Chưa xác nhận được mã. Kiểm tra Wi-Fi rồi thử lại.', true); }).then(function () { booting = false; $('scan-submit').disabled = false; });
   });
+  $('review-open').addEventListener('click', openReview);
+  $('review-ack').addEventListener('click', function () { hideReview(); $('review-open').focus(); });
+  $('review-email-form').addEventListener('submit', function (event) {
+    event.preventDefault(); if (emailBusy || !currentReceipt || !currentReceipt.duplicateReview) return;
+    emailBusy = true; $('save-email').disabled = true; $('review-email-status').textContent = 'Đang lưu email…';
+    var sid = currentReceipt.sessionId;
+    request('/api/review-email', {sessionId: sid, email: $('school-email').value}, false).then(function (data) {
+      if (currentReceipt && currentReceipt.sessionId === sid) { receipt(data.receipt); emailBusy = false; openReview(); }
+    }).catch(function (error) { $('review-email-status').textContent = error.message || 'Chưa xác nhận được email đã lưu. Giữ trang và bấm lưu lại.'; }).then(function () { emailBusy = false; $('save-email').disabled = false; });
+  });
+  $('duplicate-popup').addEventListener('keydown', function (event) {
+    if (event.key !== 'Tab' && event.keyCode !== 9) return;
+    var first = $('review-email-form').hidden ? $('review-ack') : $('school-email');
+    var last = $('review-email-form').hidden ? $('review-ack') : $('save-email');
+    if (event.shiftKey && (document.activeElement === first || document.activeElement === $('duplicate-popup').querySelector('.review-panel'))) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) refreshReceipt(); });
   $('reload').addEventListener('click', boot); window.addEventListener('hashchange', boot);
   window.addEventListener('online', function () { if (!pending && $('receipt').hidden && !document.hidden) boot(); });
   setInterval(scanClock, 1000); boot();

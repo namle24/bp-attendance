@@ -44,7 +44,7 @@ function finish(app,page){
   app.use((req,res)=>res.status(404).json({message:'Không tìm thấy trang.'}));
   app.use((error,req,res,next)=>{
     const status=error.status||500;
-    res.status(status).json({code:error.code||'REQUEST_FAILED',message:status>=500?'Máy host chưa xử lý được. Giữ trang này và gửi lại; nếu lỗi tiếp diễn, báo TA.':error.type==='entity.too.large'?'Dữ liệu quá lớn.':error instanceof SyntaxError?'Dữ liệu JSON không hợp lệ.':error.message});
+    res.status(status).json({code:error.code||'REQUEST_FAILED',message:status>=500?'Máy host chưa xử lý được. Giữ trang này và gửi lại; nếu lỗi tiếp diễn, báo TA.':error.type==='entity.too.large'?'Dữ liệu quá lớn.':error instanceof SyntaxError?'Dữ liệu JSON không hợp lệ.':error.message,...(error.code==='DUPLICATE_REVIEW'&&error.receipt?{receipt:error.receipt}:{})});
   });
   return app;
 }
@@ -55,23 +55,32 @@ function createStudentApp(config,store,options={}){
   app.get(['/','/check-in','/student.html'],studentPage);
   app.get(['/history','/history.html'],historyPage);
   app.use('/simple',(req,res,next)=>{res.set('Content-Security-Policy',simple.csp);next();});
-  app.get('/simple',(req,res)=>res.type('html').send(simple.render({store,device:req.device||req.newDevice,now:now()})));
+  app.get('/simple',(req,res)=>res.type('html').send(simple.render({store,device:req.device||req.newDevice,now:now(),round:typeof req.query.round==='string'?req.query.round:undefined})));
   app.post('/simple',(req,res)=>{
     try{
       simple.verify(req.body.formToken,req.device,store.meta('lanQrSecret'),now());
+      if(req.body.action==='supplement-email'){
+        const receipt=store.supplementEmail(req.body.sessionId,req.device,req.body.email,now());
+        return res.type('html').send(simple.render({store,device:req.device,now:now(),receipt,message:'Đã lưu email. Mang thẻ sinh viên xuống bàn TA để hoàn tất đối chiếu.'}));
+      }
       const body={sessionId:req.body.sessionId,studentId:req.body.studentId,name:req.body.name,requestId:req.body.requestId};
       if(!store.deviceReceipt(body.sessionId,req.device)){const grant=store.scan({code:req.body.code},req.socket.remoteAddress,now(),req.device);body.sessionId=grant.sessionId;body.scanTicket=grant.scanTicket;}
       const receipt=store.checkIn(body,req.socket.remoteAddress,now(),req.device);
       res.type('html').send(simple.render({store,device:req.device,now:now(),receipt}));
-    }catch(error){res.status(error.status||500).type('html').send(simple.render({store,device:req.device||req.newDevice,now:now(),input:req.body,message:error.status?error.message:'Máy đang bận. Giữ nguyên trang và gửi lại.'}));}
+    }catch(error){res.status(error.status||500).type('html').send(simple.render({store,device:req.device||req.newDevice,now:now(),input:req.body,receipt:error.receipt||store.deviceReceipt(req.body.sessionId,req.device),message:error.status?error.message:'Máy đang bận. Giữ nguyên trang và gửi lại.'}));}
   });
   app.post('/api/student-history',(req,res)=>{
     if(!options.lookup)fail(503,'LOOKUP_NOT_CONFIGURED','TA chưa cấu hình Google Sheet kết quả. Vui lòng báo TA.');
     res.json(options.lookup.search(req.body.studentId));
   });
   app.get('/api/session',(req,res)=>{
-    const session=store.activeSession(now());res.json({session:session?{id:session.id,date:session.date,endsAt:session.ends_at,number:session.number,label:session.label,generation:session.generation,location:{enabled:false}}:null,receipt:session?store.deviceReceipt(session.id,req.device):null,serverTime:now()});
+    const session=store.activeSession(now());res.json({session:session?{id:session.id,date:session.date,endsAt:session.ends_at,number:session.number,label:session.label,generation:session.generation,location:{enabled:false}}:null,receipt:session?store.deviceReceipt(session.id,req.device):store.recentDeviceReceipt(req.device,today(now())),serverTime:now()});
   });
+  app.get('/api/receipt',(req,res)=>{
+    if(typeof req.query.round!=='string'||req.query.round.length>64)fail(400,'ROUND_INVALID','Đợt không hợp lệ.');
+    res.json({receipt:store.deviceReceipt(req.query.round,req.device)});
+  });
+  app.post('/api/review-email',(req,res)=>res.json({receipt:store.supplementEmail(req.body.sessionId,req.device,req.body.email,now())}));
   app.post('/api/scan',(req,res)=>{const device=req.device||req.newDevice,grant=store.scan(req.body,req.socket.remoteAddress,now(),device);res.json({...grant,requestId:require('node:crypto').randomBytes(16).toString('hex'),receipt:store.deviceReceipt(grant.sessionId,device)});});
   app.post('/api/check-in',(req,res)=>{
     if(!req.device)fail(403,'COOKIES_REQUIRED','Trình duyệt chưa giữ được lượt quét. Mở link trực tiếp bằng Safari hoặc Chrome, cho phép cookie rồi quét lại QR.');
@@ -100,7 +109,7 @@ function createAdminApp(config,store,worker,options={}){
   app.get('/api/entries',(req,res)=>{const rows=store.entries(typeof req.query.session==='string'?req.query.session:undefined);res.json({entries:filterEntries(rows,req.query),total:rows.length,pending:rows.filter(r=>r.status==='PENDING').length});});
   app.get('/api/history',(req,res)=>{const rows=store.history(req.query.date);res.json({entries:filterEntries(rows,req.query),total:rows.length});});
   app.get('/api/issues',(req,res)=>res.json(store.issues(req.query.date,req.query.status,req.query)));
-  app.post('/api/entries/:id/review',(req,res)=>{store.reviewEntry(Number(req.params.id),req.body.review,req.body.note,req.body.peers,actor,now());res.json({ok:true});});
+  app.post('/api/entries/:id/review',(req,res)=>{store.reviewEntry(Number(req.params.id),req.body.review,req.body.note,req.body.peers,actor,now(),req.body.duplicateAttempts,req.body.cardChecked);res.json({ok:true});});
   app.post('/api/sync',(req,res)=>{void worker.sync(true);res.json(worker.status());});
   app.get('/api/lookup-source',(req,res)=>res.json({source:options.lookup?.source()||null,...(options.lookup?.status()||{configured:false,updatedAt:null,refreshing:false,stale:false,error:''})}));
   app.post('/api/lookup-source',(req,res)=>{
