@@ -24,6 +24,7 @@ async function serverProcess(){
   const worker=new SyncWorker(store,{write:()=>pendingSheets});
   const app=createStudentApp(config,store);
   const server=await new Promise(resolve=>{const s=require('../web/listener.cjs').listen(app,0,'127.0.0.1',()=>resolve(s));});
+  const connections={opened:0,closed:0};server.on('connection',socket=>{connections.opened++;socket.on('close',()=>connections.closed++);});
   config.origin='http://127.0.0.1:'+server.address().port;
   process.on('message',async message=>{
     if(message==='start'){
@@ -33,7 +34,7 @@ async function serverProcess(){
       void worker.sync();
       process.send({kind:'start',qr,session:session.id});
     }else if(message==='stats'){
-      process.send({kind:'stats',records:store.db.prepare('SELECT COUNT(*) AS n FROM lan_attendance').get().n,flagged:store.entries().filter(e=>e.status==='PENDING').length,locations:Object.fromEntries(store.db.prepare('SELECT status,COUNT(*) AS n FROM lan_attendance_locations GROUP BY status').all().map(row=>[row.status,row.n])),sync:worker.status(),rssMiB:process.memoryUsage().rss/1024/1024});
+      process.send({kind:'stats',listening:server.listening,connections,records:store.db.prepare('SELECT COUNT(*) AS n FROM lan_attendance').get().n,flagged:store.entries().filter(e=>e.status==='PENDING').length,locations:Object.fromEntries(store.db.prepare('SELECT status,COUNT(*) AS n FROM lan_attendance_locations GROUP BY status').all().map(row=>[row.status,row.n])),sync:worker.status(),rssMiB:process.memoryUsage().rss/1024/1024});
     }else if(message==='stop'){
       await new Promise(resolve=>server.close(resolve));
       releaseSheets();
@@ -99,12 +100,15 @@ async function measure(count,run,roundCount=1){
       assert.equal(scan.success,count,JSON.stringify(scan));
       identities.forEach((identity,i)=>{identity.scanTicket=tickets[i];identity.cookie=cookies[i]||identity.cookie;});
       const first=await burst(agent,ready.port,identities,started.qr);
+      if(first.success!==count)console.error(JSON.stringify({phase:'submit',first,server:await command(child,'stats')}));
+      assert.equal(first.success,count,JSON.stringify(first));assert.equal(first.duplicates,0);
       const retry=await burst(agent,ready.port,identities,started.qr);
+      if(retry.success!==count)console.error(JSON.stringify({phase:'retry',retry,server:await command(child,'stats')}));
+      assert.equal(retry.success,count,JSON.stringify(retry));assert.equal(retry.duplicates,count);
       const receipt=await burst(agent,ready.port,identities,started.qr,'/api/receipt');
+      if(receipt.success!==count)console.error(JSON.stringify({phase:'receipt',page,scan,first,retry,receipt,server:await command(child,'stats')}));
       assert.equal(receipt.success,count,JSON.stringify(receipt));assert.equal(receipt.matchingReceipts,count);
       stats=await command(child,'stats');
-      assert.equal(first.success,count,JSON.stringify(first));assert.equal(first.duplicates,0);
-      assert.equal(retry.success,count,JSON.stringify(retry));assert.equal(retry.duplicates,count);
       assert.equal(stats.records,count*round);assert.equal(stats.flagged,count*round);
       assert.deepEqual(stats.locations,{});
       rounds.push({round,page,scan,first,retry,receipt,records:stats.records});
