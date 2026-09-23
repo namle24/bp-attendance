@@ -22,7 +22,7 @@
     if (left <= 0 && session) $('scan-form').hidden = false;
   }
   function request(url, body, retry) {
-    return BPClient.request(url, body, {timeout: url === '/api/check-in' ? 20000 : 7000}).catch(function (error) {
+    return BPClient.request(url, body, {timeout: url === '/api/check-in' ? 45000 : 7000}).catch(function (error) {
       // Only admission/read requests retry automatically, once with jitter.
       if (!retry || error.code || error.status) throw error;
       notice('Kết nối vừa gián đoạn. Đang thử lại…');
@@ -127,6 +127,9 @@
   }
   $('attendance-form').addEventListener('submit', function (event) {
     event.preventDefault(); if (busy || booting) return; busy = true; $('submit').disabled = true;
+    var waitingNotice = setTimeout(function () {
+      if (busy) notice('Máy đang xử lý nhiều lượt điểm danh. Giữ trang này và chờ kết quả; đừng gửi lại từ máy khác nhé.');
+    }, 8000);
     Promise.resolve().then(function () {
       if (!pending) {
         if (!session) throw Error('Chưa mở điểm danh.');
@@ -143,7 +146,7 @@
         if (error.code === 'DEVICE_RECORDED') { $('attendance-form').hidden = true; $('scan-form').hidden = true; }
         notice(error.message, true);
       } else notice(pending ? 'Chưa xác nhận được kết quả. Giữ trang này và bấm gửi lại; hệ thống sẽ kiểm tra lượt gửi trước.' : error.message, true);
-    }).then(function () { busy = false; $('submit').disabled = false; });
+    }).then(function () { clearTimeout(waitingNotice); busy = false; $('submit').disabled = false; });
   });
   $('scan-form').addEventListener('submit', function (event) {
     event.preventDefault(); if (busy || booting) return; booting = true; $('scan-submit').disabled = true;

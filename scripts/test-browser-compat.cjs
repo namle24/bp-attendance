@@ -33,7 +33,11 @@ async function run(name){
     if(process.env.BP_SCREENSHOT_DIR){fs.mkdirSync(process.env.BP_SCREENSHOT_DIR,{recursive:true});await one.screenshot({path:path.join(process.env.BP_SCREENSHOT_DIR,name+'-student.png'),fullPage:true});}
     await one.route('**/api/check-in',async route=>{await route.fetch();await route.abort();});
     await one.locator('#submit').click();await one.locator('#notice').filter({hasText:'Chưa xác nhận được'}).waitFor();assert.equal(f.store.entries().length,1);
-    await one.unroute('**/api/check-in');await one.locator('#submit').click();await one.locator('#receipt').waitFor();assert.equal(f.store.entries().length,1);
+    await one.unroute('**/api/check-in');
+    if(process.env.BP_TEST_SLOW_REPLY==='1')await one.route('**/api/check-in',async route=>{const response=await route.fetch();await new Promise(resolve=>setTimeout(resolve,23000));await route.fulfill({response});});
+    await one.locator('#submit').click();
+    if(process.env.BP_TEST_SLOW_REPLY==='1')await one.locator('#notice').filter({hasText:'Máy đang xử lý nhiều lượt'}).waitFor({timeout:12000});
+    await one.locator('#receipt').waitFor({timeout:30000});assert.equal(f.store.entries().length,1);await one.unroute('**/api/check-in');
     const tab=await oneContext.newPage();await tab.goto(link());await tab.locator('#receipt').waitFor();assert.equal(await tab.locator('#attendance-form').isVisible(),false);assert.match(await tab.locator('#receipt-fields').textContent(),/001/);
     const twoContext=await context(),duplicate=await form(twoContext,'001');await duplicate.locator('#submit').click();
     await duplicate.locator('#duplicate-popup').waitFor();assert.equal(f.store.entries().length,1);
@@ -76,7 +80,7 @@ async function run(name){
     await basicTwo.getByRole('heading',{name:'Thiếu đối chiếu — trùng MSSV'}).waitFor();await basicTwo.locator('[name=email]').fill('basic@usth.edu.vn');await basicTwo.locator('button').click();await basicTwo.getByText('Đã lưu email:',{exact:false}).last().waitFor();
     assert.equal(f.store.entries(second.id).length,2);assert.equal(f.store.entries(second.id)[1].duplicate_emails.length,1);
     assert.deepEqual(errors,[]);assert.ok(requests.every(url=>url.startsWith(f.origin+'/')),'No external dependency');assert.ok(!requests.some(url=>/\.(js|css)(\?|$)/.test(url)),'No critical subresource requests');
-    console.log(JSON.stringify({engine:name,formReadyMs:measurements,passed:'missing APIs/storage/crypto, stalled subresources, 320–1280px, lost response, same-browser lock, duplicate MSSV/IP, reopen/new round, automatic scan retry, no-JS form and email, duplicate popup on both browsers, email retry, TA card confirmation'}));
+    console.log(JSON.stringify({engine:name,formReadyMs:measurements,slowReplyTest:process.env.BP_TEST_SLOW_REPLY==='1',passed:'missing APIs/storage/crypto, stalled subresources, 320–1280px, lost response, same-browser lock, duplicate MSSV/IP, reopen/new round, automatic scan retry, no-JS form and email, duplicate popup on both browsers, email retry, TA card confirmation'}));
   }finally{if(browser)await browser.close();await f.close();}
 }
 (async()=>{for(const name of (process.env.BP_BROWSERS||'chromium,firefox,webkit').split(','))await run(name);})().catch(error=>{console.error(error);process.exitCode=1;});
