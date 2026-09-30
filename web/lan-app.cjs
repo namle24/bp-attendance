@@ -55,7 +55,7 @@ function createStudentApp(config,store,options={}){
   app.get(['/','/check-in','/student.html'],studentPage);
   app.get(['/history','/history.html'],historyPage);
   app.use('/simple',(req,res,next)=>{res.set('Content-Security-Policy',simple.csp);next();});
-  app.get('/simple',(req,res)=>res.type('html').send(simple.render({store,device:req.device||req.newDevice,now:now(),round:typeof req.query.round==='string'?req.query.round:undefined})));
+  app.get('/simple',(req,res)=>res.type('html').send(simple.render({store,device:req.device||req.newDevice,now:now(),round:typeof req.query.round==='string'?req.query.round:undefined,input:{code:typeof req.query.code==='string'?req.query.code:''}})));
   app.post('/simple',(req,res)=>{
     try{
       simple.verify(req.body.formToken,req.device,store.meta('lanQrSecret'),now());
