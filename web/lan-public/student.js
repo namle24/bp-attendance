@@ -4,6 +4,8 @@
   function $(id) { return document.getElementById(id); }
   function notice(message, error) { $('notice').textContent = message; $('notice').className = error ? 'notice error' : 'notice'; }
   if (!window.Promise || !window.BPClient) { notice('Mở biểu mẫu tối giản bên trên để tiếp tục điểm danh.'); return; }
+  // The HTML form stays available without JS; with JS, wait for QR/session validation.
+  $('attendance-form').hidden = true;
   var session, pending, busy = false, booting = false, scanGrant, scanAt = 0, currentReceipt = null, receiptTimer, refreshing = false, viewGeneration = 0, popupKey = '', emailBusy = false;
   function clock() { return window.performance && performance.now ? performance.now() : Date.now(); }
   function loadPending(sid) {

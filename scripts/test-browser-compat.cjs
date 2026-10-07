@@ -69,7 +69,11 @@ async function run(name){
     const next=await form(oneContext,'001');await next.locator('#submit').click();await next.locator('#receipt').waitFor();assert.equal(f.store.entries(second.id).length,1);
     // One transient scan failure recovers automatically, without rescanning.
     const retryContext=await context(),retry=await retryContext.newPage();let failures=0;
-    await retry.route('**/api/scan',r=>++failures===1?r.abort():r.continue());await retry.goto(link());await retry.locator('#attendance-form').waitFor({timeout:6000});assert.equal(failures,2);
+    let releaseScan;const scanPending=new Promise(resolve=>{releaseScan=resolve;});
+    await retry.route('**/api/scan',async r=>{if(++failures===1)return r.abort();await scanPending;return r.continue();});
+    await retry.goto(link());await retry.locator('#notice').filter({hasText:'Kết nối vừa gián đoạn'}).waitFor();
+    try{assert.equal(await retry.locator('#attendance-form').isVisible(),false,'Wait for QR validation before showing the attendance form');}finally{releaseScan();}
+    await retry.locator('#attendance-form').waitFor({timeout:6000});assert.equal(failures,2);
     // No JavaScript: same QR/device checks through an ordinary HTML form.
     const basicContext=await context({javaScriptEnabled:false}),basic=await basicContext.newPage();await basic.goto(f.origin);await basic.locator('#fallback-help a').click();
     await basic.locator('[name=studentId]').fill('003');await basic.locator('[name=name]').fill('Nguyễn Minh');await basic.locator('[name=code]').fill(f.store.currentQr().code);
