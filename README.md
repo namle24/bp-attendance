@@ -20,6 +20,8 @@ Kết quả được lưu vào SQLite trước khi trả thông báo thành côn
 
 ## Chạy trên laptop
 
+**Chuyển sang MacBook để code và làm việc tiếp:** xem [bàn giao code, context và dữ liệu](docs/MACBOOK-HANDOFF.vi.md). Tài liệu có cách clone, kiểm tra, khôi phục gói dữ liệu riêng và tiếp tục công việc điểm danh.
+
 **Giảng viên/TA dùng Windows:** xem [hướng dẫn từng bước](docs/WINDOWS.vi.md) để cập nhật bản cũ hoặc cài lần đầu, mở app, chiếu QR qua HDMI và xuất Excel. Nếu đã có repo, dừng app rồi chạy `git pull --ff-only` và `npm start`; các buổi sau có thể nhấp đúp **Start-Windows.bat**.
 
 Cài **Node.js 24+** một lần. Trong thư mục repo, chạy:
